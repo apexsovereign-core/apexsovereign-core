@@ -291,9 +291,13 @@ export const ArchitectureView: React.FC<ArchitectureViewProps> = ({ onExploreCod
             <button
               onClick={() => onExploreCode(currentPillar.fileLink)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium transition-colors cursor-pointer self-start sm:self-auto"
+              title="Protected IP: Requires Administrative Clearance"
             >
               <FileText className="w-3.5 h-3.5 text-indigo-400" />
               <span>Inspect Source File</span>
+              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                Staff IP
+              </span>
               <ArrowRight className="w-3 h-3 text-slate-400" />
             </button>
           </div>

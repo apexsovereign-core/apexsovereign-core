@@ -16,7 +16,8 @@ import {
   ChevronDown,
   LayoutDashboard,
   Coins,
-  Sliders
+  Sliders,
+  ShieldAlert
 } from 'lucide-react';
 
 export type ActiveNavTab = 'pricing' | 'portal' | 'requirements' | 'signer' | 'architecture' | 'sandbox' | 'code' | 'schema' | 'deploy';
@@ -155,18 +156,24 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Simulators</span>
             </button>
 
-            <button
-              id="tab-code"
-              onClick={() => setActiveTab('code')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer hidden lg:flex ${
-                activeTab === 'code'
-                  ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-              }`}
-            >
-              <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Codebase</span>
-            </button>
+            {/* Codebase tab restricted to verified administrators to protect proprietary IP */}
+            {currentUser?.role === 'admin' && (
+              <button
+                id="tab-code"
+                onClick={() => setActiveTab('code')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'code'
+                    ? 'bg-rose-950/80 text-rose-300 shadow-sm border border-rose-500/50 ring-1 ring-rose-500/30'
+                    : 'text-rose-400/90 hover:text-rose-200 hover:bg-rose-950/30 border border-rose-900/40'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                <span>Admin Codebase</span>
+                <span className="px-1.5 py-0.2 text-[9px] font-mono bg-rose-500/20 text-rose-300 rounded border border-rose-500/30">
+                  STAFF
+                </span>
+              </button>
+            )}
 
             <button
               id="tab-deploy"
@@ -221,7 +228,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => setShowUserDropdown(false)}
                   >
                     <div className="p-2 border-b border-slate-800 mb-1">
-                      <div className="text-xs font-semibold text-white">{currentUser.fullName}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-semibold text-white">{currentUser.fullName}</div>
+                        {currentUser.role === 'admin' && (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                            ADMIN
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-slate-400 font-mono truncate">{currentUser.email}</div>
                       <div className="mt-1 flex items-center justify-between text-[10px] font-mono">
                         <span className="text-slate-500">Tenant:</span>
@@ -236,6 +250,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <LayoutDashboard className="w-3.5 h-3.5 text-blue-400" />
                       <span>My Workspace & Quota</span>
                     </button>
+
+                    {currentUser.role === 'admin' && (
+                      <button
+                        onClick={() => setActiveTab('code')}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-rose-300 hover:bg-rose-950/40 flex items-center gap-2 transition-colors border border-rose-900/30 my-0.5"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Admin IP Codebase Audit</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={() => setActiveTab('pricing')}
