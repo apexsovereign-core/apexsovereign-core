@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navbar, ActiveNavTab } from './components/Navbar';
+import { SolutionsView } from './components/SolutionsView';
 import { ArchitectureView } from './components/ArchitectureView';
 import { InteractiveSandbox } from './components/InteractiveSandbox';
 import { CodeExplorer } from './components/CodeExplorer';
@@ -17,11 +18,12 @@ import { CustomerPortal } from './components/CustomerPortal';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
+import { AdminAccessGate } from './components/AdminAccessGate';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
-import { ShieldCheck, Server, Database, Lock, Cpu, Key } from 'lucide-react';
+import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveNavTab>('pricing');
+  const [activeTab, setActiveTab] = useState<ActiveNavTab>('solutions');
   const [selectedFileForCodeExplorer, setSelectedFileForCodeExplorer] = useState<string>('config_py');
 
   // Customer User Authentication & Session State
@@ -33,6 +35,8 @@ export default function App() {
       return null;
     }
   });
+
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(() => currentUser?.role === 'admin');
 
   // Recorded Transactions
   const [transactions, setTransactions] = useState<PaymentTransaction[]>(() => {
@@ -54,8 +58,12 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('apex_customer_user', JSON.stringify(currentUser));
+      if (currentUser.role === 'admin') {
+        setIsAdminUnlocked(true);
+      }
     } else {
       localStorage.removeItem('apex_customer_user');
+      setIsAdminUnlocked(false);
     }
   }, [currentUser]);
 
@@ -65,15 +73,21 @@ export default function App() {
 
   const handleLoginSuccess = (user: CustomerUser) => {
     setCurrentUser(user);
-    setActiveTab('portal');
+    if (user.role === 'admin') {
+      setIsAdminUnlocked(true);
+      setActiveTab('signer');
+    } else {
+      setActiveTab('portal');
+    }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setActiveTab('pricing');
+    setIsAdminUnlocked(false);
+    setActiveTab('solutions');
   };
 
-  const handleSelectTierForPurchase = (tier: SubscriptionTier, interval: 'monthly' | 'annual') => {
+  const handleSelectTierForPurchase = (tier: SubscriptionTier, interval: 'monthly' | 'annual' = 'monthly') => {
     setSelectedTierForCheckout(tier);
     setBillingInterval(interval);
     setIsCheckoutModalOpen(true);
@@ -103,6 +117,11 @@ export default function App() {
     setActiveTab('sandbox');
   };
 
+  const handleElevateAdmin = (adminUser: CustomerUser) => {
+    setCurrentUser(adminUser);
+    setIsAdminUnlocked(true);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
       <Navbar 
@@ -111,10 +130,23 @@ export default function App() {
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
+        isAdminUnlocked={isAdminUnlocked}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {/* Customer Facing Views */}
+        {/* Customer Facing Views (Public Storefront & Portal) */}
+        {activeTab === 'solutions' && (
+          <SolutionsView
+            onSelectPlan={(tier) => handleSelectTierForPurchase(tier, 'monthly')}
+            onOpenConcierge={() => {
+              // Trigger autonomous concierge chatbot
+              const chatBtn = document.getElementById('btn-autonomous-chatbot-trigger');
+              if (chatBtn) chatBtn.click();
+            }}
+            onNavigatePricing={() => setActiveTab('pricing')}
+          />
+        )}
+
         {activeTab === 'pricing' && (
           <PricingPlans
             onSelectTier={handleSelectTierForPurchase}
@@ -150,32 +182,98 @@ export default function App() {
           )
         )}
 
-        {/* Developer & Operations Console Views */}
-        {activeTab === 'requirements' && <RequirementsEditor />}
+        {/* Developer & Operations Console Views - Strictly Protected behind AdminAccessGate */}
+        {activeTab === 'requirements' && (
+          <AdminAccessGate
+            currentUser={currentUser}
+            onElevateAdmin={handleElevateAdmin}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onReturnToStorefront={() => setActiveTab('solutions')}
+            toolName="Master Requirements & Global Config Engine"
+          >
+            <RequirementsEditor />
+          </AdminAccessGate>
+        )}
 
-        {activeTab === 'signer' && <VariableSigner />}
+        {activeTab === 'signer' && (
+          <AdminAccessGate
+            currentUser={currentUser}
+            onElevateAdmin={handleElevateAdmin}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onReturnToStorefront={() => setActiveTab('solutions')}
+            toolName="6 Variables Signer & Secret Manager"
+          >
+            <VariableSigner />
+          </AdminAccessGate>
+        )}
 
         {activeTab === 'architecture' && (
-          <ArchitectureView
-            onExploreCode={handleExploreCode}
-            onOpenSandbox={handleOpenSandbox}
-          />
+          <AdminAccessGate
+            currentUser={currentUser}
+            onElevateAdmin={handleElevateAdmin}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onReturnToStorefront={() => setActiveTab('solutions')}
+            toolName="Backend Architecture & Database Specifications"
+          >
+            <ArchitectureView
+              onExploreCode={handleExploreCode}
+              onOpenSandbox={handleOpenSandbox}
+            />
+          </AdminAccessGate>
         )}
 
-        {activeTab === 'sandbox' && <InteractiveSandbox />}
+        {activeTab === 'sandbox' && (
+          <AdminAccessGate
+            currentUser={currentUser}
+            onElevateAdmin={handleElevateAdmin}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onReturnToStorefront={() => setActiveTab('solutions')}
+            toolName="Autonomous Test Simulators & Webhook Replay"
+          >
+            <InteractiveSandbox />
+          </AdminAccessGate>
+        )}
 
         {activeTab === 'code' && (
-          <CodeExplorer
-            initialFileId={selectedFileForCodeExplorer}
+          <AdminAccessGate
             currentUser={currentUser}
-            onElevateAdmin={(adminUser) => setCurrentUser(adminUser)}
+            onElevateAdmin={handleElevateAdmin}
             onOpenAuth={() => setIsAuthModalOpen(true)}
-          />
+            onReturnToStorefront={() => setActiveTab('solutions')}
+            toolName="Proprietary IP Codebase Inspection"
+          >
+            <CodeExplorer
+              initialFileId={selectedFileForCodeExplorer}
+              currentUser={currentUser}
+              onElevateAdmin={handleElevateAdmin}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+            />
+          </AdminAccessGate>
         )}
 
-        {activeTab === 'schema' && <SchemaViewer />}
+        {activeTab === 'schema' && (
+          <AdminAccessGate
+            currentUser={currentUser}
+            onElevateAdmin={handleElevateAdmin}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onReturnToStorefront={() => setActiveTab('solutions')}
+            toolName="Supabase PostgreSQL Schema & RLS Rules"
+          >
+            <SchemaViewer />
+          </AdminAccessGate>
+        )}
 
-        {activeTab === 'deploy' && <DeploymentGuide />}
+        {activeTab === 'deploy' && (
+          <AdminAccessGate
+            currentUser={currentUser}
+            onElevateAdmin={handleElevateAdmin}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onReturnToStorefront={() => setActiveTab('solutions')}
+            toolName="Enterprise Deployment & Infrastructure Guide"
+          >
+            <DeploymentGuide />
+          </AdminAccessGate>
+        )}
       </main>
 
       {/* Global Modals */}
@@ -204,7 +302,7 @@ export default function App() {
         }}
       />
 
-      {/* Enterprise Status Footer */}
+      {/* Enterprise Commercial Footer (Zero Internal Tool Leakage) */}
       <footer className="border-t border-slate-900 bg-slate-950/80 py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-3">
@@ -215,47 +313,40 @@ export default function App() {
             <span className="text-slate-700">•</span>
             <span>FastAPI 0.115</span>
             <span className="text-slate-700">•</span>
-            <span>asyncpg 0.29 (Supabase SSL)</span>
+            <span>Supabase PostgreSQL (RLS Enforced)</span>
             <span className="text-slate-700">•</span>
-            <span>PayPal REST v2 Orders & Webhooks</span>
+            <span>PayPal REST v2 Encrypted</span>
           </div>
 
           <div className="flex items-center gap-4 text-[11px] font-mono">
             <button
-              onClick={() => setActiveTab('requirements')}
-              className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
+              onClick={() => setActiveTab('solutions')}
+              className="hover:text-slate-300 transition-colors cursor-pointer"
             >
-              Edit All Requirements
+              Platform Overview
             </button>
             <button
               onClick={() => setActiveTab('pricing')}
-              className="hover:text-slate-300 transition-colors"
+              className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors cursor-pointer"
             >
               Pricing & Subscriptions
             </button>
+            {currentUser && (
+              <button
+                onClick={() => setActiveTab('portal')}
+                className="hover:text-slate-300 transition-colors cursor-pointer"
+              >
+                Client Workspace
+              </button>
+            )}
+            <span className="text-slate-700">•</span>
             <button
               onClick={() => setActiveTab('signer')}
-              className="hover:text-slate-300 transition-colors"
+              className="text-slate-600 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
+              title="Staff Administrative Access Gate"
             >
-              6 Variables Signer
-            </button>
-            <button
-              onClick={() => setActiveTab('architecture')}
-              className="hover:text-slate-300 transition-colors"
-            >
-              Architecture
-            </button>
-            <button
-              onClick={() => setActiveTab('sandbox')}
-              className="hover:text-slate-300 transition-colors"
-            >
-              Simulators
-            </button>
-            <button
-              onClick={() => setActiveTab('deploy')}
-              className="hover:text-slate-300 transition-colors"
-            >
-              Deploy Guide
+              <Lock className="w-3 h-3 text-slate-600" />
+              <span>Staff Clearance</span>
             </button>
           </div>
         </div>
@@ -263,3 +354,4 @@ export default function App() {
     </div>
   );
 }
+
