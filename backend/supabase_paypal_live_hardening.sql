@@ -368,4 +368,57 @@ CREATE POLICY "authenticated_tenants_read_own_ledgers"
         OR tenant_id = auth.uid()::text
     );
 
+-- ----------------------------------------------------------------------------
+-- 9. Autonomous CRM Leads & Transactional Email Delivery Logs
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.autonomous_crm_leads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id VARCHAR(128),
+    company_name VARCHAR(255) NOT NULL,
+    contact_name VARCHAR(128) NOT NULL,
+    contact_email VARCHAR(255) NOT NULL,
+    lead_score INT NOT NULL CHECK (lead_score >= 0 AND lead_score <= 100),
+    qualification_tier VARCHAR(64) NOT NULL DEFAULT 'EXPLORATORY',
+    recommended_plan VARCHAR(255),
+    estimated_monthly_value_usd NUMERIC(14, 2) DEFAULT 0.00,
+    status VARCHAR(32) NOT NULL DEFAULT 'NEW' CHECK (
+        status IN ('NEW', 'QUALIFIED', 'SCOPED', 'CLOSED_WON', 'NURTURE')
+    ),
+    tenant_id VARCHAR(64),
+    crm_metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.autonomous_email_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id VARCHAR(128),
+    provider VARCHAR(32) NOT NULL DEFAULT 'RESEND_REST',
+    recipient_email VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    category VARCHAR(64) NOT NULL DEFAULT 'TRANSACTIONAL',
+    tenant_id VARCHAR(64),
+    order_id VARCHAR(128),
+    status VARCHAR(32) NOT NULL DEFAULT 'DELIVERED',
+    error_detail TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_leads_contact_email ON public.autonomous_crm_leads(contact_email);
+CREATE INDEX IF NOT EXISTS idx_crm_leads_tier ON public.autonomous_crm_leads(qualification_tier);
+CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON public.autonomous_email_logs(recipient_email);
+CREATE INDEX IF NOT EXISTS idx_email_logs_tenant_id ON public.autonomous_email_logs(tenant_id);
+
+ALTER TABLE public.autonomous_crm_leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.autonomous_email_logs ENABLE ROW LEVEL SECURITY;
+
+REVOKE INSERT, UPDATE, DELETE ON public.autonomous_crm_leads FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.autonomous_email_logs FROM anon, authenticated;
+
+CREATE POLICY "service_role_full_access_crm_leads"
+    ON public.autonomous_crm_leads FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+
+CREATE POLICY "service_role_full_access_email_logs"
+    ON public.autonomous_email_logs FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+
 COMMIT;

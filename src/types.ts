@@ -99,3 +99,26 @@ export interface ComputeJob {
   timestamp: string;
   durationSec: number;
 }
+
+export interface InboundChatMessage {
+  id: string;
+  sender: 'user' | 'agent' | 'system';
+  text: string;
+  timestamp: string;
+  qualificationTier?: 'SOVEREIGN_HOT' | 'ENTERPRISE_QUALIFIED' | 'EXPLORATORY' | 'NURTURE';
+  leadScore?: number;
+  suggestedActions?: string[];
+}
+
+export interface LeadQualificationResult {
+  sessionId: string;
+  agentReply: string;
+  leadScore: number;
+  qualificationTier: 'SOVEREIGN_HOT' | 'ENTERPRISE_QUALIFIED' | 'EXPLORATORY' | 'NURTURE';
+  recommendedPlan: string;
+  suggestedActions: string[];
+  capturedLeadId?: string;
+  crmSynced: boolean;
+  emailDispatched: boolean;
+}
+

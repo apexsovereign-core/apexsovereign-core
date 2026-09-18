@@ -30,6 +30,7 @@ from backend.app.schemas.billing import (
 )
 from backend.app.services.ledger_service import LedgerService
 from backend.app.services.paypal_service import PayPalService
+from backend.app.services.email_service import get_email_service
 
 logger = logging.getLogger("apexsovereign.billing.router")
 router = APIRouter(prefix="/billing", tags=["Enterprise Billing & Payments"])
@@ -306,6 +307,24 @@ async def verify_paypal_payment(
             new_balance,
             is_replay,
         )
+
+        # 9. Trigger Automated Customer Communication Receipt on Autopilot (Resend/SMTP)
+        if payer_email and not is_replay:
+            try:
+                email_svc = get_email_service()
+                await email_svc.dispatch_payment_receipt(
+                    to_email=payer_email,
+                    tenant_id=payload.tenant_id,
+                    order_id=sanitized_id,
+                    capture_id=capture_id,
+                    plan_name=payload.plan_id.upper(),
+                    amount=captured_amount,
+                    credits_awarded=payload.credits_requested,
+                    new_balance=new_balance,
+                )
+                logger.info("Automated payment receipt dispatched to %s for order %s", payer_email, sanitized_id)
+            except Exception as email_err:
+                logger.error("Automated email receipt dispatch failed (non-blocking): %s", email_err)
 
         return PaymentVerifyResponse(
             verified=True,

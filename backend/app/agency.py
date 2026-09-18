@@ -37,6 +37,7 @@ from backend.app.schemas.agency import (
     WaitlistSubmissionRequest,
     WaitlistSubmissionResponse,
 )
+from backend.app.services.email_service import get_email_service
 
 logger = logging.getLogger("apexsovereign.agency")
 router = APIRouter(prefix="/agency", tags=["AI Automation Agency (AAA)"])
@@ -261,6 +262,25 @@ async def submit_transformation_request(
         wire_ref,
     )
     smart_invoice_id = str(inv_row["id"])
+
+    # 6. Autopilot Email Notification: Dispatch formal proposal to client
+    if payload.contact_email:
+        try:
+            email_svc = get_email_service()
+            await email_svc.dispatch_lead_proposal(
+                to_email=str(payload.contact_email),
+                company_name=payload.company_name,
+                contact_name=payload.contact_name,
+                proposal_id=proposal_id,
+                recommended_tier=scope["tier_label"],
+                implementation_fee=scope["impl_fee"],
+                monthly_retainer=scope["retainer_fee"],
+                roi_multiplier=scope["roi_mult"],
+                hours_saved_monthly=scope["hours_saved"],
+            )
+            logger.info("Automated transformation proposal email dispatched to %s", payload.contact_email)
+        except Exception as email_err:
+            logger.error("Automated proposal email dispatch failed (non-blocking): %s", email_err)
 
     return ScopedProposalResponse(
         proposal_id=proposal_id,
