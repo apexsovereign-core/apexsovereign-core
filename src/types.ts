@@ -85,6 +85,9 @@ export interface PaymentTransaction {
   timestamp: string;
   transmissionId: string;
   creditsAwarded: number;
+  captureId?: string;
+  ledgerEntryId?: string;
+  payerEmail?: string;
 }
 
 export interface ComputeJob {

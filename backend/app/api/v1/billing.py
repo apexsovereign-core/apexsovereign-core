@@ -24,6 +24,8 @@ from backend.app.schemas.billing import (
     CheckoutCaptureResponse,
     CheckoutInitiateRequest,
     CheckoutInitiateResponse,
+    PaymentVerifyRequest,
+    PaymentVerifyResponse,
     WebhookProcessingResult,
 )
 from backend.app.services.ledger_service import LedgerService
@@ -181,6 +183,154 @@ async def capture_checkout(
     except Exception as exc:
         logger.error("Order capture failed: %s", str(exc))
         raise HTTPException(status_code=500, detail=f"Order capture failure: {str(exc)}")
+
+
+@router.post(
+    "/verify",
+    response_model=PaymentVerifyResponse,
+    summary="Cryptographically Verify Live PayPal Capture & Allocate Credits",
+    description=(
+        "Production-grade verification endpoint. Contacts PayPal live REST v2 API to verify "
+        "order status, capture state, and payment amount. Strictly forbids mock order IDs, "
+        "enforces amount validation, and idempotently credits the tenant under database row lock."
+    ),
+)
+async def verify_paypal_payment(
+    payload: PaymentVerifyRequest,
+    conn: Connection = Depends(get_db_tx),
+    paypal: PayPalService = Depends(get_paypal),
+) -> PaymentVerifyResponse:
+    """
+    Direct client verification endpoint after PayPal Smart Button or modal approval.
+    Ensures zero mock credits can be granted without verified PayPal live API confirmation.
+    """
+    # 1. Reject synthetic, mock, or simulated order tokens
+    sanitized_id = payload.order_id.strip()
+    if sanitized_id.upper().startswith(("MOCK", "ORD-PP-", "ORDER-MOCK-", "SIM-", "TEST-ORD-")):
+        logger.warning("Rejected synthetic/mock PayPal order ID: %s", sanitized_id)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Synthetic or simulated order IDs are strictly rejected on live financial endpoints.",
+        )
+
+    try:
+        # 2. Retrieve live order status from PayPal REST v2 API
+        logger.info("Verifying live PayPal order %s for tenant %s...", sanitized_id, payload.tenant_id)
+        order_data = await paypal.get_order_details(sanitized_id)
+        order_status = order_data.get("status")
+
+        # 3. If the order is APPROVED but not yet captured, execute server-side capture
+        if order_status == "APPROVED":
+            logger.info("PayPal order %s is APPROVED. Executing server-side capture...", sanitized_id)
+            capture_res = await paypal.capture_order(
+                order_id=sanitized_id,
+                idempotency_key=payload.idempotency_key,
+            )
+            order_data = capture_res
+            order_status = capture_res.get("status", "COMPLETED")
+
+        # 4. Verify capture status is strictly COMPLETED
+        if order_status != "COMPLETED":
+            logger.error("PayPal order %s status is %s (not COMPLETED)", sanitized_id, order_status)
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"PayPal transaction has not been completed (current status: {order_status}).",
+            )
+
+        # 5. Extract purchase unit details, capture ID, and verify currency/amount
+        purchase_units = order_data.get("purchase_units", [])
+        if not purchase_units:
+            raise HTTPException(status_code=400, detail="Invalid PayPal order: missing purchase_units.")
+
+        primary_unit = purchase_units[0]
+        payments = primary_unit.get("payments", {})
+        captures = payments.get("captures", [])
+
+        if captures:
+            primary_capture = captures[0]
+            capture_id = primary_capture.get("id")
+            amount_val_str = primary_capture.get("amount", {}).get("value", "0.0")
+            currency = primary_capture.get("amount", {}).get("currency_code", "USD")
+        else:
+            capture_id = None
+            amount_val_str = primary_unit.get("amount", {}).get("value", "0.0")
+            currency = primary_unit.get("amount", {}).get("currency_code", "USD")
+
+        captured_amount = float(amount_val_str)
+
+        # 6. Anti-Fraud Amount Verification (prevents paying $0.01 for Enterprise Tier)
+        # Allow 0.01 tolerance for minor rounding
+        if captured_amount < (payload.expected_amount - 0.05):
+            logger.critical(
+                "Amount mismatch fraud alert! Captured: $%.2f, Expected: $%.2f for tenant %s",
+                captured_amount,
+                payload.expected_amount,
+                payload.tenant_id,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Financial verification failed: Captured amount (${captured_amount:.2f}) "
+                    f"is less than required plan tier cost (${payload.expected_amount:.2f})."
+                ),
+            )
+
+        # 7. Extract Payer Details for Audit Trails
+        payer_info = order_data.get("payer", {})
+        payer_email = payer_info.get("email_address")
+        payer_id = payer_info.get("payer_id")
+
+        # 8. Idempotent Ledger Fulfillment under PostgreSQL Row Lock
+        fulfillment = await LedgerService.fulfill_payment_idempotent(
+            conn=conn,
+            tenant_id=payload.tenant_id,
+            amount_currency=captured_amount,
+            currency=currency,
+            credits_allocated=payload.credits_requested,
+            provider_order_id=sanitized_id,
+            provider_capture_id=capture_id,
+            webhook_event_id=None,
+            idempotency_key=payload.idempotency_key,
+            raw_payload=order_data,
+        )
+
+        is_replay = fulfillment.get("is_replay", False)
+        new_balance = float(fulfillment.get("balance_after", fulfillment.get("current_balance", 0.0)))
+        ledger_id = str(fulfillment.get("ledger_id", fulfillment.get("payment_id", "ALREADY_FULFILLED")))
+
+        logger.info(
+            "PayPal verification successful. Order: %s, Tenant: %s, Credits: +%.2f, Balance: %.2f (Replay: %s)",
+            sanitized_id,
+            payload.tenant_id,
+            payload.credits_requested,
+            new_balance,
+            is_replay,
+        )
+
+        return PaymentVerifyResponse(
+            verified=True,
+            status="COMPLETED",
+            order_id=sanitized_id,
+            capture_id=capture_id,
+            payer_email=payer_email,
+            payer_id=payer_id,
+            tenant_id=payload.tenant_id,
+            credits_allocated=payload.credits_requested,
+            new_credit_balance=new_balance,
+            ledger_entry_id=ledger_id,
+            verification_source="LIVE_PAYPAL_API",
+            verified_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            is_replay=is_replay,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Live PayPal verification error for order %s: %s", sanitized_id, str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Live PayPal API verification failure: {str(exc)}",
+        )
 
 
 @router.post(

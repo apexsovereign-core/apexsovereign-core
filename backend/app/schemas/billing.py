@@ -53,6 +53,33 @@ class PayPalWebhookVerificationPayload(BaseModel):
     webhook_event: Dict[str, Any] = Field(..., description="Complete raw JSON webhook event body")
 
 
+class PaymentVerifyRequest(BaseModel):
+    """Payload to verify live PayPal order capture and sync credits to tenant partition."""
+    order_id: str = Field(..., min_length=8, description="PayPal Orders v2 identifier (e.g. 5O190127TN364715T)")
+    tenant_id: str = Field(..., min_length=3, description="ApexSovereign Tenant Partition identifier")
+    plan_id: str = Field(..., description="Subscription plan ID (starter, pro, enterprise)")
+    expected_amount: float = Field(..., gt=0.0, description="Expected transaction amount in USD")
+    credits_requested: float = Field(..., gt=0.0, description="Expected compute credits to allocate")
+    idempotency_key: str = Field(..., min_length=8, description="Client idempotency key")
+
+
+class PaymentVerifyResponse(BaseModel):
+    """Result of live cryptographic PayPal order verification."""
+    verified: bool
+    status: str
+    order_id: str
+    capture_id: Optional[str] = None
+    payer_email: Optional[str] = None
+    payer_id: Optional[str] = None
+    tenant_id: str
+    credits_allocated: float
+    new_credit_balance: float
+    ledger_entry_id: str
+    verification_source: str = "LIVE_PAYPAL_API"
+    verified_at: str
+    is_replay: bool = False
+
+
 class WebhookProcessingResult(BaseModel):
     status: str
     event_type: str

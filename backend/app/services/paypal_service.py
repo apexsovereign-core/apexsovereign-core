@@ -131,6 +131,25 @@ class PayPalService:
 
         return response.json()
 
+    async def get_order_details(self, order_id: str) -> Dict[str, Any]:
+        """
+        Retrieves live order representation directly from PayPal REST API v2.
+        Used to verify capture status, amount, and custom_id bindings.
+        """
+        token = await self.get_access_token()
+        url = f"{self._settings.paypal_base_url}/v2/checkout/orders/{order_id}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+
+        response = await self._http_client.get(url, headers=headers)
+        if response.status_code != 200:
+            logger.error("Failed to fetch PayPal order %s: %d - %s", order_id, response.status_code, response.text)
+            raise RuntimeError(f"PayPal Order Verification Failure (HTTP {response.status_code}): {response.text}")
+
+        return response.json()
+
     async def capture_order(self, order_id: str, idempotency_key: str) -> Dict[str, Any]:
         """
         Captures authorized payment for a PayPal order.
