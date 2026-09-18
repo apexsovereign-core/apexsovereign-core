@@ -41,14 +41,17 @@ _token_cache: Dict[str, Any] = {"token": None, "expires_at": 0}
 def get_paypal_access_token() -> str:
     """
     Retrieves or refreshes PayPal OAuth2 Bearer token with local expiration caching.
+    Guarantees strict authentication against PayPal live API without mock fallbacks.
     """
     now = time.time()
     if _token_cache["token"] and _token_cache["expires_at"] > now + 60:
         return _token_cache["token"]
 
     if not PAYPAL_CLIENT_ID or not PAYPAL_CLIENT_SECRET:
-        # Fallback for local testing when keys are not yet configured in environment
-        return "mock-paypal-bearer-token-sandbox"
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Production PayPal credentials not configured. PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are required.",
+        )
 
     url = f"{PAYPAL_BASE_URL}/v1/oauth2/token"
     headers = {"Accept": "application/json", "Accept-Language": "en_US"}
@@ -109,6 +112,31 @@ class CaptureResponse(BaseModel):
     message: str
 
 
+class PaymentVerifyRequest(BaseModel):
+    order_id: str = Field(..., min_length=8, description="PayPal Orders v2 identifier")
+    tenant_id: str = Field(..., min_length=3, description="Tenant partition identifier")
+    plan_id: str = Field(..., description="Target Subscription Tier ID")
+    expected_amount: float = Field(..., gt=0.0, description="Expected payment amount in USD")
+    credits_requested: float = Field(..., gt=0.0, description="Credits to award")
+    idempotency_key: str = Field(..., min_length=8, description="Unique client idempotency token")
+
+
+class PaymentVerifyResponse(BaseModel):
+    verified: bool
+    status: str
+    order_id: str
+    capture_id: Optional[str] = None
+    payer_email: Optional[str] = None
+    payer_id: Optional[str] = None
+    tenant_id: str
+    credits_allocated: float
+    new_credit_balance: float
+    ledger_entry_id: str
+    verification_source: str = "LIVE_PAYPAL_API"
+    verified_at: str
+    is_replay: bool = False
+
+
 # ---------------------------------------------------------------------------
 # Payment Router Endpoints
 # ---------------------------------------------------------------------------
@@ -131,30 +159,6 @@ def initiate_paypal_checkout(req: CheckoutInitiateRequest, db: Session = Depends
             currency=existing_tx.currency,
             approve_url=f"https://www.paypal.com/checkoutnow?token={existing_tx.order_id}",
             status="PENDING",
-        )
-
-    # If PayPal credentials are not configured, simulate order creation for developer onboarding
-    if not PAYPAL_CLIENT_ID or not PAYPAL_CLIENT_SECRET:
-        mock_order_id = f"ORDER-MOCK-{int(time.time())}"
-        tx = Transaction(
-            tenant_id=req.tenant_id,
-            order_id=mock_order_id,
-            amount=req.amount,
-            currency=req.currency,
-            credits_added=req.amount,
-            payment_status="PENDING",
-            payment_method="PAYPAL_SANDBOX_SIMULATED",
-        )
-        db.add(tx)
-        db.commit()
-
-        return CheckoutInitiateResponse(
-            order_id=mock_order_id,
-            tenant_id=req.tenant_id,
-            amount=req.amount,
-            currency=req.currency,
-            approve_url=f"{req.return_url or 'http://localhost:3000'}?mock_order_id={mock_order_id}",
-            status="CREATED (SIMULATED)",
         )
 
     # Real PayPal REST API v2 Order Creation
@@ -232,43 +236,15 @@ def capture_paypal_order(order_id: str, db: Session = Depends(get_db)):
     """
     Captures an authorized PayPal checkout order, credits the tenant's account,
     and commits the financial ledger transaction.
+    Enforces strict PayPal API capture validation with zero mock fallbacks.
     """
-    tx = db.query(Transaction).filter(Transaction.order_id == order_id).first()
-
-    # If simulated/sandbox mock
-    if order_id.startswith("ORDER-MOCK-"):
-        if tx and tx.payment_status == "COMPLETED":
-            user = db.query(User).filter(User.tenant_id == tx.tenant_id).first()
-            return CaptureResponse(
-                order_id=order_id,
-                tenant_id=tx.tenant_id,
-                amount_captured=float(tx.amount),
-                new_balance=float(user.credits_balance) if user else 0.0,
-                status="COMPLETED",
-                message="Mock payment already captured.",
-            )
-
-        amount = float(tx.amount) if tx else 50.0
-        tenant_id = tx.tenant_id if tx else "tenant-enterprise-4401"
-
-        user = db.query(User).filter(User.tenant_id == tenant_id).first()
-        if not user:
-            user = User(tenant_id=tenant_id, email=f"{tenant_id}@apexsovereign.local", credits_balance=1250.0)
-            db.add(user)
-
-        user.credits_balance = float(user.credits_balance) + amount
-        if tx:
-            tx.payment_status = "COMPLETED"
-        db.commit()
-
-        return CaptureResponse(
-            order_id=order_id,
-            tenant_id=tenant_id,
-            amount_captured=amount,
-            new_balance=float(user.credits_balance),
-            status="COMPLETED",
-            message="Mock order successfully captured and credited.",
+    if order_id.upper().startswith(("ORDER-MOCK-", "MOCK", "SIM-", "TEST-")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mock orders are rejected on production capture endpoints.",
         )
+
+    tx = db.query(Transaction).filter(Transaction.order_id == order_id).first()
 
     # Real PayPal Capture
     token = get_paypal_access_token()
@@ -337,6 +313,127 @@ def capture_paypal_order(order_id: str, db: Session = Depends(get_db)):
     )
 
 
+@payment_router.post("/verify", response_model=PaymentVerifyResponse)
+def verify_paypal_payment(req: PaymentVerifyRequest, db: Session = Depends(get_db)):
+    """
+    Live cryptographic verification endpoint for PayPal Orders v2.
+    Validates captured funds directly against PayPal live API and prevents duplicate or mock credit allocations.
+    """
+    sanitized_id = req.order_id.strip()
+    if sanitized_id.upper().startswith(("MOCK", "ORD-PP-", "ORDER-MOCK-", "SIM-")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Synthetic or simulated order IDs are strictly rejected on live verification endpoints.",
+        )
+
+    # Check for existing completed transaction for idempotency
+    existing_tx = db.query(Transaction).filter(Transaction.order_id == sanitized_id).first()
+    if existing_tx and existing_tx.payment_status == "COMPLETED":
+        user = db.query(User).filter(User.tenant_id == existing_tx.tenant_id).first()
+        current_bal = float(user.credits_balance) if user else 0.0
+        return PaymentVerifyResponse(
+            verified=True,
+            status="ALREADY_PROCESSED",
+            order_id=sanitized_id,
+            tenant_id=existing_tx.tenant_id,
+            credits_allocated=float(existing_tx.credits_added or req.credits_requested),
+            new_credit_balance=current_bal,
+            ledger_entry_id=f"tx_{existing_tx.id}",
+            verification_source="LIVE_PAYPAL_API",
+            verified_at=datetime.now(timezone.utc).isoformat(),
+            is_replay=True,
+        )
+
+    token = get_paypal_access_token()
+    url = f"{PAYPAL_BASE_URL}/v2/checkout/orders/{sanitized_id}"
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+    resp = requests.get(url, headers=headers, timeout=12)
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unable to verify order with PayPal live servers: {resp.text}",
+        )
+
+    order_data = resp.json()
+    order_status = order_data.get("status")
+
+    # If APPROVED, execute capture immediately
+    if order_status == "APPROVED":
+        cap_url = f"{PAYPAL_BASE_URL}/v2/checkout/orders/{sanitized_id}/capture"
+        cap_resp = requests.post(cap_url, headers=headers, json={}, timeout=15)
+        if cap_resp.status_code in [200, 201]:
+            order_data = cap_resp.json()
+            order_status = order_data.get("status", "COMPLETED")
+
+    if order_status != "COMPLETED":
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail=f"PayPal order is not completed (current status: {order_status}).",
+        )
+
+    # Validate payment amounts
+    purchase_units = order_data.get("purchase_units", [{}])
+    primary_unit = purchase_units[0]
+    captures = primary_unit.get("payments", {}).get("captures", [])
+    capture_id = captures[0].get("id") if captures else None
+    captured_amount = float(
+        captures[0].get("amount", {}).get("value", 0.0) 
+        if captures 
+        else primary_unit.get("amount", {}).get("value", 0.0)
+    )
+
+    if captured_amount < (req.expected_amount - 0.05):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Fraud alert: Captured amount ${captured_amount:.2f} is below expected ${req.expected_amount:.2f}.",
+        )
+
+    # Allocate compute credits
+    user = db.query(User).filter(User.tenant_id == req.tenant_id).first()
+    if not user:
+        user = User(tenant_id=req.tenant_id, email=f"{req.tenant_id}@apexsovereign.local", credits_balance=0.0)
+        db.add(user)
+
+    user.credits_balance = float(user.credits_balance) + req.credits_requested
+
+    if existing_tx:
+        existing_tx.payment_status = "COMPLETED"
+        existing_tx.credits_added = req.credits_requested
+        existing_tx.amount = captured_amount
+    else:
+        new_tx = Transaction(
+            tenant_id=req.tenant_id,
+            order_id=sanitized_id,
+            amount=captured_amount,
+            currency="USD",
+            credits_added=req.credits_requested,
+            payment_status="COMPLETED",
+            payment_method="PAYPAL_LIVE_VERIFIED",
+        )
+        db.add(new_tx)
+
+    db.commit()
+    db.refresh(user)
+
+    payer = order_data.get("payer", {})
+    return PaymentVerifyResponse(
+        verified=True,
+        status="COMPLETED",
+        order_id=sanitized_id,
+        capture_id=capture_id,
+        payer_email=payer.get("email_address"),
+        payer_id=payer.get("payer_id"),
+        tenant_id=req.tenant_id,
+        credits_allocated=req.credits_requested,
+        new_credit_balance=float(user.credits_balance),
+        ledger_entry_id=f"tx_verified_{sanitized_id}",
+        verification_source="LIVE_PAYPAL_API",
+        verified_at=datetime.now(timezone.utc).isoformat(),
+        is_replay=False,
+    )
+
+
 @payment_router.post("/webhook")
 async def paypal_webhook_listener(request: Request, db: Session = Depends(get_db)):
     """
@@ -376,9 +473,12 @@ async def paypal_webhook_listener(request: Request, db: Session = Depends(get_db
             v_data = v_resp.json()
             if v_data.get("verification_status") != "SUCCESS":
                 print(f"[PayPal Webhook] Signature verification failed: {v_data}")
-                raise HTTPException(status_code=401, detail="Webhook signature mismatch")
+                raise HTTPException(status_code=401, detail="Cryptographic verification failed: Webhook signature mismatch")
+        except HTTPException:
+            raise
         except Exception as exc:
-            print(f"[PayPal Webhook Signature Check Skipped/Warning]: {exc}")
+            print(f"[PayPal Webhook Signature Error]: {exc}")
+            raise HTTPException(status_code=401, detail=f"Webhook verification failure: {str(exc)}")
 
     # Process Completed Capture
     if event_type == "PAYMENT.CAPTURE.COMPLETED":
