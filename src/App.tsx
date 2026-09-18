@@ -165,7 +165,12 @@ export default function App() {
         {activeTab === 'sandbox' && <InteractiveSandbox />}
 
         {activeTab === 'code' && (
-          <CodeExplorer initialFileId={selectedFileForCodeExplorer} />
+          <CodeExplorer
+            initialFileId={selectedFileForCodeExplorer}
+            currentUser={currentUser}
+            onElevateAdmin={(adminUser) => setCurrentUser(adminUser)}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+          />
         )}
 
         {activeTab === 'schema' && <SchemaViewer />}

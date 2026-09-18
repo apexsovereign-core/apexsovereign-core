@@ -47,16 +47,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const generatedTenantId = 'tenant-' + Math.random().toString(36).substring(2, 10);
       const generatedApiKey = 'sk_live_' + Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
+      const isAdminEmail = email.toLowerCase().includes('admin');
       const user: CustomerUser = {
         id: 'usr_' + Math.random().toString(36).substring(2, 9),
-        email: email || 'client@apexsovereign.ai',
-        fullName: mode === 'signup' ? fullName : (email.includes('enterprise') ? 'Enterprise Executive' : 'Autonomous Client'),
-        company: mode === 'signup' ? company : 'Apex Sovereign Enterprise LLC',
+        email: email || (isAdminEmail ? 'admin@apexsovereign.ai' : 'client@apexsovereign.ai'),
+        fullName: mode === 'signup' 
+          ? fullName 
+          : (isAdminEmail 
+              ? 'Lead Principal Architect & Admin' 
+              : (email.includes('enterprise') ? 'Enterprise Executive' : 'Autonomous Client')),
+        company: mode === 'signup' 
+          ? company 
+          : (isAdminEmail ? 'ApexSovereign Global Security Office' : 'Apex Sovereign Enterprise LLC'),
         tenantId: generatedTenantId,
-        role: 'customer',
-        plan: 'pro',
-        computeCredits: 25000,
-        maxQuota: 50000,
+        role: isAdminEmail ? 'admin' : 'customer',
+        plan: isAdminEmail ? 'enterprise' : 'pro',
+        computeCredits: isAdminEmail ? 500000 : 25000,
+        maxQuota: isAdminEmail ? 1000000 : 50000,
         apiKey: generatedApiKey,
         createdAt: new Date().toISOString(),
         subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -67,26 +74,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }, 600);
   };
 
-  const handleQuickDemoLogin = (tier: 'starter' | 'pro' | 'enterprise') => {
+  const handleQuickDemoLogin = (tier: 'starter' | 'pro' | 'enterprise' | 'admin') => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      const creditsMap = { starter: 2500, pro: 25000, enterprise: 150000 };
-      const quotaMap = { starter: 5000, pro: 50000, enterprise: 300000 };
+      const creditsMap = { starter: 2500, pro: 25000, enterprise: 150000, admin: 500000 };
+      const quotaMap = { starter: 5000, pro: 50000, enterprise: 300000, admin: 1000000 };
 
       const user: CustomerUser = {
         id: 'usr_demo_' + tier,
-        email: `client.${tier}@apexsovereign.ai`,
-        fullName: tier === 'enterprise' ? 'Elena Vance (Chief Architect)' : 'Marcus Chen (Lead Quant)',
-        company: tier === 'enterprise' ? 'Blackstone Quantum Corp' : 'Autonomous Research Labs',
+        email: tier === 'admin' ? 'lead.architect@apexsovereign.ai' : `client.${tier}@apexsovereign.ai`,
+        fullName: tier === 'admin'
+          ? 'Lead Principal Architect (Staff Admin)'
+          : (tier === 'enterprise' ? 'Elena Vance (Chief Architect)' : 'Marcus Chen (Lead Quant)'),
+        company: tier === 'admin'
+          ? 'ApexSovereign Global Infrastructure'
+          : (tier === 'enterprise' ? 'Blackstone Quantum Corp' : 'Autonomous Research Labs'),
         tenantId: `tenant-${tier}-node01`,
-        role: 'customer',
-        plan: tier,
+        role: tier === 'admin' ? 'admin' : 'customer',
+        plan: tier === 'admin' ? 'enterprise' : tier,
         computeCredits: creditsMap[tier],
         maxQuota: quotaMap[tier],
         apiKey: `sk_live_apex_${tier}_` + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
         createdAt: new Date().toISOString(),
-        subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
       };
 
       onLoginSuccess(user);
@@ -264,7 +275,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => handleQuickDemoLogin('pro')}
@@ -274,7 +285,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Autonomous Pro
               </div>
               <div className="text-[10px] text-slate-500">
-                25,000 Compute Credits
+                25k Credits
               </div>
             </button>
 
@@ -284,10 +295,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               className="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-purple-500/40 text-left transition-all group"
             >
               <div className="text-xs font-semibold text-slate-200 group-hover:text-purple-300">
-                Enterprise Sovereign
+                Enterprise
               </div>
               <div className="text-[10px] text-slate-500">
-                150,000 Compute Credits
+                150k Credits
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('admin')}
+              className="p-2 rounded-lg bg-slate-950 border border-rose-900/50 hover:border-rose-500/60 text-left transition-all group"
+            >
+              <div className="text-xs font-semibold text-rose-300 group-hover:text-rose-200 flex items-center justify-between">
+                <span>Principal Admin</span>
+              </div>
+              <div className="text-[10px] text-rose-400/80 font-mono">
+                Staff Clearance
               </div>
             </button>
           </div>

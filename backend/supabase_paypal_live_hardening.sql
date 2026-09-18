@@ -316,18 +316,36 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- 8. Row Level Security (RLS) Enactment
+-- 8. Row Level Security (RLS) Enactment & Multi-Tenant Data Isolation
 -- ----------------------------------------------------------------------------
+ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.billing_ledgers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.paypal_webhook_events ENABLE ROW LEVEL SECURITY;
 
 -- Revoke all client-side write permissions from untrusted public roles
+REVOKE INSERT, UPDATE, DELETE ON public.tenants FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.users FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.payment_transactions FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.billing_ledgers FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.paypal_webhook_events FROM anon, authenticated;
 
 -- Service Role maintains absolute administrative authority
+CREATE POLICY "service_role_full_access_tenants"
+    ON public.tenants
+    FOR ALL
+    TO service_role
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+CREATE POLICY "service_role_full_access_users"
+    ON public.users
+    FOR ALL
+    TO service_role
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
 CREATE POLICY "service_role_full_access_payment_tx"
     ON public.payment_transactions
     FOR ALL
@@ -349,7 +367,25 @@ CREATE POLICY "service_role_full_access_webhooks"
     USING (TRUE)
     WITH CHECK (TRUE);
 
--- Authenticated tenants may only read their own financial logs
+-- Authenticated tenants may only read their own records
+CREATE POLICY "authenticated_tenants_read_own_tenant"
+    ON public.tenants
+    FOR SELECT
+    TO authenticated
+    USING (
+        id = current_setting('request.jwt.claims', true)::jsonb->>'tenant_id'
+        OR id = auth.uid()::text
+    );
+
+CREATE POLICY "authenticated_users_read_own_user"
+    ON public.users
+    FOR SELECT
+    TO authenticated
+    USING (
+        tenant_id = current_setting('request.jwt.claims', true)::jsonb->>'tenant_id'
+        OR id = auth.uid()
+    );
+
 CREATE POLICY "authenticated_tenants_read_own_payments"
     ON public.payment_transactions
     FOR SELECT
@@ -420,5 +456,53 @@ CREATE POLICY "service_role_full_access_crm_leads"
 
 CREATE POLICY "service_role_full_access_email_logs"
     ON public.autonomous_email_logs FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+
+-- Authenticated tenants may only inspect leads and email dispatches mapped to their tenant partition
+CREATE POLICY "authenticated_tenants_read_own_crm_leads"
+    ON public.autonomous_crm_leads FOR SELECT TO authenticated
+    USING (
+        tenant_id = current_setting('request.jwt.claims', true)::jsonb->>'tenant_id'
+        OR tenant_id = auth.uid()::text
+    );
+
+CREATE POLICY "authenticated_tenants_read_own_email_logs"
+    ON public.autonomous_email_logs FOR SELECT TO authenticated
+    USING (
+        tenant_id = current_setting('request.jwt.claims', true)::jsonb->>'tenant_id'
+        OR tenant_id = auth.uid()::text
+    );
+
+-- ----------------------------------------------------------------------------
+-- 10. Defensive Hardening: Ensure Compute & Leases Tables (If Present) Are Locked
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'compute_leases') THEN
+        ALTER TABLE public.compute_leases ENABLE ROW LEVEL SECURITY;
+        REVOKE INSERT, UPDATE, DELETE ON public.compute_leases FROM anon, authenticated;
+        DROP POLICY IF EXISTS "service_role_full_access_leases" ON public.compute_leases;
+        CREATE POLICY "service_role_full_access_leases" ON public.compute_leases FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+        DROP POLICY IF EXISTS "authenticated_tenants_read_own_leases" ON public.compute_leases;
+        CREATE POLICY "authenticated_tenants_read_own_leases" ON public.compute_leases FOR SELECT TO authenticated
+        USING (tenant_id = current_setting('request.jwt.claims', true)::jsonb->>'tenant_id' OR tenant_id = auth.uid()::text);
+    END IF;
+
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'compute_jobs') THEN
+        ALTER TABLE public.compute_jobs ENABLE ROW LEVEL SECURITY;
+        REVOKE INSERT, UPDATE, DELETE ON public.compute_jobs FROM anon, authenticated;
+        DROP POLICY IF EXISTS "service_role_full_access_jobs" ON public.compute_jobs;
+        CREATE POLICY "service_role_full_access_jobs" ON public.compute_jobs FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+        DROP POLICY IF EXISTS "authenticated_tenants_read_own_jobs" ON public.compute_jobs;
+        CREATE POLICY "authenticated_tenants_read_own_jobs" ON public.compute_jobs FOR SELECT TO authenticated
+        USING (tenant_id = current_setting('request.jwt.claims', true)::jsonb->>'tenant_id' OR tenant_id = auth.uid()::text);
+    END IF;
+
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'idempotency_keys') THEN
+        ALTER TABLE public.idempotency_keys ENABLE ROW LEVEL SECURITY;
+        REVOKE INSERT, UPDATE, DELETE ON public.idempotency_keys FROM anon, authenticated;
+        DROP POLICY IF EXISTS "service_role_full_access_idemp" ON public.idempotency_keys;
+        CREATE POLICY "service_role_full_access_idemp" ON public.idempotency_keys FOR ALL TO service_role USING (TRUE) WITH CHECK (TRUE);
+    END IF;
+END $$;
 
 COMMIT;

@@ -422,6 +422,29 @@ async def handle_paypal_webhook(
                 idempotent_replay = fulfillment.get("is_replay", False)
                 details["fulfillment"] = fulfillment
 
+                # Trigger automated Resend payment receipt dispatch on Autopilot
+                payer_email = (
+                    resource.get("payer", {}).get("email_address")
+                    or resource.get("seller_receivable_breakdown", {}).get("payer_email")
+                )
+                if payer_email and not idempotent_replay:
+                    try:
+                        email_svc = get_email_service()
+                        new_bal = float(fulfillment.get("balance_after", 0.0))
+                        await email_svc.dispatch_payment_receipt(
+                            to_email=payer_email,
+                            tenant_id=tenant_id,
+                            order_id=order_id,
+                            capture_id=capture_id or f"cap_{event_id}",
+                            plan_name="AUTONOMOUS_CREDITS_WEBHOOK",
+                            amount=amount_val,
+                            credits_awarded=credits_alloc,
+                            new_balance=new_bal,
+                        )
+                        logger.info("Webhook: automated payment receipt dispatched to %s for order %s", payer_email, order_id)
+                    except Exception as email_err:
+                        logger.error("Webhook: automated email receipt dispatch failed (non-blocking): %s", email_err)
+
     # 4. Handle PAYMENT.CAPTURE.REFUNDED, REVERSED, and CUSTOMER.DISPUTE.*
     elif event_type in (
         "PAYMENT.CAPTURE.REFUNDED",
