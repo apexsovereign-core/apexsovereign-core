@@ -15,10 +15,11 @@ import {
   LogOut,
   ChevronDown,
   LayoutDashboard,
-  Coins
+  Coins,
+  Sliders
 } from 'lucide-react';
 
-export type ActiveNavTab = 'pricing' | 'portal' | 'architecture' | 'sandbox' | 'code' | 'schema' | 'deploy' | 'signer';
+export type ActiveNavTab = 'pricing' | 'portal' | 'requirements' | 'signer' | 'architecture' | 'sandbox' | 'code' | 'schema' | 'deploy';
 
 interface NavbarProps {
   activeTab: ActiveNavTab;
@@ -99,6 +100,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
+
+            {/* Quick Master Requirements Editor */}
+            <button
+              id="tab-requirements"
+              onClick={() => setActiveTab('requirements')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'requirements'
+                  ? 'bg-emerald-500 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.3)] font-bold'
+                  : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Edit All Requirements</span>
+            </button>
 
             {/* Developer & Operations Console Tabs */}
             <button

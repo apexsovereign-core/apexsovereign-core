@@ -11,6 +11,7 @@ import { CodeExplorer } from './components/CodeExplorer';
 import { SchemaViewer } from './components/SchemaViewer';
 import { DeploymentGuide } from './components/DeploymentGuide';
 import { VariableSigner } from './components/VariableSigner';
+import { RequirementsEditor } from './components/RequirementsEditor';
 import { PricingPlans, SUBSCRIPTION_TIERS } from './components/PricingPlans';
 import { CustomerPortal } from './components/CustomerPortal';
 import { AuthModal } from './components/AuthModal';
@@ -149,6 +150,8 @@ export default function App() {
         )}
 
         {/* Developer & Operations Console Views */}
+        {activeTab === 'requirements' && <RequirementsEditor />}
+
         {activeTab === 'signer' && <VariableSigner />}
 
         {activeTab === 'architecture' && (
@@ -204,8 +207,14 @@ export default function App() {
 
           <div className="flex items-center gap-4 text-[11px] font-mono">
             <button
+              onClick={() => setActiveTab('requirements')}
+              className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
+            >
+              Edit All Requirements
+            </button>
+            <button
               onClick={() => setActiveTab('pricing')}
-              className="text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="hover:text-slate-300 transition-colors"
             >
               Pricing & Subscriptions
             </button>
