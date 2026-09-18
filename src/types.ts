@@ -44,3 +44,55 @@ export interface WebhookSimulationLog {
   creditsAllocated: number;
   details: string;
 }
+
+export interface CustomerUser {
+  id: string;
+  email: string;
+  fullName: string;
+  company: string;
+  tenantId: string;
+  role: 'customer' | 'admin';
+  plan: 'free' | 'starter' | 'pro' | 'enterprise';
+  computeCredits: number;
+  maxQuota: number;
+  apiKey: string;
+  createdAt: string;
+  subscriptionExpiresAt: string;
+}
+
+export interface SubscriptionTier {
+  id: 'starter' | 'pro' | 'enterprise';
+  name: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  computeUnits: number;
+  description: string;
+  popular?: boolean;
+  features: string[];
+  badge?: string;
+  paypalPlanId: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  paypalOrderId: string;
+  tenantId: string;
+  planId: string;
+  planName: string;
+  amount: number;
+  currency: string;
+  status: 'COMPLETED' | 'PENDING' | 'FAILED';
+  timestamp: string;
+  transmissionId: string;
+  creditsAwarded: number;
+}
+
+export interface ComputeJob {
+  id: string;
+  name: string;
+  type: string;
+  costCredits: number;
+  status: 'RUNNING' | 'COMPLETED' | 'QUEUED';
+  timestamp: string;
+  durationSec: number;
+}
