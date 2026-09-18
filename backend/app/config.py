@@ -109,6 +109,11 @@ class Settings(BaseModel):
         description="Cryptographic secret used to sign execution lease tokens for compute workers"
     )
 
+    # Automated Customer Communication (Resend / SMTP)
+    RESEND_API_KEY: str = Field(default="", description="Resend API Key for automated transactional emails")
+    EMAIL_FROM: str = Field(default="ApexSovereign Concierge <concierge@apexsovereign.ai>", description="Sender email string")
+    EMAIL_REPLY_TO: str = Field(default="support@apexsovereign.ai", description="Reply-to email address")
+
     @property
     def paypal_base_url(self) -> str:
         """Determines the appropriate PayPal REST API endpoint based on configured mode."""
@@ -167,4 +172,7 @@ def get_settings() -> Settings:
         PAYPAL_WEBHOOK_ID=paypal_webhook_id,
         PAYPAL_MODE=valid_mode,
         LEASE_HMAC_SECRET=lease_secret,
+        RESEND_API_KEY=get_env_optional("RESEND_API_KEY", ""),
+        EMAIL_FROM=get_env_optional("EMAIL_FROM", "ApexSovereign Concierge <concierge@apexsovereign.ai>"),
+        EMAIL_REPLY_TO=get_env_optional("EMAIL_REPLY_TO", "support@apexsovereign.ai"),
     )

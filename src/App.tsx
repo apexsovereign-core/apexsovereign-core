@@ -16,6 +16,7 @@ import { PricingPlans, SUBSCRIPTION_TIERS } from './components/PricingPlans';
 import { CustomerPortal } from './components/CustomerPortal';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
+import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
 import { ShieldCheck, Server, Database, Lock, Cpu, Key } from 'lucide-react';
 
@@ -187,6 +188,15 @@ export default function App() {
         currentUser={currentUser}
         onPaymentSuccess={handlePaymentSuccess}
         onRequireLogin={() => setIsAuthModalOpen(true)}
+      />
+
+      {/* Autonomous 24/7 AI Agent Chatbot & Inbound Lead Qualification */}
+      <AutonomousAgentChatbot
+        onOpenCheckout={(planId) => {
+          const matchedTier = SUBSCRIPTION_TIERS.find((t) => t.id === planId) || SUBSCRIPTION_TIERS[1];
+          setSelectedTierForCheckout(matchedTier);
+          setIsCheckoutModalOpen(true);
+        }}
       />
 
       {/* Enterprise Status Footer */}
