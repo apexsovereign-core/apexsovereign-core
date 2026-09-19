@@ -20,12 +20,16 @@ import {
   ShieldAlert,
   Briefcase,
   Lock,
-  Workflow
+  Workflow,
+  Bot,
+  BarChart2
 } from 'lucide-react';
 
 export type ActiveNavTab = 
   | 'solutions' 
   | 'pricing' 
+  | 'crm'
+  | 'swarm'
   | 'portal' 
   | 'requirements' 
   | 'signer' 
@@ -111,13 +115,43 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Pricing & Plans</span>
-              <span className="px-1.5 py-0.2 text-[9px] font-mono bg-blue-500/20 text-blue-300 rounded border border-blue-500/30">
-                PayPal
+              <span>Dynamic Pricing</span>
+              <span className="px-1.5 py-0.5 text-[9px] font-mono bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>-15% Live</span>
               </span>
             </button>
 
-            {/* 3. Customer Workspace (Customer-Facing when authenticated) */}
+            {/* 3. Enterprise CRM & Work OS (Salesforce + M365 Synthesis) */}
+            <button
+              id="tab-crm"
+              onClick={() => setActiveTab('crm')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'crm'
+                  ? 'bg-slate-800 text-emerald-300 shadow-sm border border-emerald-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <BarChart2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span>CRM & Docs</span>
+            </button>
+
+            {/* 4. 24/7 Autonomous Agent Swarm */}
+            <button
+              id="tab-swarm"
+              onClick={() => setActiveTab('swarm')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'swarm'
+                  ? 'bg-slate-800 text-emerald-300 shadow-sm border border-emerald-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Bot className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Agent Swarm</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </button>
+
+            {/* 5. Customer Workspace (Customer-Facing when authenticated) */}
             {currentUser && (
               <button
                 id="tab-portal"

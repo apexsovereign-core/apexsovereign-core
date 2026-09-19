@@ -12,7 +12,15 @@ import {
   CreditCard, 
   Building2, 
   Workflow,
-  MessageSquare
+  MessageSquare,
+  Activity,
+  Server,
+  RefreshCw,
+  Globe,
+  Radio,
+  Lock,
+  Flame,
+  AlertTriangle
 } from 'lucide-react';
 import { SUBSCRIPTION_TIERS } from './PricingPlans';
 import { SubscriptionTier } from '../types';
@@ -21,15 +29,28 @@ interface SolutionsViewProps {
   onSelectPlan: (tier: SubscriptionTier) => void;
   onOpenConcierge: () => void;
   onNavigatePricing: () => void;
+  onNavigateCrm?: () => void;
+  onNavigateSwarm?: () => void;
 }
 
 export const SolutionsView: React.FC<SolutionsViewProps> = ({
   onSelectPlan,
   onOpenConcierge,
-  onNavigatePricing
+  onNavigatePricing,
+  onNavigateCrm,
+  onNavigateSwarm
 }) => {
   const [teamSize, setTeamSize] = useState<number>(25);
   const [manualHoursPerWeek, setManualHoursPerWeek] = useState<number>(40);
+
+  // Self-Healing Chaos Simulation State
+  const [chaosSimulating, setChaosSimulating] = useState<boolean>(false);
+  const [chaosStage, setChaosStage] = useState<'IDLE' | 'SPIKE_DETECTED' | 'AUTO_FAILOVER_ENGAGED' | 'SELF_HEALED'>('IDLE');
+  const [workerCount, setWorkerCount] = useState<number>(4);
+  const [surgeVelocity, setSurgeVelocity] = useState<number>(38);
+  const [activePoolLatency, setActivePoolLatency] = useState<number>(1.4);
+  const [circuitState, setCircuitState] = useState<'CLOSED' | 'HALF_OPEN' | 'AUTO_FAILOVER'>('CLOSED');
+  const [noncesProtectedCount, setNoncesProtectedCount] = useState<number>(14892);
 
   // Financial ROI calculations
   const avgHourlyCost = 65; // USD/hour blended rate
@@ -40,6 +61,37 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
 
   const recommendedTier = 
     teamSize > 50 ? SUBSCRIPTION_TIERS[2] : (teamSize > 10 ? SUBSCRIPTION_TIERS[1] : SUBSCRIPTION_TIERS[0]);
+
+  const triggerChaosSpikeSimulation = () => {
+    if (chaosSimulating) return;
+    setChaosSimulating(true);
+    setChaosStage('SPIKE_DETECTED');
+    setSurgeVelocity(480);
+    setActivePoolLatency(14.8);
+    setCircuitState('HALF_OPEN');
+
+    setTimeout(() => {
+      setChaosStage('AUTO_FAILOVER_ENGAGED');
+      setWorkerCount(16);
+      setCircuitState('AUTO_FAILOVER');
+      setActivePoolLatency(2.1);
+      setNoncesProtectedCount(prev => prev + 124);
+    }, 1200);
+
+    setTimeout(() => {
+      setChaosStage('SELF_HEALED');
+      setWorkerCount(6);
+      setSurgeVelocity(44);
+      setActivePoolLatency(1.3);
+      setCircuitState('CLOSED');
+    }, 3200);
+
+    setTimeout(() => {
+      setChaosSimulating(false);
+      setChaosStage('IDLE');
+      setWorkerCount(4);
+    }, 5000);
+  };
 
   return (
     <div className="space-y-16 py-6 animate-in fade-in duration-300">
@@ -63,20 +115,48 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
 
         <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
           <button
-            onClick={onNavigatePricing}
+            onClick={() => onSelectPlan(recommendedTier)}
             className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-[0_0_25px_rgba(16,185,129,0.3)] flex items-center gap-2 cursor-pointer"
           >
             <CreditCard className="w-4 h-4" />
-            <span>View Pricing & PayPal Plans</span>
+            <span>Launch Work OS (Instant Onboarding)</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
+
+          <button
+            onClick={onNavigatePricing}
+            className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-700 transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <BarChart3 className="w-4 h-4 text-emerald-400" />
+            <span>Dynamic Pricing & Comparison</span>
+          </button>
+
+          {onNavigateCrm && (
+            <button
+              onClick={onNavigateCrm}
+              className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-300 font-semibold text-xs border border-indigo-500/30 transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Workflow className="w-4 h-4 text-indigo-400" />
+              <span>CRM & Collaborative Docs</span>
+            </button>
+          )}
+
+          {onNavigateSwarm && (
+            <button
+              onClick={onNavigateSwarm}
+              className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 font-semibold text-xs border border-emerald-500/30 transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Bot className="w-4 h-4 text-emerald-400" />
+              <span>24/7 Agentic Swarm</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenConcierge}
             className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium text-xs border border-slate-700 transition-colors flex items-center gap-2 cursor-pointer"
           >
             <MessageSquare className="w-4 h-4 text-emerald-400" />
-            <span>Consult 24/7 AI Concierge</span>
+            <span>Consult AI Concierge</span>
           </button>
         </div>
       </div>
@@ -118,15 +198,15 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
           <ul className="space-y-2 pt-2 text-xs text-slate-300">
             <li className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              <span>Isolated compute quotas per tenant</span>
+              <span>NVIDIA A100 & H100 bare-metal instances</span>
             </li>
             <li className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              <span>Sub-millisecond worker dispatch</span>
+              <span>Sub-minute worker dispatch latency</span>
             </li>
             <li className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              <span>Rollover credits with zero expiration waste</span>
+              <span>Usage billed dynamically per compute second</span>
             </li>
           </ul>
         </div>
@@ -153,6 +233,166 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
               <span>Double-entry idempotency guarantees</span>
             </li>
           </ul>
+        </div>
+      </div>
+
+      {/* Autonomous Self-Healing & Distributed Edge Resilience Command Station */}
+      <div className="max-w-7xl mx-auto p-7 rounded-2xl bg-slate-950 border border-slate-800 space-y-6 shadow-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold text-emerald-400">
+              <Radio className="w-4 h-4 animate-pulse" />
+              <span>DISTRIBUTED EDGE RESILIENCE & PREDICTIVE SCALING MESH</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white">Autonomous Self-Healing Operational Mesh</h2>
+            <p className="text-xs text-slate-400 max-w-2xl">
+              Zero-downtime automated fallback protocols across database connection pools (PgBouncer, edge replicas, local fallback) with dynamic HMAC-SHA256 lease rotation and single-use anti-replay nonces.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={triggerChaosSpikeSimulation}
+              disabled={chaosSimulating}
+              className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                chaosSimulating 
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/40'
+              }`}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${chaosSimulating ? 'animate-spin' : ''}`} />
+              <span>{chaosSimulating ? 'Simulating Spike...' : 'Simulate 10k Webhook Burst (Chaos Test)'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Live Simulation Alert Banner */}
+        {chaosStage !== 'IDLE' && (
+          <div className={`p-4 rounded-xl text-xs font-mono transition-all border flex items-center justify-between ${
+            chaosStage === 'SPIKE_DETECTED' 
+              ? 'bg-amber-950/40 border-amber-500/40 text-amber-300'
+              : (chaosStage === 'AUTO_FAILOVER_ENGAGED'
+                  ? 'bg-purple-950/40 border-purple-500/40 text-purple-300'
+                  : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300')
+          }`}>
+            <div className="flex items-center gap-3">
+              {chaosStage === 'SPIKE_DETECTED' && <AlertTriangle className="w-4 h-4 text-amber-400 animate-bounce" />}
+              {chaosStage === 'AUTO_FAILOVER_ENGAGED' && <Flame className="w-4 h-4 text-purple-400 animate-pulse" />}
+              {chaosStage === 'SELF_HEALED' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+              <div>
+                <span className="font-bold">
+                  {chaosStage === 'SPIKE_DETECTED' && 'STAGE 1: Traffic Surge (+450% velocity) detected by Predictive Scaler.'}
+                  {chaosStage === 'AUTO_FAILOVER_ENGAGED' && 'STAGE 2: Circuit Breaker HALF_OPEN. Secondary cluster absorbed workload; concurrency boosted to 16 threads.'}
+                  {chaosStage === 'SELF_HEALED' && 'STAGE 3: Auto-Healing completed. Zero request drops, 100% cryptographic integrity preserved.'}
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-black/40 border border-white/10 uppercase">
+              {circuitState}
+            </span>
+          </div>
+        )}
+
+        {/* Distributed Mesh Metrics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+              <span>PRIMARY POOL (PgBouncer)</span>
+              <span className="text-emerald-400 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                ACTIVE
+              </span>
+            </div>
+            <div className="text-xl font-bold font-mono text-white flex items-baseline gap-2">
+              <span>{activePoolLatency.toFixed(1)} ms</span>
+              <span className="text-xs text-slate-500 font-normal">avg latency</span>
+            </div>
+            <div className="text-[11px] text-slate-400 flex justify-between pt-1 border-t border-slate-800">
+              <span>Circuit State:</span>
+              <span className="font-mono text-emerald-400 font-semibold">{circuitState}</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+              <span>PREDICTIVE SCALING</span>
+              <span className="text-indigo-400">dC/dt GRADIENT</span>
+            </div>
+            <div className="text-xl font-bold font-mono text-indigo-300 flex items-baseline gap-2">
+              <span>{surgeVelocity} CU/min</span>
+              <span className="text-xs text-slate-500 font-normal">velocity</span>
+            </div>
+            <div className="text-[11px] text-slate-400 flex justify-between pt-1 border-t border-slate-800">
+              <span>Active Concurrency:</span>
+              <span className="font-mono text-indigo-300 font-semibold">{workerCount} Worker Threads</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+              <span>HMAC KEY ROTATION</span>
+              <span className="text-purple-400">VERSION v3.4</span>
+            </div>
+            <div className="text-xl font-bold font-mono text-purple-300 flex items-baseline gap-2">
+              <span>{noncesProtectedCount.toLocaleString()}</span>
+              <span className="text-xs text-slate-500 font-normal">nonces tracked</span>
+            </div>
+            <div className="text-[11px] text-slate-400 flex justify-between pt-1 border-t border-slate-800">
+              <span>Anti-Replay Security:</span>
+              <span className="font-mono text-purple-400 font-semibold">100% Protected</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+              <span>TENANT ISOLATION</span>
+              <span className="text-teal-400">TIER-GATED RLS</span>
+            </div>
+            <div className="text-xl font-bold font-mono text-teal-300 flex items-baseline gap-2">
+              <span>FORCE RLS</span>
+              <span className="text-xs text-slate-500 font-normal">7 tables</span>
+            </div>
+            <div className="text-[11px] text-slate-400 flex justify-between pt-1 border-t border-slate-800">
+              <span>Audit Hash Chain:</span>
+              <span className="font-mono text-teal-300 font-semibold">SHA-256 Intact</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Regional Edge Node Topology */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+          <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <Globe className="w-4 h-4 text-emerald-400" />
+              <div>
+                <div className="font-bold text-white">US-East (Virginia)</div>
+                <div className="text-[10px] text-slate-400 font-mono">Primary PgBouncer Cluster</div>
+              </div>
+            </div>
+            <span className="font-mono text-[11px] text-emerald-400 font-semibold">1.4ms • 99.999%</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <Globe className="w-4 h-4 text-indigo-400" />
+              <div>
+                <div className="font-bold text-white">EU-Central (Frankfurt)</div>
+                <div className="text-[10px] text-slate-400 font-mono">Real-Time Edge Replica</div>
+              </div>
+            </div>
+            <span className="font-mono text-[11px] text-indigo-400 font-semibold">8.2ms • Synced</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <Globe className="w-4 h-4 text-purple-400" />
+              <div>
+                <div className="font-bold text-white">AP-Southeast (Singapore)</div>
+                <div className="text-[10px] text-slate-400 font-mono">Autonomous Failover Mesh</div>
+              </div>
+            </div>
+            <span className="font-mono text-[11px] text-purple-400 font-semibold">11.6ms • Standby</span>
+          </div>
         </div>
       </div>
 
@@ -255,14 +495,25 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onSelectPlan(recommendedTier)}
-              className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-950"
-            >
-              <span>Subscribe to {recommendedTier.name}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => onSelectPlan(recommendedTier)}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-950"
+              >
+                <span>Subscribe to {recommendedTier.name} via PayPal</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={onNavigatePricing}
+                className="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-indigo-200 text-[11px] font-mono transition-colors flex items-center justify-center gap-1.5 border border-indigo-500/20 cursor-pointer"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
+                <span>See Weekly-Locked Comparison vs Salesforce & Microsoft</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1401,6 +1401,38 @@ CREATE TABLE IF NOT EXISTS dao_treasury_escrows (
     ],
     content: `# View backend/app/services/dao_treasury_engine.py for complete production code`
   },
+  {
+    id: 'supabase_hyper_scale_rls_sql',
+    path: 'backend/supabase_hyper_scale_rls_hardening.sql',
+    name: 'supabase_hyper_scale_rls_hardening.sql',
+    category: 'db',
+    language: 'sql',
+    description: 'Enterprise Hyper-Scale PostgreSQL & Supabase RLS Hardening with Multi-Tenant Tier Isolation.',
+    keyFeatures: [
+      'Multi-tenant tier constraint enforcement (SANDBOX, PRO, ENTERPRISE)',
+      'Ephemeral single-use HMAC-SHA256 lease nonces preventing all token replay exploits',
+      'Blockchain-style chained tamper-evident audit ledger with SHA-256 prev_hash validation',
+      'Row-Level Security (RLS) forced across all tables with SECURITY INVOKER search_path pinned',
+      'Zero-downtime atomic credit debits with exclusive SELECT FOR UPDATE row locking',
+    ],
+    content: `-- View backend/supabase_hyper_scale_rls_hardening.sql for full production SQL script`
+  },
+  {
+    id: 'compute_broker_resilience_py',
+    path: 'backend/compute_broker.py',
+    name: 'compute_broker.py (Resilience & Nonces)',
+    category: 'core',
+    language: 'python',
+    description: 'Autonomous Zero-Downtime Connection Pool Manager, Circuit Breaker, and Predictive Scaling Engine.',
+    keyFeatures: [
+      'ResilientConnectionPoolManager: PgBouncer primary pool, edge replica, and SQLite fallback',
+      'Automated Circuit Breaker: trips on >800ms latency or 3 dropouts, half-opens for health recovery',
+      'DynamicKeyRotationManager: rotating HMAC-SHA256 token signer with backward grace tolerance',
+      'PredictiveScalingEngine: real-time consumption velocity gradient (dC/dt) and dynamic burst quotas',
+      'Cryptographic chained audit ledger logging every compute dispatch with SHA-256 hashes',
+    ],
+    content: `# View backend/compute_broker.py for full production Python engine`
+  },
 ];
 
 

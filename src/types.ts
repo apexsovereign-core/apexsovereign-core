@@ -60,6 +60,8 @@ export interface CustomerUser {
   subscriptionExpiresAt: string;
 }
 
+export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'JPY' | 'AUD' | 'SGD';
+
 export interface SubscriptionTier {
   id: 'starter' | 'pro' | 'enterprise';
   name: string;
@@ -67,10 +69,86 @@ export interface SubscriptionTier {
   priceAnnual: number;
   computeUnits: number;
   description: string;
+  tagline?: string;
   popular?: boolean;
   features: string[];
   badge?: string;
   paypalPlanId: string;
+  dynamicPriceMonthly?: number;
+  dynamicPriceAnnual?: number;
+  discountAppliedPct?: number;
+  effectiveWeeklyRateUsd?: number;
+  epochId?: string;
+}
+
+export interface WeeklyEpochSnapshot {
+  epoch_id: string;
+  week_number: number;
+  year: number;
+  valid_from_utc: string;
+  valid_until_utc: string;
+  next_recalibration_utc: string;
+  seconds_remaining: number;
+  is_active: boolean;
+  wholesale_discount_pct: number;
+  discount_multiplier: number;
+  base_cu_per_1k_usd: number;
+  locked_cu_per_1k_usd: number;
+  agent_swarm_hour_usd: number;
+  energy_efficiency_index: number;
+  swarm_density_factor: number;
+  hmac_signature: string;
+  calibration_notes?: string;
+}
+
+export interface WeeklyMarketCalibrationData {
+  status: string;
+  epoch_id: string;
+  week_number: number;
+  year: number;
+  valid_from_utc: string;
+  valid_until_utc: string;
+  next_recalibration_utc: string;
+  seconds_remaining: number;
+  wholesale_discount_pct: number;
+  discount_multiplier: number;
+  base_cu_per_1k_usd: number;
+  locked_cu_per_1k_usd: number;
+  agent_swarm_hour_usd: number;
+  energy_efficiency_index: number;
+  swarm_density_factor: number;
+  hmac_signature: string;
+  cfo_guarantee: string;
+  currency: CurrencyCode;
+  fx_rate_to_usd: number;
+  all_fx_rates: Record<CurrencyCode, number>;
+  historical_snapshots?: WeeklyEpochSnapshot[];
+}
+
+export interface DynamicMarketRateData {
+  status: string;
+  timestampUtc: string;
+  marketDemandStatus: 'OFF_PEAK_SURPLUS' | 'OPTIMIZED_WHOLESALE_DISPATCH' | 'HIGH_COMPUTE_UTILIZATION';
+  wholesaleEfficiencyDiscountPct: number;
+  discountMultiplier: number;
+  baseCuPer1kUsd: number;
+  dynamicCuPer1kUsd: number;
+  currency: CurrencyCode;
+  fxRateToUsd: number;
+  allFxRates: Record<CurrencyCode, number>;
+}
+
+export interface EnterpriseRoiMetrics {
+  headcount: number;
+  monthlyWorkflows: number;
+  salesforceAnnualTco: number;
+  microsoftAnnualTco: number;
+  apexSovereignAnnualCost: number;
+  netAnnualSavingsVsSalesforce: number;
+  netAnnualSavingsVsMicrosoft: number;
+  savingsPercentage: number;
+  roiMultiple: number;
+  manualHoursEliminatedAnnual: number;
 }
 
 export interface PaymentTransaction {
@@ -100,6 +178,17 @@ export interface ComputeJob {
   durationSec: number;
 }
 
+export interface AgentToolExecution {
+  id: string;
+  toolName: 'verify_paypal_transaction' | 'diagnose_pipeline_error' | 'dispatch_resend_documentation' | 'check_gpu_spot_inventory' | 'reconcile_tenant_credits' | 'auto_rebalance_swarm';
+  parameters: Record<string, any>;
+  resultStatus: 'EXECUTING' | 'SUCCESS' | 'ERROR';
+  summary: string;
+  latencyMs?: number;
+  timestamp: string;
+  auditSignature?: string;
+}
+
 export interface InboundChatMessage {
   id: string;
   sender: 'user' | 'agent' | 'system';
@@ -108,6 +197,9 @@ export interface InboundChatMessage {
   qualificationTier?: 'SOVEREIGN_HOT' | 'ENTERPRISE_QUALIFIED' | 'EXPLORATORY' | 'NURTURE';
   leadScore?: number;
   suggestedActions?: string[];
+  toolInvocations?: AgentToolExecution[];
+  agentRole?: 'CONCIERGE' | 'DIAGNOSTIC_DOCTOR' | 'SETTLEMENT_RECONCILER' | 'CLUSTER_ARCHITECT';
+  actionPayload?: Record<string, any>;
 }
 
 export interface LeadQualificationResult {
@@ -120,5 +212,79 @@ export interface LeadQualificationResult {
   capturedLeadId?: string;
   crmSynced: boolean;
   emailDispatched: boolean;
+  activeAgent?: 'CONCIERGE' | 'DIAGNOSTIC_DOCTOR' | 'SETTLEMENT_RECONCILER' | 'CLUSTER_ARCHITECT';
+  toolExecutions?: AgentToolExecution[];
+}
+
+export type CrmStage = 
+  | 'DISCOVERY'
+  | 'QUALIFIED_OPPORTUNITY'
+  | 'SECURITY_CLEARANCE'
+  | 'HMAC_LEASE_PROVISIONED'
+  | 'CLOSED_ACTIVE_COMPUTE'
+  | 'EXPANDED';
+
+export interface CrmDealRecord {
+  id: string;
+  companyName: string;
+  contactName: string;
+  contactEmail: string;
+  valueUsd: number;
+  computeUnitsMonthly: number;
+  stage: CrmStage;
+  winProbability: number;
+  aiSentiment: 'HIGH_INTENT' | 'TECHNICAL_DEEP' | 'STANDARD_EVAL' | 'URGENT';
+  clusterTarget: 'A100_SXM4' | 'H100_SXM5' | 'HYBRID_DISTRIBUTED';
+  zeroTouchLogs: string[];
+  lastActivity: string;
+  createdAt: string;
+  resendProposalSent: boolean;
+  paypalInvoiceLinked: boolean;
+}
+
+export interface ProductivityDoc {
+  id: string;
+  title: string;
+  category: 'SLA_SPEC' | 'CLUSTER_ARCHITECTURE' | 'COMPUTE_RUNBOOK' | 'AUDIT_REPORT';
+  collaborators: string[];
+  content: string;
+  lastEdited: string;
+  autoSynced: boolean;
+  agentApproved: boolean;
+  securityClearance: 'PUBLIC' | 'CONFIDENTIAL' | 'RESTRICTED_SOVEREIGN';
+}
+
+export interface AutonomousAgentWorker {
+  id: string;
+  name: string;
+  role: 'DIAGNOSTIC_HEALER' | 'QUOTA_SCALER' | 'SETTLEMENT_RECONCILER' | 'CODE_EXEC_DISPATCHER';
+  status: 'ACTIVE_PATROL' | 'EXECUTING_REMEDIATION' | 'STANDBY_WATCH' | 'HEALTHY';
+  tasksResolvedToday: number;
+  lastRemediation: string;
+  latencyMs: number;
+  description: string;
+  capabilities: string[];
+}
+
+export interface AgentExecutionEvent {
+  id: string;
+  agentId: string;
+  agentName: string;
+  action: string;
+  targetTenant: string;
+  status: 'SUCCESS' | 'EXECUTING' | 'AUTO_REMEDIATED';
+  details: string;
+  timestamp: string;
+  latencyMs: number;
+}
+
+export interface DiagnosticCheck {
+  id: string;
+  subsystem: string;
+  checkName: string;
+  status: 'PASS' | 'OPTIMIZING' | 'WARMED';
+  metric: string;
+  autoResolved: boolean;
+  timestamp: string;
 }
 

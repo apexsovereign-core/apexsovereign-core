@@ -12,18 +12,21 @@ import {
   CheckCircle2, 
   Info,
   Terminal,
-  ExternalLink
+  ExternalLink,
+  Lock
 } from 'lucide-react';
 import { CODEBASE_FILES } from '../data/codebase';
 
 export const SchemaViewer: React.FC = () => {
   const [copied, setCopied] = useState<boolean>(false);
   const [copiedAdvisor, setCopiedAdvisor] = useState<boolean>(false);
-  const [activeSubTab, setActiveSubTab] = useState<'advisor' | 'tables'>('advisor');
+  const [copiedHyperScale, setCopiedHyperScale] = useState<boolean>(false);
+  const [activeSubTab, setActiveSubTab] = useState<'advisor' | 'tables' | 'hyper_scale_rls'>('advisor');
   const [selectedTable, setSelectedTable] = useState<string>('idempotency_keys');
 
   const schemaFile = CODEBASE_FILES.find((f) => f.id === 'schema_sql') || CODEBASE_FILES[2];
   const advisorFile = CODEBASE_FILES.find((f) => f.id === 'supabase_security_advisor_fix_sql');
+  const hyperScaleFile = CODEBASE_FILES.find((f) => f.id === 'supabase_hyper_scale_rls_sql');
 
   const handleCopySchema = () => {
     navigator.clipboard.writeText(schemaFile.content);
@@ -36,6 +39,14 @@ export const SchemaViewer: React.FC = () => {
       navigator.clipboard.writeText(advisorFile.content);
       setCopiedAdvisor(true);
       setTimeout(() => setCopiedAdvisor(false), 2000);
+    }
+  };
+
+  const handleCopyHyperScale = () => {
+    if (hyperScaleFile) {
+      navigator.clipboard.writeText(hyperScaleFile.content);
+      setCopiedHyperScale(true);
+      setTimeout(() => setCopiedHyperScale(false), 2000);
     }
   };
 
@@ -197,7 +208,7 @@ export const SchemaViewer: React.FC = () => {
     <div id="schema-viewer" className="space-y-6 py-6">
       {/* Subtab Navigation Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-2 rounded-xl">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActiveSubTab('advisor')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -210,6 +221,21 @@ export const SchemaViewer: React.FC = () => {
             <span>Supabase Security Advisor Remediation</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/30 text-amber-300 border border-amber-500/40">
               5 Warnings + 5 Info Fixed
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('hyper_scale_rls')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeSubTab === 'hyper_scale_rls'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-purple-400" />
+            <span>Hyper-Scale Multi-Tenant RLS & Nonces</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/30 text-purple-300 border border-purple-500/40">
+              Production Hardened
             </span>
           </button>
 
@@ -234,6 +260,14 @@ export const SchemaViewer: React.FC = () => {
             >
               {copiedAdvisor ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copiedAdvisor ? 'Copied Advisor Fix SQL!' : 'Copy Advisor Remediation SQL'}</span>
+            </button>
+          ) : activeSubTab === 'hyper_scale_rls' ? (
+            <button
+              onClick={handleCopyHyperScale}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold shadow-md transition-all cursor-pointer"
+            >
+              {copiedHyperScale ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedHyperScale ? 'Copied Hyper-Scale SQL!' : 'Copy Hyper-Scale RLS SQL'}</span>
             </button>
           ) : (
             <button
@@ -391,6 +425,63 @@ export const SchemaViewer: React.FC = () => {
             </div>
             <pre className="p-4 text-xs font-mono text-slate-300 overflow-x-auto max-h-[480px] bg-slate-950/90 leading-relaxed">
               {advisorFile?.content}
+            </pre>
+          </div>
+        </div>
+      ) : activeSubTab === 'hyper_scale_rls' ? (
+        <div className="space-y-6">
+          {/* Hyper-Scale Multi-Tenant RLS Hardening Banner */}
+          <div className="bg-gradient-to-r from-purple-950/40 via-slate-900 to-slate-900 border border-purple-500/30 rounded-2xl p-5 sm:p-6 shadow-xl">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Institutional Hyper-Scale RLS Hardening</span>
+                </div>
+                <h2 className="text-lg font-bold text-white tracking-tight">
+                  Cryptographic Multi-Tenant Tier Isolation & Ephemeral Nonces
+                </h2>
+                <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
+                  Enforces strict tenant tier boundaries (SANDBOX, PRO, ENTERPRISE), single-use HMAC-SHA256 execution lease nonces to neutralize replay attacks, and a blockchain-style chained audit ledger with SHA-256 tamper-evident integrity proofs.
+                </p>
+              </div>
+
+              <button
+                onClick={handleCopyHyperScale}
+                className="self-start lg:self-center inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-purple-950 cursor-pointer"
+              >
+                {copiedHyperScale ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedHyperScale ? 'Copied Hyper-Scale SQL!' : 'Copy Hyper-Scale RLS SQL'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-purple-500/20 text-xs font-mono">
+              <div className="flex items-center gap-2 text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>FORCE RLS Across 7 Tables</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>Ephemeral Lease Nonces (Anti-Replay)</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-300">
+                <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>Chained SHA-256 Audit Ledger</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Hyper-Scale SQL Script Display */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-slate-800 text-xs font-mono">
+              <div className="flex items-center gap-2 text-purple-300">
+                <Terminal className="w-4 h-4 text-purple-400" />
+                <span>backend/supabase_hyper_scale_rls_hardening.sql</span>
+              </div>
+              <span className="text-[11px] text-slate-500">PostgreSQL DDL & RLS Policies</span>
+            </div>
+            <pre className="p-4 text-xs font-mono text-slate-300 overflow-x-auto max-h-[520px] leading-relaxed bg-slate-950/60">
+              {hyperScaleFile ? hyperScaleFile.content : '-- Script ready in backend/supabase_hyper_scale_rls_hardening.sql'}
             </pre>
           </div>
         </div>

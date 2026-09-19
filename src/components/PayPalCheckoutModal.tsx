@@ -400,7 +400,9 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                     <p className="text-xs text-slate-400 mt-0.5">{tier.description}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-xl font-bold text-white font-mono">${totalDue}</div>
+                    <div className="text-xl font-bold text-white font-mono">
+                      ${typeof totalDue === 'number' ? totalDue.toFixed(2).replace(/\.00$/, '') : totalDue}
+                    </div>
                     <div className="text-[11px] text-slate-500">
                       {billingInterval === 'monthly' ? 'per month' : 'billed annually'}
                     </div>
@@ -415,6 +417,21 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                   <span className="text-emerald-400 font-semibold">
                     +{creditsToAward.toLocaleString()} Compute Units
                   </span>
+                </div>
+
+                {/* Weekly Epoch Lock Guarantee */}
+                <div className="border-t border-slate-900 pt-2 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <Lock className="w-3 h-3" />
+                    <span>Weekly Tariff Epoch:</span>
+                  </span>
+                  <span className="text-slate-200 font-semibold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    {tier.epochId || 'EPOCH-2026-W38 (Locked Mon 00:00 UTC)'}
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono text-emerald-400/90 pt-0.5 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Atomic settlement (SELECT ... FOR UPDATE) & instant Resend tax receipt</span>
                 </div>
               </div>
 

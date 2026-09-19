@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { CustomerUser, PaymentTransaction, ComputeJob } from '../types';
+import { EnterpriseCrmPipeline } from './EnterpriseCrmPipeline';
+import { AutonomousAgentSwarm } from './AutonomousAgentSwarm';
 import { 
   Cpu, 
   Key, 
@@ -17,7 +19,10 @@ import {
   PlusCircle,
   ArrowUpRight,
   TrendingUp,
-  Clock
+  Clock,
+  Workflow,
+  Bot,
+  BarChart2
 } from 'lucide-react';
 
 interface CustomerPortalProps {
@@ -25,14 +30,17 @@ interface CustomerPortalProps {
   transactions: PaymentTransaction[];
   onOpenPricing: () => void;
   onUpdateUser: (updatedUser: CustomerUser) => void;
+  initialSubTab?: 'compute' | 'crm' | 'swarm';
 }
 
 export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   user,
   transactions,
   onOpenPricing,
-  onUpdateUser
+  onUpdateUser,
+  initialSubTab = 'compute'
 }) => {
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'compute' | 'crm' | 'swarm'>(initialSubTab);
   const [showApiKey, setShowApiKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
@@ -138,6 +146,65 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       </div>
 
+      {/* Institutional Workspace Sub-Navigation (Salesforce + Microsoft + Swarm Synthesis) */}
+      <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900 border border-slate-800 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveWorkspaceTab('compute')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            activeWorkspaceTab === 'compute'
+              ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Cpu className="w-3.5 h-3.5" />
+          <span>Compute Brokerage & API Keys</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveWorkspaceTab('crm')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            activeWorkspaceTab === 'crm'
+              ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Workflow className="w-3.5 h-3.5" />
+          <span>CRM & Productivity Conduits</span>
+          <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${activeWorkspaceTab === 'crm' ? 'bg-slate-950 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
+            Salesforce+M365
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveWorkspaceTab('swarm')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            activeWorkspaceTab === 'swarm'
+              ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Bot className="w-3.5 h-3.5" />
+          <span>24/7 Agentic Swarm</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        </button>
+      </div>
+
+      {/* SUB-VIEW 1: CRM & PRODUCTIVITY CONDUITS */}
+      {activeWorkspaceTab === 'crm' && (
+        <EnterpriseCrmPipeline />
+      )}
+
+      {/* SUB-VIEW 2: 24/7 AUTONOMOUS AGENT SWARM */}
+      {activeWorkspaceTab === 'swarm' && (
+        <AutonomousAgentSwarm />
+      )}
+
+      {/* SUB-VIEW 3: CORE COMPUTE BROKERAGE, APIS, & SETTLEMENT */}
+      {activeWorkspaceTab === 'compute' && (
+        <>
       {/* Metrics Row: Compute Quota, Burn Rate, Active Partition */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Compute Meter Card */}
@@ -477,6 +544,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
