@@ -15,6 +15,8 @@ import { VariableSigner } from './components/VariableSigner';
 import { RequirementsEditor } from './components/RequirementsEditor';
 import { PricingPlans, SUBSCRIPTION_TIERS } from './components/PricingPlans';
 import { CustomerPortal } from './components/CustomerPortal';
+import { EnterpriseCrmPipeline } from './components/EnterpriseCrmPipeline';
+import { AutonomousAgentSwarm } from './components/AutonomousAgentSwarm';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
@@ -144,6 +146,8 @@ export default function App() {
               if (chatBtn) chatBtn.click();
             }}
             onNavigatePricing={() => setActiveTab('pricing')}
+            onNavigateCrm={() => setActiveTab('crm')}
+            onNavigateSwarm={() => setActiveTab('swarm')}
           />
         )}
 
@@ -153,6 +157,20 @@ export default function App() {
             currentUser={currentUser}
             onOpenAuth={() => setIsAuthModalOpen(true)}
           />
+        )}
+
+        {/* Enterprise CRM & Work OS (Salesforce + Microsoft 365 Synthesis) */}
+        {activeTab === 'crm' && (
+          <div className="py-4">
+            <EnterpriseCrmPipeline />
+          </div>
+        )}
+
+        {/* 24/7 Autonomous Agent Swarm Operations */}
+        {activeTab === 'swarm' && (
+          <div className="py-4">
+            <AutonomousAgentSwarm />
+          </div>
         )}
 
         {activeTab === 'portal' && (
