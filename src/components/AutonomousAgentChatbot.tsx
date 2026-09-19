@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { InboundChatMessage, LeadQualificationResult, AgentToolExecution } from '../types';
+import { InboundChatMessage, LeadQualificationResult, AgentToolExecution, SmsOtpVerifyResponse, ResendEmailConfirmation } from '../types';
 import { 
   Bot, 
   Send, 
@@ -24,7 +24,11 @@ import {
   Copy,
   Check,
   AlertTriangle,
-  FileCheck
+  FileCheck,
+  Phone,
+  Smartphone,
+  KeyRound,
+  ShieldAlert
 } from 'lucide-react';
 
 interface AutonomousAgentChatbotProps {
@@ -59,6 +63,24 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
   const [adminAuditResult, setAdminAuditResult] = useState<any>(null);
   const [auditLoading, setAuditLoading] = useState(false);
   const [copiedAuditSig, setCopiedAuditSig] = useState<string | null>(null);
+
+  // Zero-Trust SMS 2FA Authentication & Verification State
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [smsPhoneInput, setSmsPhoneInput] = useState('+1 (555) 234-5678');
+  const [smsOtpInput, setSmsOtpInput] = useState('');
+  const [smsOtpDispatched, setSmsOtpDispatched] = useState(false);
+  const [smsCountdown, setSmsCountdown] = useState(300);
+  const [smsLoading, setSmsLoading] = useState(false);
+  const [smsError, setSmsError] = useState<string | null>(null);
+  const [devPreviewOtp, setDevPreviewOtp] = useState<string | null>(null);
+  const [verifiedSession, setVerifiedSession] = useState<SmsOtpVerifyResponse | null>(() => {
+    try {
+      const saved = localStorage.getItem('sovereign_sms_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Chat message stream
   const [messages, setMessages] = useState<InboundChatMessage[]>([

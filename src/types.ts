@@ -199,6 +199,7 @@ export interface InboundChatMessage {
   suggestedActions?: string[];
   toolInvocations?: AgentToolExecution[];
   agentRole?: 'CONCIERGE' | 'DIAGNOSTIC_DOCTOR' | 'SETTLEMENT_RECONCILER' | 'CLUSTER_ARCHITECT';
+  resendConfirmation?: ResendEmailConfirmation;
   actionPayload?: Record<string, any>;
 }
 
@@ -212,8 +213,54 @@ export interface LeadQualificationResult {
   capturedLeadId?: string;
   crmSynced: boolean;
   emailDispatched: boolean;
+  resendConfirmation?: ResendEmailConfirmation;
   activeAgent?: 'CONCIERGE' | 'DIAGNOSTIC_DOCTOR' | 'SETTLEMENT_RECONCILER' | 'CLUSTER_ARCHITECT';
   toolExecutions?: AgentToolExecution[];
+}
+
+export interface ResendEmailConfirmation {
+  messageId: string;
+  recipient: string;
+  subject: string;
+  docType: string;
+  status: 'DELIVERED' | 'QUEUED' | 'SIMULATED';
+  timestamp: string;
+}
+
+export interface SmsOtpSendRequest {
+  phone_number: string;
+  tenant_id?: string;
+  purpose?: string;
+}
+
+export interface SmsOtpSendResponse {
+  status: 'OTP_DISPATCHED' | 'RATE_LIMITED' | 'ERROR';
+  phone_number: string;
+  expires_in_seconds: number;
+  purpose: string;
+  dev_preview_otp?: string;
+  message?: string;
+}
+
+export interface SmsOtpVerifyRequest {
+  phone_number: string;
+  otp: string;
+  tenant_id?: string;
+}
+
+export interface SmsOtpVerifyResponse {
+  status: 'AUTHENTICATED' | 'INVALID_OTP' | 'EXPIRED' | 'MAX_ATTEMPTS_EXCEEDED';
+  session_token?: string;
+  tenant_id?: string;
+  phone_number?: string;
+  authenticated_at?: string;
+  rls_claims?: {
+    role: string;
+    tenant_id: string;
+    permissions: string[];
+  };
+  audit_signature?: string;
+  error?: string;
 }
 
 export type CrmStage = 
