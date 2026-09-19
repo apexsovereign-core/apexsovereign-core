@@ -39,8 +39,8 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
   const [tokenSuccess, setTokenSuccess] = useState<boolean>(false);
 
   const envAdminToken = 
-    (import.meta.env.VITE_ADMIN_ACCESS_T as string) || 
-    (import.meta.env.VITE_ADMIN_ACCESS_TOKEN as string) || 
+    ((import.meta as any).env?.VITE_ADMIN_ACCESS_T as string) || 
+    ((import.meta as any).env?.VITE_ADMIN_ACCESS_TOKEN as string) || 
     'apex-sec-admin-2026';
 
   const isUserAdmin = currentUser?.role === 'admin';
