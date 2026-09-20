@@ -1,0 +1,17 @@
+{
+  "name": "ApexSovereign.ai | The Sovereign Global Work OS",
+  "short_name": "ApexSovereign",
+  "description": "Enterprise Work OS, autonomous compute broker, and idempotent financial ledger backend engineered for absolute market dominance.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#06B6D4",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

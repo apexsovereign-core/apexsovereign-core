@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="obsidian-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#0B0F19" />
+      <stop offset="50%" stopColor="#0F172A" />
+      <stop offset="100%" stopColor="#020617" />
+    </linearGradient>
+    <linearGradient id="obsidian-surface" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="#1E293B" />
+      <stop offset="40%" stopColor="#0F172A" />
+      <stop offset="100%" stopColor="#090D16" />
+    </linearGradient>
+    <linearGradient id="cyan-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#22D3EE" />
+      <stop offset="50%" stopColor="#06B6D4" />
+      <stop offset="100%" stopColor="#0891B2" />
+    </linearGradient>
+    <linearGradient id="cyan-radiant" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="#67E8F9" />
+      <stop offset="35%" stopColor="#22D3EE" />
+      <stop offset="100%" stopColor="#0284C7" />
+    </linearGradient>
+    <linearGradient id="crystal-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="#E0F2FE" stopOpacity="0.9" />
+      <stop offset="50%" stopColor="#38BDF8" stopOpacity="0.4" />
+      <stop offset="100%" stopColor="#0284C7" stopOpacity="0.1" />
+    </linearGradient>
+    <radialGradient id="central-core-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.4" />
+      <stop offset="60%" stopColor="#06B6D4" stopOpacity="0.1" />
+      <stop offset="100%" stopColor="#0891B2" stopOpacity="0" />
+    </radialGradient>
+  </defs>
+
+  <circle cx="60" cy="60" r="48" fill="url(#central-core-glow)" />
+
+  <!-- Outer Hexagonal Diamond Frame -->
+  <polygon points="60,6 108,33 108,87 60,114 12,87 12,33" fill="url(#obsidian-dark)" stroke="#1E293B" stroke-width="2" />
+
+  <!-- Crystalline Facets -->
+  <polygon points="60,6 12,33 36,46 60,33" fill="url(#obsidian-surface)" stroke="#0891B2" stroke-width="1" stroke-opacity="0.4" />
+  <polygon points="60,6 108,33 84,46 60,33" fill="url(#crystal-highlight)" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.6" />
+  <polygon points="108,33 108,87 84,74 84,46" fill="url(#obsidian-surface)" stroke="#06B6D4" stroke-width="1" stroke-opacity="0.5" />
+  <polygon points="108,87 60,114 60,87 84,74" fill="url(#obsidian-dark)" stroke="#0E7490" stroke-width="1" stroke-opacity="0.4" />
+  <polygon points="60,114 12,87 36,74 60,87" fill="url(#obsidian-surface)" stroke="#06B6D4" stroke-width="1" stroke-opacity="0.5" />
+  <polygon points="12,87 12,33 36,46 36,74" fill="url(#obsidian-dark)" stroke="#0891B2" stroke-width="1" stroke-opacity="0.4" />
+
+  <!-- Inner Radiant Cyan Hexagon -->
+  <polygon points="60,20 96,40 96,80 60,100 24,80 24,40" fill="url(#obsidian-dark)" stroke="url(#cyan-primary)" stroke-width="2.5" />
+
+  <!-- 'A' Monogram Arch -->
+  <path d="M 60 25 L 76 60 L 68 60 L 60 42 L 52 60 L 44 60 Z" fill="url(#cyan-radiant)" />
+  <polygon points="48,53 72,53 69,57 51,57" fill="#E0F2FE" />
+
+  <!-- 'S' Monogram Curve -->
+  <path d="M 72 65 C 72 61 68 59 60 59 C 52 59 47 62 47 67 C 47 73 54 75 62 77 C 71 79 75 82 75 88 C 75 94 69 98 60 98 C 50 98 45 93 44 87 L 51 86 C 52 90 55 93 60 93 C 65 93 68 91 68 87 C 68 82 62 80 54 78 C 46 76 40 73 40 67 C 40 60 46 54 60 54 C 68 54 74 58 75 64 Z" fill="url(#cyan-primary)" />
+
+  <!-- Cryptographic Nodes -->
+  <circle cx="60" cy="20" r="3" fill="#E0F2FE" />
+  <circle cx="96" cy="40" r="2.5" fill="#38BDF8" />
+  <circle cx="96" cy="80" r="2.5" fill="#38BDF8" />
+  <circle cx="60" cy="100" r="3" fill="#22D3EE" />
+  <circle cx="24" cy="80" r="2.5" fill="#38BDF8" />
+  <circle cx="24" cy="40" r="2.5" fill="#38BDF8" />
+  <polygon points="60,56 63,60 60,64 57,60" fill="#FFFFFF" />
+</svg>

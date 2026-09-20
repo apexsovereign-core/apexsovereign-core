@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { InboundChatMessage, LeadQualificationResult, AgentToolExecution, SmsOtpVerifyResponse, ResendEmailConfirmation } from '../types';
+import { SovereignHexDiamond } from './SovereignHexDiamond';
 import { 
   Bot, 
   Send, 
@@ -82,12 +83,25 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
     }
   });
 
+  // SMS OTP Verification Countdown Timer
+  useEffect(() => {
+    let timer: any = null;
+    if (smsOtpDispatched && smsCountdown > 0) {
+      timer = setInterval(() => {
+        setSmsCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [smsOtpDispatched, smsCountdown]);
+
   // Chat message stream
   const [messages, setMessages] = useState<InboundChatMessage[]>([
     {
       id: 'init-1',
       sender: 'agent',
-      text: 'Welcome to ApexSovereign.ai Autonomous AI Swarm. I am your 24/7 Autopilot Concierge. I can autonomously verify live PayPal transactions, diagnose and self-heal stalled compute pipelines, allocate H100 GPU clusters, and dispatch official documentation via Resend.',
+      text: 'Welcome to ApexMind Sovereign—our proprietary, standalone enterprise neural assistant mesh. I am your 24/7 Autopilot Concierge. I autonomously reconcile live PayPal transactions, execute self-healing pipeline recovery, evaluate bare-metal GPU cluster sizing, and dispatch official enterprise documentation via Resend.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       qualificationTier: 'EXPLORATORY',
       agentRole: 'CONCIERGE',
@@ -95,7 +109,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
         'Verify PayPal Order ORD-LIVE-77192 & Credit Allocation',
         'Diagnose and self-heal pipeline pipe_swarm_beta',
         'Check 8x H100 SXM5 bare-metal GPU availability',
-        'Calculate Enterprise ROI vs Salesforce ($165/seat)',
+        'Authenticate Corporate Identity via SMS 2FA',
       ],
     },
   ]);
@@ -115,6 +129,81 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
     }
   }, [messages, isOpen]);
 
+  // Zero-Trust SMS 2FA Dispatch & Verification Handlers
+  const handleSendSmsOtp = async () => {
+    if (!smsPhoneInput.trim()) return;
+    setSmsLoading(true);
+    setSmsError(null);
+    try {
+      const res = await fetch('/auth/send-sms-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: smsPhoneInput,
+          purpose: 'ENTERPRISE_AUTHENTICATION',
+          tenant_id: 'tenant-sovereign-01',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'OTP_DISPATCHED') {
+        setSmsOtpDispatched(true);
+        setSmsCountdown(data.expires_in_seconds || 300);
+        if (data.dev_preview_otp) {
+          setDevPreviewOtp(data.dev_preview_otp);
+          setSmsOtpInput(data.dev_preview_otp);
+        }
+      } else {
+        setSmsError(data.error || 'Failed to dispatch SMS verification code.');
+      }
+    } catch (err) {
+      setSmsError('Network error connecting to SMS Gateway.');
+    } finally {
+      setSmsLoading(false);
+    }
+  };
+
+  const handleVerifySmsOtp = async () => {
+    if (!smsOtpInput.trim()) return;
+    setSmsLoading(true);
+    setSmsError(null);
+    try {
+      const res = await fetch('/auth/verify-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: smsPhoneInput,
+          otp: smsOtpInput,
+          tenant_id: 'tenant-sovereign-01',
+        }),
+      });
+      const data: SmsOtpVerifyResponse = await res.json();
+      if (res.ok && data.status === 'AUTHENTICATED') {
+        setVerifiedSession(data);
+        try {
+          localStorage.setItem('sovereign_sms_session', JSON.stringify(data));
+        } catch (_) {}
+
+        const confirmMsg: InboundChatMessage = {
+          id: `agent_sms_${Date.now()}`,
+          sender: 'agent',
+          text: `🔒 Cryptographic SMS 2FA Verified!\nTenant: ${data.tenant_id}\nSession Token: ${data.session_token.slice(0, 24)}...\nClearance: ${data.rls_claims.clearance_level}\nAudit Signature: ${data.audit_signature.slice(0, 16)}...`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          qualificationTier: 'SOVEREIGN_HOT',
+          leadScore: 99,
+          agentRole: 'CONCIERGE',
+        };
+        setMessages((prev) => [...prev, confirmMsg]);
+        setTimeout(() => setShowSmsModal(false), 2000);
+      } else {
+        setSmsError(data.error || 'Invalid or expired verification code.');
+      }
+    } catch (err) {
+      setSmsError('Network error verifying SMS code.');
+    } finally {
+      setSmsLoading(false);
+    }
+  };
+
   const handleSendMessage = async (textToSend?: string) => {
     const messageText = (textToSend || inputVal).trim();
     if (!messageText || isLoading) return;
@@ -131,27 +220,37 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
     setIsLoading(true);
 
     try {
-      const res = await fetch('/leads/agent/chat', {
+      const chatPayload = {
+        session_id: sessionId,
+        user_message: messageText,
+        company_name: companyName || undefined,
+        contact_email: contactEmail || undefined,
+        contact_name: contactName || undefined,
+        budget_range: budgetRange || undefined,
+        compute_needs: computeNeeds || undefined,
+        agent_role: activeRole,
+        tenant_id: 'tenant-sovereign-01',
+        conversation_history: messages.slice(-5).map((m) => ({
+          sender: m.sender,
+          text: m.text,
+        })),
+      };
+
+      // Call proprietary ApexMind Sovereign chat router
+      let res = await fetch('/api/v1/apexmind/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          user_message: messageText,
-          company_name: companyName || undefined,
-          contact_email: contactEmail || undefined,
-          contact_name: contactName || undefined,
-          budget_range: budgetRange || undefined,
-          compute_needs: computeNeeds || undefined,
-          agent_role: activeRole,
-          tenant_id: 'tenant-sovereign-01',
-          conversation_history: messages.slice(-5).map((m) => ({
-            sender: m.sender,
-            text: m.text,
-          })),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(chatPayload),
       });
+
+      if (!res.ok) {
+        // Fallback to secondary lead agent router
+        res = await fetch('/leads/agent/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(chatPayload),
+        });
+      }
 
       if (res.ok) {
         const data: LeadQualificationResult = await res.json();
@@ -179,11 +278,11 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
         const fallbackMsg: InboundChatMessage = {
           id: `agent_${Date.now()}`,
           sender: 'agent',
-          text: `[Autonomous Swarm Operator] Query analyzed under active tier ${tier}. Live PayPal ledger fulfillment and Resend transactional notifications are armed with zero-drop failover.`,
+          text: `[ApexMind Sovereign Operator] Query analyzed under active tier ${tier}. Live PayPal ledger fulfillment and Resend transactional notifications are armed with zero-drop failover.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           qualificationTier: tier,
           leadScore: simulatedScore,
-          suggestedActions: ['Review Sovereign Pricing', 'Verify PayPal Transaction'],
+          suggestedActions: ['Review Sovereign Pricing', 'Verify PayPal Transaction', 'SMS 2FA Authentication'],
         };
         setMessages((prev) => [...prev, fallbackMsg]);
       }
@@ -191,9 +290,9 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
       const errReply: InboundChatMessage = {
         id: `agent_${Date.now()}`,
         sender: 'agent',
-        text: 'Autonomous agent gateway online. In-chat PayPal transaction reconciliation and Supabase RLS row-level security are currently active.',
+        text: 'ApexMind Sovereign gateway online. In-chat PayPal transaction reconciliation and Supabase RLS row-level security are currently active.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedActions: ['Review Pricing', 'Connect Live PayPal'],
+        suggestedActions: ['Review Pricing', 'Connect Live PayPal', 'SMS 2FA'],
       };
       setMessages((prev) => [...prev, errReply]);
     } finally {
@@ -281,22 +380,22 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
         <button
           id="btn-open-agent-chat"
           onClick={() => setIsOpen(true)}
-          className="flex items-center space-x-3 px-5 py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white rounded-full shadow-2xl shadow-indigo-950/60 border border-indigo-400/30 transition-all duration-200 transform hover:scale-105 group cursor-pointer"
+          className="flex items-center space-x-3 px-5 py-3.5 bg-gradient-to-r from-slate-900 via-cyan-950/90 to-indigo-950/90 hover:from-slate-800 hover:to-indigo-900 text-white rounded-full shadow-2xl shadow-cyan-950/60 border border-cyan-500/40 transition-all duration-200 transform hover:scale-105 group cursor-pointer"
         >
-          <div className="relative">
-            <Bot className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full" />
+          <div className="relative flex items-center justify-center">
+            <SovereignHexDiamond size={28} glow={false} />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full animate-ping" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full" />
           </div>
           <div className="flex flex-col text-left">
             <span className="font-semibold text-sm tracking-wide flex items-center space-x-1.5">
-              <span>Autonomous AI Swarm</span>
-              <span className="text-[10px] bg-emerald-400/20 text-emerald-300 font-mono px-1.5 py-0.2 rounded border border-emerald-400/30">
+              <span className="text-cyan-100 font-bold">ApexMind Sovereign</span>
+              <span className="text-[10px] bg-cyan-400/20 text-cyan-300 font-mono px-1.5 py-0.2 rounded border border-cyan-400/30">
                 24/7 LIVE
               </span>
             </span>
-            <span className="text-[10px] text-indigo-200">
-              Concierge • Self-Healing Ops • PayPal Settlement
+            <span className="text-[10px] text-cyan-300/80">
+              Autonomous Neural Mesh • Self-Healing Ops • 2FA
             </span>
           </div>
         </button>
@@ -309,6 +408,158 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
         className="hidden"
         aria-hidden="true"
       />
+
+      {/* Zero-Trust SMS 2FA Authentication Modal */}
+      {showSmsModal && (
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-cyan-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-cyan-950/80 relative text-left">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 rounded-lg bg-cyan-950/60 text-cyan-400 border border-cyan-500/40">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-100 flex items-center space-x-2">
+                    <span>Enterprise SMS 2FA Gateway</span>
+                    <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded font-mono">
+                      ZERO-TRUST
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Cryptographic carrier verification via Twilio / HSM Mesh
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSmsModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">
+                  Enterprise Mobile Number (E.164 format)
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="tel"
+                    value={smsPhoneInput}
+                    onChange={(e) => setSmsPhoneInput(e.target.value)}
+                    placeholder="+1 (555) 234-5678"
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-cyan-500"
+                  />
+                  <button
+                    id="btn-dispatch-sms-otp"
+                    onClick={handleSendSmsOtp}
+                    disabled={smsLoading || !smsPhoneInput.trim()}
+                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-lg font-semibold flex items-center space-x-1.5 transition-colors"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{smsLoading && !smsOtpDispatched ? 'Dispatching...' : 'Send OTP'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {smsOtpDispatched && (
+                <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                    <span className="flex items-center space-x-1 text-cyan-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>6-Digit Verification Code Dispatched</span>
+                    </span>
+                    <span className="font-mono text-slate-300">
+                      Expires in: {Math.floor(smsCountdown / 60)}:{(smsCountdown % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  {devPreviewOtp && (
+                    <div className="p-2.5 bg-cyan-950/40 border border-cyan-500/30 rounded-lg flex items-center justify-between text-[11px]">
+                      <span className="text-cyan-300 font-mono">
+                        Dev Preview OTP: <strong className="text-white tracking-widest">{devPreviewOtp}</strong>
+                      </span>
+                      <button
+                        onClick={() => setSmsOtpInput(devPreviewOtp)}
+                        className="text-[10px] text-cyan-400 hover:underline cursor-pointer"
+                      >
+                        Auto-Fill
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex space-x-2">
+                    <input
+                      id="input-sms-otp"
+                      type="text"
+                      maxLength={6}
+                      value={smsOtpInput}
+                      onChange={(e) => setSmsOtpInput(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Enter 6-digit OTP"
+                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-center text-slate-100 font-mono text-base tracking-widest focus:outline-none focus:border-cyan-500"
+                    />
+                    <button
+                      id="btn-verify-sms-otp"
+                      onClick={handleVerifySmsOtp}
+                      disabled={smsLoading || smsOtpInput.length !== 6}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg font-semibold flex items-center space-x-1.5 transition-colors"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>{smsLoading ? 'Verifying...' : 'Verify OTP'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {smsError && (
+                <div className="p-2.5 bg-rose-950/60 border border-rose-800/80 rounded-lg text-rose-300 flex items-center space-x-2 text-[11px]">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>{smsError}</span>
+                </div>
+              )}
+
+              {verifiedSession && (
+                <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl space-y-2 font-mono text-[11px]">
+                  <div className="flex items-center justify-between text-emerald-400 font-bold border-b border-emerald-900/60 pb-1">
+                    <span className="flex items-center space-x-1">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>SESSION VERIFIED: {verifiedSession.rls_claims?.clearance_level}</span>
+                    </span>
+                    <span className="text-[10px] bg-emerald-900 text-emerald-200 px-1.5 py-0.5 rounded">
+                      ACTIVE
+                    </span>
+                  </div>
+                  <div className="text-slate-300 text-[10px] space-y-0.5">
+                    <div>Token: <span className="text-white">{verifiedSession.session_token?.slice(0, 24)}...</span></div>
+                    <div>Tenant: <span className="text-cyan-300">{verifiedSession.tenant_id}</span></div>
+                    <div>HMAC Signature: <span className="text-emerald-300">{verifiedSession.audit_signature?.slice(0, 20)}...</span></div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex items-center justify-between">
+              {smsOtpDispatched && smsCountdown === 0 && (
+                <button
+                  onClick={handleSendSmsOtp}
+                  className="text-xs text-cyan-400 hover:underline"
+                >
+                  Resend New Code
+                </button>
+              )}
+              <div className="ml-auto flex space-x-2">
+                <button
+                  onClick={() => setShowSmsModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Zero-Trust Administrative Clearance Modal */}
       {showAdminAuditModal && (
@@ -429,25 +680,40 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
           {/* Header */}
           <div className="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-                <Bot className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center p-0.5">
+                <SovereignHexDiamond size={24} glow={false} />
               </div>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h3 className="font-bold text-sm text-slate-100">ApexSovereign AI Swarm</h3>
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                  <h3 className="font-bold text-sm text-slate-100">ApexMind Sovereign</h3>
+                  <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  24/7 Autonomous Concierge & Self-Healing Mesh
+                  24/7 Enterprise Neural Mesh & Autopilot Ops
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-1.5">
               <button
+                id="btn-open-sms-2fa"
+                onClick={() => setShowSmsModal(true)}
+                className={`px-2 py-1 rounded-lg text-xs transition-colors flex items-center space-x-1 cursor-pointer ${
+                  verifiedSession
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/50'
+                    : 'bg-slate-800/80 text-cyan-400 hover:bg-cyan-950/60 border border-slate-700'
+                }`}
+                title={verifiedSession ? 'SMS 2FA Verified' : 'Authenticate via SMS 2FA'}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-mono font-medium">
+                  {verifiedSession ? '2FA Active' : 'SMS 2FA'}
+                </span>
+              </button>
+              <button
                 id="btn-open-admin-audit"
                 onClick={() => setShowAdminAuditModal(true)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-950/40 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-950/40 transition-colors cursor-pointer"
                 title="Zero-Trust Memory & RLS Audit (ADMIN_ACCESS_T)"
               >
                 <ShieldCheck className="w-4 h-4" />
@@ -455,7 +721,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
               <button
                 id="btn-toggle-lead-form"
                 onClick={() => setShowLeadFields(!showLeadFields)}
-                className={`p-1.5 rounded-lg text-xs transition-colors ${
+                className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
                   showLeadFields ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                 }`}
                 title="Toggle Corporate Lead Context"
@@ -465,7 +731,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
               <button
                 id="btn-toggle-expand-chat"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
                 title={isExpanded ? 'Collapse' : 'Expand'}
               >
                 {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -473,7 +739,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
               <button
                 id="btn-close-agent-chat"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -569,10 +835,10 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
                   }`}
                 >
                   {/* Specialized Operator Tag */}
-                  {msg.sender === 'agent' && msg.agentRole && (
-                    <div className="mb-1 text-[10px] font-semibold text-indigo-400 flex items-center space-x-1.5">
-                      <Bot className="w-3 h-3" />
-                      <span>{roleDetails[msg.agentRole as AgentRole]?.name || 'Autonomous Operator'}</span>
+                  {msg.sender === 'agent' && (
+                    <div className="mb-1 text-[10px] font-semibold text-cyan-400 flex items-center space-x-1.5">
+                      <SovereignHexDiamond size={13} glow={false} />
+                      <span>{msg.agentRole ? (roleDetails[msg.agentRole as AgentRole]?.name || 'ApexMind Sovereign') : 'ApexMind Sovereign'}</span>
                     </div>
                   )}
 
