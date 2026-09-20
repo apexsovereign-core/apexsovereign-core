@@ -258,6 +258,8 @@ export interface SmsOtpVerifyResponse {
     role: string;
     tenant_id: string;
     permissions: string[];
+    clearance_level?: string;
+    phone_verified?: boolean;
   };
   audit_signature?: string;
   error?: string;

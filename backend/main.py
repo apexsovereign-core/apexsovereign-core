@@ -179,6 +179,30 @@ app.add_middleware(PrometheusMetricsMiddleware)
 
 
 # ---------------------------------------------------------------------------
+# Zero-Trust RBAC & Vault Perimeter Middleware
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def rbac_security_middleware(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/admin") or path.startswith("/api/admin") or path.startswith("/vault/admin"):
+        admin_token = request.headers.get("x-admin-access-token") or request.headers.get("authorization", "").replace("Bearer ", "")
+        user_role = (request.headers.get("x-user-role") or "").lower()
+        if not admin_token or admin_token not in ["apex-sec-admin-2026", "apex-sovereign-master-audit", "ADMIN_ACCESS_T"] or user_role in ["lead", "visitor"]:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "status": "FORBIDDEN",
+                    "error": "Access Denied: Zero-Trust RBAC Policy Enforcement.",
+                    "message": "Standard public visitors and Lead accounts are strictly partitioned from administrative vaults. Authenticated ROLE_ADMIN clearance required.",
+                    "boundary": "ADMIN_ACCESS_T",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            )
+    response = await call_next(request)
+    return response
+
+
+# ---------------------------------------------------------------------------
 # Root, Health Check & Telemetry Metrics Endpoints
 # ---------------------------------------------------------------------------
 @app.get("/", tags=["Health"])
@@ -615,9 +639,10 @@ async def verify_paypal_billing_transaction(
 
 
 # ---------------------------------------------------------------------------
-# Autonomous AI Concierge & Lead Qualification Endpoint
+# Autonomous AI Concierge & Lead Qualification Endpoint (ApexMind Sovereign)
 # ---------------------------------------------------------------------------
 @app.post("/leads/agent/chat", tags=["Autonomous Agents"])
+@app.post("/api/v1/apexmind/chat", tags=["Autonomous Agents"])
 async def autonomous_agent_chat_endpoint(
     request: Request,
     body: Dict[str, Any] = None

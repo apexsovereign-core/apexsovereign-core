@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CustomerUser } from '../types';
+import { SovereignHexDiamond } from './SovereignHexDiamond';
 import { 
   ShieldCheck, 
   Terminal, 
@@ -65,25 +66,24 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header id="apex-header" className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo & Brand Identity */}
+          {/* Official Sovereign Hex-Diamond Logo & Brand Identity */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setActiveTab(currentUser ? 'portal' : 'solutions')}
               className="flex items-center gap-3 text-left focus:outline-none group cursor-pointer"
             >
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono font-bold text-lg shadow-[0_0_15px_rgba(16,185,129,0.15)] group-hover:border-emerald-400/60 transition-colors">
-                AS
-              </div>
+              <SovereignHexDiamond size={38} glow animated />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white tracking-tight text-base group-hover:text-emerald-300 transition-colors">
-                    ApexSovereign.ai
+                  <span className="font-bold text-white tracking-tight text-base group-hover:text-cyan-300 transition-colors flex items-center">
+                    <span>ApexSovereign</span>
+                    <span className="text-cyan-400">.ai</span>
                   </span>
-                  <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
                     Live
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 hidden sm:block">Work OS & Autonomous Agency Mesh</p>
+                <p className="text-[11px] text-slate-400 hidden sm:block">The Sovereign Global Work OS</p>
               </div>
             </button>
           </div>
