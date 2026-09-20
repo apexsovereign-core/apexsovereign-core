@@ -17,12 +17,13 @@ import {
   Unlock,
   Server,
   ArrowRight,
-  Zap
+  Zap,
+  Database
 } from 'lucide-react';
 import { CODEBASE_FILES } from '../data/codebase';
 
 export const DeploymentGuide: React.FC = () => {
-  const [platform, setPlatform] = useState<'dns' | 'vercel' | 'render'>('dns');
+  const [platform, setPlatform] = useState<'dns' | 'ciso' | 'vercel' | 'render'>('dns');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [diagRunning, setDiagRunning] = useState(false);
   const [diagReport, setDiagReport] = useState<any>(null);
@@ -99,6 +100,18 @@ export const DeploymentGuide: React.FC = () => {
       secure: true,
     },
     {
+      name: 'APEXMIND_CORE_KEY',
+      desc: 'Master private key for ApexMind Sovereign neural assistant mesh. Encrypted in Render/Vercel Secret Vault.',
+      required: true,
+      secure: true,
+    },
+    {
+      name: 'RESEND_API_KEY',
+      desc: 'Resend transactional email API key (re_xxx) for automated receipts, welcome sequences & audit packages.',
+      required: true,
+      secure: true,
+    },
+    {
       name: 'PAYPAL_WEBHOOK_ID',
       desc: 'PayPal Webhook ID configured for PAYMENT.CAPTURE.COMPLETED and CHECKOUT.ORDER.APPROVED.',
       required: true,
@@ -124,7 +137,7 @@ export const DeploymentGuide: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-3 rounded-xl">
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-purple-400" />
-          <span className="text-xs font-semibold text-white tracking-tight">Production Routing & Deployment:</span>
+          <span className="text-xs font-semibold text-white tracking-tight">Production Routing & Security:</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -137,7 +150,18 @@ export const DeploymentGuide: React.FC = () => {
             }`}
           >
             <Radio className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
-            <span>DNS & Vercel Decoupling (Bypass Login Trap)</span>
+            <span>DNS & Domain Unlinking (apexsovereign.ai)</span>
+          </button>
+          <button
+            onClick={() => setPlatform('ciso')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              platform === 'ciso'
+                ? 'bg-emerald-600 text-white shadow-sm font-bold border border-emerald-400/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+            <span>CISO Security & Secret Privacy</span>
           </button>
           <button
             onClick={() => setPlatform('vercel')}
@@ -459,6 +483,200 @@ export const DeploymentGuide: React.FC = () => {
                   className="p-1 hover:text-white text-slate-500"
                 >
                   {copiedKey === 'cli-2' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CISO MASTER SECURITY & REPOSITORY PRIVACY LOCKDOWN */}
+      {platform === 'ciso' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-cyan-950/80 border border-emerald-500/40 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>CISO MANDATE: TOTAL REPOSITORY PRIVACY & ZERO-LEAK PROTOCOL</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Enterprise Security, Secret Vaults & RLS Isolation Runbook
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+                  Ironclad defense-in-depth across GitHub repositories, Vercel/Render encrypted secret vaults, Supabase PostgreSQL multi-tenant Row Level Security (RLS), and server-side RBAC boundary filters.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="px-3.5 py-2 rounded-xl bg-slate-950/90 border border-emerald-500/30 text-emerald-400 font-mono text-xs flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-emerald-400" />
+                  <span>ZERO-TRUST ENFORCED</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Strategic Security Pillars */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Pillar 1: GitHub Private Lockdown */}
+            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                  <Lock className="w-4 h-4" />
+                  <span>1. GITHUB REPOSITORY PRIVACY</span>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
+                  MUST BE PRIVATE
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white">
+                Lock Down Core & Production Repositories
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Ensure both <code className="text-cyan-300 font-mono">apexsovereign-core</code> and <code className="text-cyan-300 font-mono">apexsovereign-production</code> are strictly restricted from public indexing:
+              </p>
+              <ol className="space-y-2 text-xs text-slate-300 list-decimal list-inside">
+                <li>Go to GitHub: <strong className="text-white">Settings &gt; General &gt; Danger Zone</strong></li>
+                <li>Click <strong className="text-amber-300">Change repository visibility</strong> &rarr; Select <strong className="text-emerald-400">Make private</strong></li>
+                <li>Navigate to <strong className="text-white">Collaborators and teams</strong>: Audit and purge any unverified external accounts</li>
+                <li>Under <strong className="text-white">Branches &gt; Branch protection rules</strong>, enforce PR approvals and signed commits on <code className="text-cyan-300 font-mono">main</code></li>
+              </ol>
+            </div>
+
+            {/* Pillar 2: Encrypted Secret Vaults */}
+            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-cyan-400 font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>2. VERCEL & RENDER SECRET VAULTS</span>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-[10px] font-bold">
+                  ZERO CLIENT LEAKS
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white">
+                Encrypted Vault Injection & Bundle Isolation
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Sensitive keys must live exclusively in encrypted server environment stores and never be exposed to the client-side JavaScript bundle:
+              </p>
+              <ul className="space-y-2 text-xs text-slate-300">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  <span><code className="text-white font-mono font-bold">DATABASE_URL</code>, <code className="text-white font-mono font-bold">PAYPAL_CLIENT_SECRET</code>, <code className="text-white font-mono font-bold">APEXMIND_CORE_KEY</code>, <code className="text-white font-mono font-bold">RESEND_API_KEY</code> must NOT have <code className="text-amber-400 font-mono">VITE_</code> or <code className="text-amber-400 font-mono">NEXT_PUBLIC_</code> prefixes.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  <span>Render Dashboard: <strong className="text-white">Environment &gt; Secret Files &amp; Environment Variables</strong> (auto-encrypted at rest).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  <span>Vercel Dashboard: <strong className="text-white">Settings &gt; Environment Variables &gt; Production</strong> (uncheck Preview/Development).</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Pillar 3: Supabase PostgreSQL RLS */}
+            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-indigo-400 font-bold flex items-center gap-1.5">
+                  <Database className="w-4 h-4" />
+                  <span>3. SUPABASE RLS HARDENING</span>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 text-[10px] font-bold">
+                  FORCE RLS ON 7 TABLES
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white">
+                Multi-Tenant PostgreSQL Partition Isolation
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Row Level Security enforces tenant isolation directly in the database engine, blocking cross-tenant reads or writes:
+              </p>
+              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
+                <div className="text-emerald-400">-- Run in Supabase SQL Editor:</div>
+                <div>ALTER TABLE tenants FORCE ROW LEVEL SECURITY;</div>
+                <div>ALTER TABLE agent_workloads FORCE ROW LEVEL SECURITY;</div>
+                <div>ALTER TABLE invoices FORCE ROW LEVEL SECURITY;</div>
+                <div>ALTER TABLE transactions FORCE ROW LEVEL SECURITY;</div>
+                <div>ALTER TABLE leads FORCE ROW LEVEL SECURITY;</div>
+                <div>ALTER TABLE api_keys FORCE ROW LEVEL SECURITY;</div>
+                <div>ALTER TABLE audit_logs FORCE ROW LEVEL SECURITY;</div>
+              </div>
+            </div>
+
+            {/* Pillar 4: Strict RBAC & Admin Shield */}
+            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-purple-400 font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>4. IRONCLAD SERVER-SIDE RBAC</span>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 text-[10px] font-bold">
+                  403 FORBIDDEN TO LEADS
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white">
+                Zero-Trust Gatekeeper on /admin &amp; Vaults
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Public visitors and <code className="text-slate-300 font-mono font-bold">Lead</code> accounts attempting to access administrative consoles or cryptographic vaults are rejected immediately at the server edge:
+              </p>
+              <ul className="space-y-2 text-xs text-slate-300">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                  <span>Endpoints <code className="text-cyan-300 font-mono">/admin</code>, <code className="text-cyan-300 font-mono">/api/admin/*</code>, and <code className="text-cyan-300 font-mono">/vault/admin/*</code> require verified <code className="text-purple-300 font-mono">ROLE_ADMIN</code>.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                  <span>Authentication is verified server-side via timing-safe HMAC token comparison (<code className="text-slate-200 font-mono">ADMIN_ACCESS_T</code>).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                  <span>Unauthorized attempts yield a secure <strong className="text-amber-400 font-mono">HTTP 403 Forbidden</strong> response with zero information disclosure.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* CISO Security Audit CLI Commands */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-emerald-400" />
+              <span>CISO Automated Security Audit Commands</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Run these commands to verify that no secret keys are leaked in client bundles and that RBAC access boundaries are properly locked:
+            </p>
+
+            <div className="space-y-2 font-mono text-xs">
+              {/* Check 1: Client Bundle Secret Leak Test */}
+              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-slate-300 flex items-center justify-between">
+                <div>
+                  <span className="text-slate-500"># Verify 0 sensitive keys in client build:</span>
+                  <div className="text-emerald-400">grep -rnE "(DATABASE_URL|PAYPAL_CLIENT_SECRET|APEXMIND_CORE_KEY)" dist/ || echo "PASSED: Zero secret leaks in client bundle"</div>
+                </div>
+                <button
+                  onClick={() => copyToClipboard('grep -rnE "(DATABASE_URL|PAYPAL_CLIENT_SECRET|APEXMIND_CORE_KEY)" dist/ || echo "PASSED: Zero secret leaks in client bundle"', 'ciso-cmd-1')}
+                  className="p-1 hover:text-white text-slate-500"
+                >
+                  {copiedKey === 'ciso-cmd-1' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              {/* Check 2: RBAC 403 Forbidden Probe */}
+              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-slate-300 flex items-center justify-between">
+                <div>
+                  <span className="text-slate-500"># Test RBAC boundary (expect HTTP 403 for unauthenticated):</span>
+                  <div className="text-purple-400">curl -s -o /dev/null -w "%&#123;http_code&#125;\n" https://apexsovereign.ai/api/admin/overview</div>
+                </div>
+                <button
+                  onClick={() => copyToClipboard('curl -s -o /dev/null -w "%{http_code}\n" https://apexsovereign.ai/api/admin/overview', 'ciso-cmd-2')}
+                  className="p-1 hover:text-white text-slate-500"
+                >
+                  {copiedKey === 'ciso-cmd-2' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>

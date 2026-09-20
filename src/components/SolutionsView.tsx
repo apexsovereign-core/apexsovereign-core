@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { SUBSCRIPTION_TIERS } from './PricingPlans';
 import { SubscriptionTier } from '../types';
+import { AutonomousNeuralAnalytics } from './AutonomousNeuralAnalytics';
+import { FrictionlessAgentSandbox } from './FrictionlessAgentSandbox';
 
 interface SolutionsViewProps {
   onSelectPlan: (tier: SubscriptionTier) => void;
@@ -235,6 +237,12 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
           </ul>
         </div>
       </div>
+
+      {/* Autonomous Neural Analytics Panel (ApexMind Sovereign Real-Time Telemetry) */}
+      <AutonomousNeuralAnalytics />
+
+      {/* Frictionless Enterprise Onboarding Interactive Sandbox (Zero Login Walls) */}
+      <FrictionlessAgentSandbox />
 
       {/* Autonomous Self-Healing & Distributed Edge Resilience Command Station */}
       <div className="max-w-7xl mx-auto p-7 rounded-2xl bg-slate-950 border border-slate-800 space-y-6 shadow-2xl">
