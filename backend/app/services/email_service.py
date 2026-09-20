@@ -229,6 +229,21 @@ class AutonomousEmailService:
         <body>
           <div class="card">
             <div class="header">
+              <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 10px;">
+                    <svg width="28" height="28" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <polygon points="100,10 184,170 128,138 100,180 72,138 16,170" fill="#090E17" stroke="#06B6D4" stroke-width="4"/>
+                      <line x1="100" y1="10" x2="100" y2="180" stroke="#67E8F9" stroke-width="3"/>
+                      <polygon points="100,108 104,114 100,120 96,114" fill="#FFFFFF"/>
+                    </svg>
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <span style="font-size: 18px; font-weight: 800; color: #FFFFFF; font-family: monospace; letter-spacing: -0.5px;">ApexSovereign<span style="color: #06B6D4;">.ai</span></span>
+                    <span style="display: block; font-size: 10px; color: #64748B; font-family: sans-serif;">The Sovereign Global Work OS</span>
+                  </td>
+                </tr>
+              </table>
               <div class="logo">APEXSOVEREIGN // WORK OS</div>
               <h1 style="margin-top: 16px;">Welcome aboard, {html.escape(full_name)}</h1>
               <p style="color: #a7f3d0; margin-bottom: 0;">Your autonomous enterprise partition is now provisioned and hot.</p>
@@ -318,6 +333,21 @@ class AutonomousEmailService:
         <body>
           <div class="card">
             <div class="header">
+              <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 10px;">
+                    <svg width="28" height="28" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <polygon points="100,10 184,170 128,138 100,180 72,138 16,170" fill="#090E17" stroke="#06B6D4" stroke-width="4"/>
+                      <line x1="100" y1="10" x2="100" y2="180" stroke="#67E8F9" stroke-width="3"/>
+                      <polygon points="100,108 104,114 100,120 96,114" fill="#FFFFFF"/>
+                    </svg>
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <span style="font-size: 18px; font-weight: 800; color: #FFFFFF; font-family: monospace; letter-spacing: -0.5px;">ApexSovereign<span style="color: #06B6D4;">.ai</span></span>
+                    <span style="display: block; font-size: 10px; color: #64748B; font-family: sans-serif;">The Sovereign Global Work OS</span>
+                  </td>
+                </tr>
+              </table>
               <span class="badge">CRYPTOGRAPHICALLY VERIFIED &bull; REST v2</span>
               <h1 style="font-size: 20px; margin: 12px 0 0 0; color: #ffffff;">Payment Receipt & Ledger Allocation</h1>
             </div>
@@ -408,6 +438,21 @@ class AutonomousEmailService:
         <body>
           <div class="card">
             <div class="header">
+              <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 10px;">
+                    <svg width="28" height="28" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <polygon points="100,10 184,170 128,138 100,180 72,138 16,170" fill="#090E17" stroke="#06B6D4" stroke-width="4"/>
+                      <line x1="100" y1="10" x2="100" y2="180" stroke="#67E8F9" stroke-width="3"/>
+                      <polygon points="100,108 104,114 100,120 96,114" fill="#FFFFFF"/>
+                    </svg>
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <span style="font-size: 18px; font-weight: 800; color: #FFFFFF; font-family: monospace; letter-spacing: -0.5px;">ApexSovereign<span style="color: #06B6D4;">.ai</span></span>
+                    <span style="display: block; font-size: 10px; color: #94A3B8; font-family: sans-serif;">The Sovereign Global Work OS</span>
+                  </td>
+                </tr>
+              </table>
               <span class="badge">AUTONOMOUS SCOPING ENGINE // AAA SUITE</span>
               <h1 style="font-size: 20px; margin: 12px 0 0 0; color: #ffffff;">Enterprise AI Architecture Scoped</h1>
               <p style="color: #c7d2fe; margin: 4px 0 0 0; font-size: 14px;">Prepared for {html.escape(contact_name)} &bull; {html.escape(company_name)}</p>

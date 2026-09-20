@@ -71,7 +71,25 @@
     </script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
-    <div id="root"></div>
+    <div id="root">
+      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #020617; color: #f8fafc; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+        <div style="position: relative; width: 64px; height: 64px; margin-bottom: 24px;">
+          <svg viewBox="0 0 200 200" width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 16px rgba(6, 182, 212, 0.6)); animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
+            <polygon points="100,10 184,170 128,138 100,180 72,138 16,170" fill="#090E17" stroke="#06B6D4" stroke-width="4" stroke-linejoin="round"/>
+            <polygon points="100,10 16,170 78,114" fill="#03060A" stroke="#0284C7" stroke-width="1.2"/>
+            <polygon points="100,10 100,114 122,114" fill="#0284C7" stroke="#67E8F9" stroke-width="1.2"/>
+            <line x1="100" y1="10" x2="100" y2="180" stroke="#67E8F9" stroke-width="3" stroke-linecap="round"/>
+            <polygon points="100,108 104,114 100,120 96,114" fill="#FFFFFF" stroke="#67E8F9" stroke-width="1"/>
+          </svg>
+        </div>
+        <div style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px;">
+          ApexSovereign<span style="color: #06B6D4;">.ai</span>
+        </div>
+        <div style="font-size: 11px; color: #64748B; letter-spacing: 0.05em; text-transform: uppercase;">
+          Synchronizing Autonomous Neural Mesh...
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
