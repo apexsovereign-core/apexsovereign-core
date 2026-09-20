@@ -210,9 +210,20 @@ class DomainCutoverValidator:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 latency_ms = round((time.time() - t0) * 1000, 2)
                 status_code = resp.getcode()
+                final_url = resp.geturl()
                 content_type = resp.headers.get("Content-Type", "")
                 server_header = resp.headers.get("Server", "Unknown")
                 body_bytes = resp.read()
+
+                # Detect Vercel Deployment Protection / Authentication Login Wall
+                if "vercel.com/login" in final_url or "x-vercel-protection" in resp.headers:
+                    self._record(
+                        name,
+                        "FAIL",
+                        {"url": url, "final_url": final_url, "status_code": status_code, "latency_ms": latency_ms},
+                        error="CRITICAL: Domain is blocked by Vercel Deployment Protection (login wall). Fix: Go to Vercel Project Settings -> Deployment Protection -> Disable Vercel Authentication for Production."
+                    )
+                    return False, {"url": url, "status_code": status_code}
 
                 parsed_json = None
                 if "application/json" in content_type:
