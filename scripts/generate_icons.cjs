@@ -1,4 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+const fs = require('fs');
+const path = require('path');
+const sharp = require('sharp');
+
+// Exact vector SVG corresponding to the user's uploaded ApexSovereign stealth delta logo
+const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
   <defs>
     <!-- Cyan & Electric Blue Neon Seam Gradients -->
     <linearGradient id="apexCyanLine" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -178,4 +183,45 @@
     stroke-linecap="round"
     stroke-linejoin="round"
   />
-</svg>
+</svg>`;
+
+async function run() {
+  const publicDir = path.join(__dirname, '..', 'public');
+  const svgPath = path.join(publicDir, 'favicon.svg');
+  
+  // 1. Write the clean SVG to public/favicon.svg
+  fs.writeFileSync(svgPath, svgContent, 'utf8');
+  console.log('Written clean SVG to public/favicon.svg');
+
+  const svgBuffer = Buffer.from(svgContent);
+
+  // 2. Generate crisp PNG icons with sharp
+  const targets = [
+    { name: 'logo.png', size: 512 },
+    { name: 'apple-touch-icon.png', size: 180 },
+    { name: 'favicon-32x32.png', size: 32 },
+    { name: 'favicon-16x16.png', size: 16 },
+  ];
+
+  for (const t of targets) {
+    const outPath = path.join(publicDir, t.name);
+    await sharp(svgBuffer)
+      .resize(t.size, t.size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png({ quality: 100 })
+      .toFile(outPath);
+    console.log(`Generated ${t.name} (${t.size}x${t.size})`);
+  }
+
+  // 3. Generate favicon.ico using 32x32 buffer
+  const ico32Buffer = await sharp(svgBuffer)
+    .resize(32, 32, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
+  fs.writeFileSync(path.join(publicDir, 'favicon.ico'), ico32Buffer);
+  console.log('Generated favicon.ico');
+}
+
+run().catch(err => {
+  console.error('Error generating icons:', err);
+  process.exit(1);
+});
