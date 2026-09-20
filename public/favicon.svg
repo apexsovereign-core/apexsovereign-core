@@ -1,66 +1,181 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <linearGradient id="obsidian-dark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#0B0F19" />
-      <stop offset="50%" stopColor="#0F172A" />
-      <stop offset="100%" stopColor="#020617" />
-    </linearGradient>
-    <linearGradient id="obsidian-surface" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stopColor="#1E293B" />
-      <stop offset="40%" stopColor="#0F172A" />
-      <stop offset="100%" stopColor="#090D16" />
-    </linearGradient>
-    <linearGradient id="cyan-primary" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#22D3EE" />
-      <stop offset="50%" stopColor="#06B6D4" />
-      <stop offset="100%" stopColor="#0891B2" />
-    </linearGradient>
-    <linearGradient id="cyan-radiant" x1="0%" y1="100%" x2="100%" y2="0%">
+    <!-- Cyan & Aqua Neon Laser Glow Gradients -->
+    <linearGradient id="apex-cyan-primary" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stopColor="#67E8F9" />
       <stop offset="35%" stopColor="#22D3EE" />
+      <stop offset="70%" stopColor="#06B6D4" />
+      <stop offset="100%" stopColor="#0891B2" />
+    </linearGradient>
+
+    <linearGradient id="apex-cyan-light" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="#A5F3FC" />
+      <stop offset="45%" stopColor="#38BDF8" />
       <stop offset="100%" stopColor="#0284C7" />
     </linearGradient>
-    <linearGradient id="crystal-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stopColor="#E0F2FE" stopOpacity="0.9" />
-      <stop offset="50%" stopColor="#38BDF8" stopOpacity="0.4" />
-      <stop offset="100%" stopColor="#0284C7" stopOpacity="0.1" />
+
+    <linearGradient id="apex-spine-beam" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stopColor="#CFFAFE" />
+      <stop offset="30%" stopColor="#67E8F9" />
+      <stop offset="75%" stopColor="#06B6D4" />
+      <stop offset="100%" stopColor="#0E7490" />
     </linearGradient>
-    <radialGradient id="central-core-glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.4" />
-      <stop offset="60%" stopColor="#06B6D4" stopOpacity="0.1" />
+
+    <!-- Metallic Obsidian & Titanium Dark Surface Gradients -->
+    <linearGradient id="obsidian-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#0C1220" />
+      <stop offset="50%" stopColor="#070B14" />
+      <stop offset="100%" stopColor="#020408" />
+    </linearGradient>
+
+    <linearGradient id="obsidian-left-wing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#1E293B" />
+      <stop offset="40%" stopColor="#0F172A" />
+      <stop offset="100%" stopColor="#050811" />
+    </linearGradient>
+
+    <linearGradient id="obsidian-right-wing" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stopColor="#334155" />
+      <stop offset="30%" stopColor="#1E293B" />
+      <stop offset="70%" stopColor="#0F172A" />
+      <stop offset="100%" stopColor="#080D1A" />
+    </linearGradient>
+
+    <linearGradient id="obsidian-specular" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="#0A101D" />
+      <stop offset="40%" stopColor="#19263E" />
+      <stop offset="70%" stopColor="#38BDF8" stopOpacity="0.4" />
+      <stop offset="100%" stopColor="#BAE6FD" stopOpacity="0.8" />
+    </linearGradient>
+
+    <!-- Radial Cyan Atmosphere Aura -->
+    <radialGradient id="apex-aura" cx="50%" cy="52%" r="50%">
+      <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.35" />
+      <stop offset="50%" stopColor="#06B6D4" stopOpacity="0.12" />
       <stop offset="100%" stopColor="#0891B2" stopOpacity="0" />
     </radialGradient>
+
+    <!-- Precision Neon Glow Filter -->
+    <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
   </defs>
 
-  <circle cx="60" cy="60" r="48" fill="url(#central-core-glow)" />
+  <!-- Ambient Cyan Aura -->
+  <ellipse cx="60" cy="62" rx="46" ry="46" fill="url(#apex-aura)" />
 
-  <!-- Outer Hexagonal Diamond Frame -->
-  <polygon points="60,6 108,33 108,87 60,114 12,87 12,33" fill="url(#obsidian-dark)" stroke="#1E293B" stroke-width="2" />
+  <!-- Outer Neon Cyan Beveled Wing Silhouette (Base Glow) -->
+  <polygon
+    points="60,6 112,94 86,82 72,87 60,114 48,87 34,82 8,94"
+    fill="url(#obsidian-dark)"
+    stroke="url(#apex-cyan-primary)"
+    stroke-width="3"
+    stroke-linejoin="round"
+    filter="url(#cyan-glow)"
+  />
 
-  <!-- Crystalline Facets -->
-  <polygon points="60,6 12,33 36,46 60,33" fill="url(#obsidian-surface)" stroke="#0891B2" stroke-width="1" stroke-opacity="0.4" />
-  <polygon points="60,6 108,33 84,46 60,33" fill="url(#crystal-highlight)" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.6" />
-  <polygon points="108,33 108,87 84,74 84,46" fill="url(#obsidian-surface)" stroke="#06B6D4" stroke-width="1" stroke-opacity="0.5" />
-  <polygon points="108,87 60,114 60,87 84,74" fill="url(#obsidian-dark)" stroke="#0E7490" stroke-width="1" stroke-opacity="0.4" />
-  <polygon points="60,114 12,87 36,74 60,87" fill="url(#obsidian-surface)" stroke="#06B6D4" stroke-width="1" stroke-opacity="0.5" />
-  <polygon points="12,87 12,33 36,46 36,74" fill="url(#obsidian-dark)" stroke="#0891B2" stroke-width="1" stroke-opacity="0.4" />
+  <!-- Stealth Facet: Outer Left Wing Surface -->
+  <polygon
+    points="60,6 8,94 34,82 48,60"
+    fill="url(#obsidian-left-wing)"
+    stroke="#0891B2"
+    stroke-width="0.75"
+    stroke-opacity="0.6"
+  />
 
-  <!-- Inner Radiant Cyan Hexagon -->
-  <polygon points="60,20 96,40 96,80 60,100 24,80 24,40" fill="url(#obsidian-dark)" stroke="url(#cyan-primary)" stroke-width="2.5" />
+  <!-- Stealth Facet: Outer Right Wing Surface (Specular Highlight) -->
+  <polygon
+    points="60,6 112,94 86,82 72,60"
+    fill="url(#obsidian-right-wing)"
+    stroke="#38BDF8"
+    stroke-width="0.75"
+    stroke-opacity="0.8"
+  />
 
-  <!-- 'A' Monogram Arch -->
-  <path d="M 60 25 L 76 60 L 68 60 L 60 42 L 52 60 L 44 60 Z" fill="url(#cyan-radiant)" />
-  <polygon points="48,53 72,53 69,57 51,57" fill="#E0F2FE" />
+  <!-- Upper Left Dorsal Facet -->
+  <polygon
+    points="60,6 48,60 60,64"
+    fill="url(#obsidian-left-wing)"
+    stroke="#06B6D4"
+    stroke-width="0.8"
+  />
 
-  <!-- 'S' Monogram Curve -->
-  <path d="M 72 65 C 72 61 68 59 60 59 C 52 59 47 62 47 67 C 47 73 54 75 62 77 C 71 79 75 82 75 88 C 75 94 69 98 60 98 C 50 98 45 93 44 87 L 51 86 C 52 90 55 93 60 93 C 65 93 68 91 68 87 C 68 82 62 80 54 78 C 46 76 40 73 40 67 C 40 60 46 54 60 54 C 68 54 74 58 75 64 Z" fill="url(#cyan-primary)" />
+  <!-- Upper Right Dorsal Facet (High Sheen) -->
+  <polygon
+    points="60,6 72,60 60,64"
+    fill="url(#obsidian-specular)"
+    stroke="#67E8F9"
+    stroke-width="0.8"
+  />
 
-  <!-- Cryptographic Nodes -->
-  <circle cx="60" cy="20" r="3" fill="#E0F2FE" />
-  <circle cx="96" cy="40" r="2.5" fill="#38BDF8" />
-  <circle cx="96" cy="80" r="2.5" fill="#38BDF8" />
-  <circle cx="60" cy="100" r="3" fill="#22D3EE" />
-  <circle cx="24" cy="80" r="2.5" fill="#38BDF8" />
-  <circle cx="24" cy="40" r="2.5" fill="#38BDF8" />
-  <polygon points="60,56 63,60 60,64 57,60" fill="#FFFFFF" />
+  <!-- Mid Left Lateral Facet -->
+  <polygon
+    points="48,60 34,82 48,87 60,64"
+    fill="url(#obsidian-dark)"
+    stroke="#0891B2"
+    stroke-width="0.75"
+  />
+
+  <!-- Mid Right Lateral Facet -->
+  <polygon
+    points="72,60 86,82 72,87 60,64"
+    fill="url(#obsidian-right-wing)"
+    stroke="#06B6D4"
+    stroke-width="0.75"
+  />
+
+  <!-- Lower Left Keel Diamond -->
+  <polygon
+    points="60,64 48,87 60,114"
+    fill="url(#obsidian-dark)"
+    stroke="#0891B2"
+    stroke-width="0.8"
+  />
+
+  <!-- Lower Right Keel Diamond (Specular Titanium) -->
+  <polygon
+    points="60,64 72,87 60,114"
+    fill="url(#obsidian-specular)"
+    stroke="#38BDF8"
+    stroke-width="0.8"
+  />
+
+  <!-- Central Vertical Illuminated Spine Ridge (Apex to Keel) -->
+  <line
+    x1="60"
+    y1="6"
+    x2="60"
+    y2="114"
+    stroke="url(#apex-spine-beam)"
+    stroke-width="1.75"
+    stroke-linecap="round"
+  />
+
+  <!-- Inner Chevron Accents & Leading Edge Glow Lines -->
+  <polyline
+    points="8,94 60,6 112,94"
+    fill="none"
+    stroke="url(#apex-cyan-light)"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Central Energy Core Prism Diamond Spark -->
+  <polygon
+    points="60,58 64,64 60,70 56,64"
+    fill="#E0F2FE"
+    stroke="#67E8F9"
+    stroke-width="0.5"
+    filter="url(#cyan-glow)"
+  />
+
+  <circle cx="60" cy="6" r="1.5" fill="#CFFAFE" />
+  <circle cx="60" cy="114" r="1.5" fill="#22D3EE" />
+  <circle cx="8" cy="94" r="1.5" fill="#38BDF8" />
+  <circle cx="112" cy="94" r="1.5" fill="#38BDF8" />
 </svg>
