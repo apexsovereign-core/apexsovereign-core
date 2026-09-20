@@ -126,12 +126,69 @@ export const DeploymentGuide: React.FC = () => {
       {/* VERCEL FRONTEND GUIDE & 404 FIX */}
       {platform === 'vercel' && (
         <div className="space-y-6">
+          {/* Critical Alert: Vercel Authentication / Login Wall Override */}
+          <div className="bg-gradient-to-r from-red-950/70 via-slate-900 to-amber-950/70 border border-amber-500/50 rounded-2xl p-6 relative overflow-hidden shadow-2xl shadow-amber-950/40">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-xl shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="space-y-3 flex-1">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono">
+                  <span>CRITICAL ZERO-DOWNTIME OVERRIDE</span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                  Permanent Fix: Domain Redirecting to Vercel Login Wall (<span className="font-mono text-amber-300 text-sm">vercel.com/login?next=...</span>)
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  If public visitors searching for <strong className="text-white">apexsovereign.ai</strong> encounter a Vercel login screen or internal password prompt, <strong className="text-amber-300">Deployment Protection (Vercel Authentication)</strong> is currently active on the project. Follow this exact 30-second fix in the Vercel Dashboard:
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                  <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-xl space-y-1.5">
+                    <div className="text-xs font-mono text-cyan-400 font-bold flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-cyan-950 flex items-center justify-center border border-cyan-500/40 text-[10px]">1</span>
+                      <span>Project Settings</span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Open <strong className="text-slate-200">Vercel Dashboard</strong> → select your <strong className="text-slate-200">apexsovereign.ai</strong> project → click the top <strong className="text-slate-200">Settings</strong> tab.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-xl space-y-1.5">
+                    <div className="text-xs font-mono text-amber-400 font-bold flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-amber-950 flex items-center justify-center border border-amber-500/40 text-[10px]">2</span>
+                      <span>Deployment Protection</span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      In the left sidebar, click <strong className="text-slate-200">Deployment Protection</strong> → under <strong className="text-amber-300">Vercel Authentication</strong>, toggle to <strong className="text-white">Disabled</strong> (or uncheck "Protect Production Deployments").
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-xl space-y-1.5">
+                    <div className="text-xs font-mono text-emerald-400 font-bold flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-emerald-950 flex items-center justify-center border border-emerald-500/40 text-[10px]">3</span>
+                      <span>Domain Production Assignment</span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Click <strong className="text-slate-200">Domains</strong> in the left sidebar → confirm <strong className="text-cyan-300">apexsovereign.ai</strong> is assigned to the <strong className="text-white">Production</strong> branch (<span className="font-mono text-slate-400">main</span> / <span className="font-mono text-slate-400">master</span>), NOT a Preview branch.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl flex items-center gap-2 text-xs text-emerald-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Once toggled, the login wall immediately clears worldwide with zero downtime—public visitors will directly hit your obsidian & radiant cyan storefront!</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono mb-2">
                   <Globe className="w-3.5 h-3.5" />
-                  <span>Vercel 404 Resolution Protocol</span>
+                  <span>Vercel 404 & SPA Routing Protocol</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                   Fixing Vercel 404 "This page doesn't exist" on Vite / React
