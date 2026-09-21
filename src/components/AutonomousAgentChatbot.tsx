@@ -16,6 +16,7 @@ import {
   Minimize2, 
   Maximize2,
   X,
+  MessageSquare,
   Lock,
   Zap,
   Wrench,
@@ -378,24 +379,17 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
         <button
           id="btn-open-agent-chat"
           onClick={() => setIsOpen(true)}
-          className="flex items-center space-x-3 px-5 py-3.5 bg-gradient-to-r from-slate-900 via-cyan-950/90 to-indigo-950/90 hover:from-slate-800 hover:to-indigo-900 text-white rounded-full shadow-2xl shadow-cyan-950/60 border border-cyan-500/40 transition-all duration-200 transform hover:scale-105 group cursor-pointer"
+          className="fixed bottom-6 right-6 p-4 bg-emerald-500 text-slate-950 rounded-full shadow-2xl shadow-emerald-950/60 hover:bg-emerald-400 transition-all z-50 flex items-center space-x-2.5 cursor-pointer transform hover:scale-105 group font-bold"
+          aria-label="Open AI Concierge"
         >
           <div className="relative flex items-center justify-center">
-            <SovereignHexDiamond size={28} glow={false} />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full animate-ping" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full" />
+            <MessageSquare className="w-5 h-5 text-slate-950" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-slate-950 rounded-full animate-ping" />
           </div>
-          <div className="flex flex-col text-left">
-            <span className="font-semibold text-sm tracking-wide flex items-center space-x-1.5">
-              <span className="text-cyan-100 font-bold">ApexMind Sovereign</span>
-              <span className="text-[10px] bg-cyan-400/20 text-cyan-300 font-mono px-1.5 py-0.2 rounded border border-cyan-400/30">
-                24/7 LIVE
-              </span>
-            </span>
-            <span className="text-[10px] text-cyan-300/80">
-              Autonomous Neural Mesh • Self-Healing Ops • 2FA
-            </span>
-          </div>
+          <span className="text-sm font-bold tracking-tight">Open AI Concierge</span>
+          <span className="text-[10px] bg-slate-950 text-emerald-400 font-mono px-2 py-0.5 rounded-full uppercase tracking-wider">
+            Live
+          </span>
         </button>
       )}
 
@@ -676,10 +670,10 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 p-4 bg-slate-950/80">
+          <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950">
             <div className="flex items-center space-x-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <h3 className="text-sm font-semibold text-slate-200">ApexMind Sovereign</h3>
+              <h3 className="text-sm font-medium text-emerald-400">ApexMind Sovereign</h3>
               {verifiedSession && (
                 <span className="text-[10px] bg-emerald-950/80 text-emerald-300 font-mono px-1.5 py-0.5 rounded border border-emerald-500/40">
                   2FA ACTIVE
@@ -730,14 +724,14 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
                 {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               
-              {/* CLEARLY VISIBLE 'X' CLOSE BUTTON */}
+              {/* Working Close Button */}
               <button 
                 id="btn-close-agent-chat"
                 onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer"
-                aria-label="Close Chat"
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                aria-label="Close chatbot"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
