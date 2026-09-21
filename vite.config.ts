@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { exec } from 'child_process';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
+import { WebSocketServer, WebSocket as WsClient } from 'ws';
 import { defineConfig, Plugin } from 'vite';
 
 dotenv.config();
@@ -163,11 +164,212 @@ function getGeminiClient(): GoogleGenAI | null {
   return geminiClient;
 }
 
+// Live Bare-Metal GPU Node Specs for Real-Time Telemetry Streaming
+const GPU_NODES_SPEC = [
+  {
+    nodeId: 'us-east-h100-cluster-01',
+    region: 'us-east (Ashburn, VA)',
+    model: '8x NVIDIA H100 80GB SXM5',
+    gpuCount: 8,
+    memTotal: 640.0,
+    baseUtil: 84.5,
+    baseTemp: 61.0,
+    powerLimit: 700.0,
+    basePower: 580.0,
+    baseSpot: 1.94,
+    interconnect: 3200,
+  },
+  {
+    nodeId: 'eu-central-h100-cluster-02',
+    region: 'eu-central (Frankfurt, DE)',
+    model: '8x NVIDIA H100 80GB SXM5',
+    gpuCount: 8,
+    memTotal: 640.0,
+    baseUtil: 91.2,
+    baseTemp: 64.5,
+    powerLimit: 700.0,
+    basePower: 645.0,
+    baseSpot: 2.15,
+    interconnect: 3200,
+  },
+  {
+    nodeId: 'nordic-hydro-b200-cluster-01',
+    region: 'eu-north (Luleå, SE)',
+    model: '4x NVIDIA B200 NVL72 192GB',
+    gpuCount: 4,
+    memTotal: 768.0,
+    baseUtil: 72.8,
+    baseTemp: 54.0,
+    powerLimit: 1000.0,
+    basePower: 780.0,
+    baseSpot: 2.85,
+    interconnect: 7200,
+  },
+  {
+    nodeId: 'us-west-l40s-inference-01',
+    region: 'us-west (Oregon)',
+    model: '8x NVIDIA L40S 48GB PCIe',
+    gpuCount: 8,
+    memTotal: 384.0,
+    baseUtil: 66.4,
+    baseTemp: 52.0,
+    powerLimit: 350.0,
+    basePower: 240.0,
+    baseSpot: 0.89,
+    interconnect: 800,
+  },
+  {
+    nodeId: 'ap-northeast-a100-partition-03',
+    region: 'ap-northeast (Tokyo, JP)',
+    model: '8x NVIDIA A100 80GB SXM4',
+    gpuCount: 8,
+    memTotal: 640.0,
+    baseUtil: 78.9,
+    baseTemp: 58.0,
+    powerLimit: 400.0,
+    basePower: 320.0,
+    baseSpot: 1.42,
+    interconnect: 1600,
+  },
+];
+
+let telemetryTick = 0;
+
+function generateLiveGpuMetrics(tick: number) {
+  const nowIso = new Date().toISOString();
+  return GPU_NODES_SPEC.map((spec, idx) => {
+    const drift = Math.sin((tick + idx * 3) * 0.15) * 6.0;
+    const jitter = (Math.random() - 0.5) * 3.0;
+    const util = Math.max(15.0, Math.min(99.5, spec.baseUtil + drift + jitter));
+
+    const tempDrift = Math.sin((tick + idx * 2) * 0.1) * 3.0;
+    const temp = Math.max(42.0, Math.min(82.0, spec.baseTemp + tempDrift + (Math.random() - 0.5)));
+
+    const memRatio = (util / 100.0) * 0.92 + (Math.random() - 0.5) * 0.04;
+    const memUsed = Math.round(Math.max(10.0, Math.min(spec.memTotal * 0.98, spec.memTotal * memRatio)) * 10) / 10;
+
+    const powerRatio = (util / 100.0) * 0.85 + 0.15;
+    const power = Math.round((spec.powerLimit * powerRatio + (Math.random() - 0.5) * 16.0) * 10) / 10;
+
+    let health: 'OPTIMAL' | 'DEGRADED' | 'THROTTLED' = 'OPTIMAL';
+    if (temp > 80.0) {
+      health = 'THROTTLED';
+    } else if (util > 96.0) {
+      health = 'DEGRADED';
+    }
+
+    const activeLeases = Math.max(1, Math.floor(spec.gpuCount * (util / 100.0)));
+    const spotRate = Math.round(spec.baseSpot * (0.95 + util / 200.0) * 100) / 100;
+
+    return {
+      nodeId: spec.nodeId,
+      datacenterRegion: spec.region,
+      gpuModel: spec.model,
+      gpuCount: spec.gpuCount,
+      utilizationPct: Math.round(util * 10) / 10,
+      memoryUsedGb: memUsed,
+      memoryTotalGb: spec.memTotal,
+      temperatureC: Math.round(temp * 10) / 10,
+      powerDrawWatts: power,
+      powerLimitWatts: spec.powerLimit,
+      healthStatus: health,
+      activeLeasesCount: activeLeases,
+      arbitrageSpotRatePerHour: spotRate,
+      interconnectBandwidthGbps: spec.interconnect,
+      fanSpeedPct: Math.min(100, Math.round(temp * 1.15)),
+      timestamp: nowIso,
+    };
+  });
+}
+
+function calculateClusterSummary(nodes: ReturnType<typeof generateLiveGpuMetrics>) {
+  const totalGpus = nodes.reduce((acc, n) => acc + n.gpuCount, 0);
+  const avgUtil = nodes.reduce((acc, n) => acc + n.utilizationPct * n.gpuCount, 0) / Math.max(1, totalGpus);
+  const memUsed = nodes.reduce((acc, n) => acc + n.memoryUsedGb, 0);
+  const memTotal = nodes.reduce((acc, n) => acc + n.memoryTotalGb, 0);
+  const totalPower = nodes.reduce((acc, n) => acc + n.powerDrawWatts, 0);
+  const activeLeases = nodes.reduce((acc, n) => acc + n.activeLeasesCount, 0);
+
+  return {
+    totalGpusOnline: totalGpus,
+    totalGpusActive: Math.round(totalGpus * (avgUtil / 100.0)),
+    averageUtilizationPct: Math.round(avgUtil * 10) / 10,
+    totalMemoryUsedGb: Math.round(memUsed * 10) / 10,
+    totalMemoryCapacityGb: Math.round(memTotal * 10) / 10,
+    totalPowerWatts: Math.round(totalPower * 10) / 10,
+    effectiveSpotRateSavingsPct: 46.8,
+    activeWorkloadsCount: activeLeases,
+    timestamp: new Date().toISOString(),
+  };
+}
+
 // Development and Preview API Interceptor Plugin
 function apexSovereignApiPlugin(): Plugin {
   return {
     name: 'apexsovereign-api-middleware',
     configureServer(server) {
+      // Attach WebSocketServer to dev server for real-time GPU metrics streaming
+      if (server.httpServer) {
+        const wss = new WebSocketServer({ noServer: true });
+
+        server.httpServer.on('upgrade', (request, socket, head) => {
+          const pathname = request.url ? request.url.split('?')[0] : '';
+          if (pathname === '/ws/gpu-metrics' || pathname === '/api/v1/ws/gpu-metrics') {
+            wss.handleUpgrade(request, socket, head, (ws) => {
+              wss.emit('connection', ws, request);
+            });
+          }
+        });
+
+        wss.on('connection', (ws: WsClient) => {
+          // Push immediate initial state
+          const initialNodes = generateLiveGpuMetrics(telemetryTick);
+          const initialSummary = calculateClusterSummary(initialNodes);
+          ws.send(JSON.stringify({
+            type: 'INITIAL_STATE',
+            clusterSummary: initialSummary,
+            nodes: initialNodes,
+            sequenceId: telemetryTick,
+            serverTimestamp: Date.now(),
+          }));
+
+          // Heartbeat / ping responder
+          ws.on('message', (data) => {
+            try {
+              const payload = JSON.parse(data.toString());
+              if (payload.type === 'PING') {
+                ws.send(JSON.stringify({
+                  type: 'HEARTBEAT_ACK',
+                  clientTimestamp: payload.timestamp,
+                  serverTimestamp: Date.now(),
+                }));
+              }
+            } catch {}
+          });
+        });
+
+        // Broadcast to all connected clients every 1000ms
+        setInterval(() => {
+          if (wss.clients.size === 0) return;
+          telemetryTick++;
+          const nodes = generateLiveGpuMetrics(telemetryTick);
+          const summary = calculateClusterSummary(nodes);
+          const message = JSON.stringify({
+            type: 'METRICS_UPDATE',
+            clusterSummary: summary,
+            nodes,
+            sequenceId: telemetryTick,
+            serverTimestamp: Date.now(),
+          });
+
+          for (const client of wss.clients) {
+            if (client.readyState === WsClient.OPEN) {
+              client.send(message);
+            }
+          }
+        }, 1000);
+      }
+
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ? req.url.split('?')[0] : '';
 
@@ -195,6 +397,22 @@ function apexSovereignApiPlugin(): Plugin {
             }));
             return;
           }
+        }
+
+        // 0.5 GPU Telemetry REST Snapshot Endpoint (Hydration & Fallback)
+        if (url === '/api/v1/gpu/telemetry') {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          const nodes = generateLiveGpuMetrics(telemetryTick);
+          const summary = calculateClusterSummary(nodes);
+          res.end(JSON.stringify({
+            status: 'SUCCESS',
+            clusterSummary: summary,
+            nodes,
+            sequenceId: telemetryTick,
+            serverTimestamp: Date.now(),
+          }));
+          return;
         }
 
         // 1. Health check endpoint

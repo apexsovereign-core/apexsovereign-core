@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CustomerUser, PaymentTransaction, ComputeJob } from '../types';
 import { EnterpriseCrmPipeline } from './EnterpriseCrmPipeline';
 import { AutonomousAgentSwarm } from './AutonomousAgentSwarm';
+import { LiveGpuTelemetryStream } from './LiveGpuTelemetryStream';
 import { 
   Cpu, 
   Key, 
@@ -22,7 +23,8 @@ import {
   Clock,
   Workflow,
   Bot,
-  BarChart2
+  BarChart2,
+  Activity
 } from 'lucide-react';
 
 interface CustomerPortalProps {
@@ -30,7 +32,7 @@ interface CustomerPortalProps {
   transactions: PaymentTransaction[];
   onOpenPricing: () => void;
   onUpdateUser: (updatedUser: CustomerUser) => void;
-  initialSubTab?: 'compute' | 'crm' | 'swarm';
+  initialSubTab?: 'compute' | 'telemetry' | 'crm' | 'swarm';
 }
 
 export const CustomerPortal: React.FC<CustomerPortalProps> = ({
@@ -40,7 +42,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   onUpdateUser,
   initialSubTab = 'compute'
 }) => {
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'compute' | 'crm' | 'swarm'>(initialSubTab);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'compute' | 'telemetry' | 'crm' | 'swarm'>(initialSubTab);
   const [showApiKey, setShowApiKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
@@ -163,6 +165,20 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
         <button
           type="button"
+          onClick={() => setActiveWorkspaceTab('telemetry')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            activeWorkspaceTab === 'telemetry'
+              ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Live GPU Telemetry (WSS)</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveWorkspaceTab('crm')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             activeWorkspaceTab === 'crm'
@@ -192,6 +208,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </button>
       </div>
 
+      {/* SUB-VIEW 0: REAL-TIME BARE-METAL GPU TELEMETRY (WSS STREAM) */}
+      {activeWorkspaceTab === 'telemetry' && (
+        <LiveGpuTelemetryStream />
+      )}
+
       {/* SUB-VIEW 1: CRM & PRODUCTIVITY CONDUITS */}
       {activeWorkspaceTab === 'crm' && (
         <EnterpriseCrmPipeline />
@@ -205,6 +226,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
       {/* SUB-VIEW 3: CORE COMPUTE BROKERAGE, APIS, & SETTLEMENT */}
       {activeWorkspaceTab === 'compute' && (
         <>
+      {/* Live GPU Telemetry Streaming Bar in Compute Tab */}
+      <div className="space-y-4">
+        <LiveGpuTelemetryStream compact />
+      </div>
+
       {/* Metrics Row: Compute Quota, Burn Rate, Active Partition */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Compute Meter Card */}

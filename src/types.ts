@@ -360,3 +360,46 @@ export interface DiagnosticCheck {
   timestamp: string;
 }
 
+export type GpuNodeHealth = 'OPTIMAL' | 'DEGRADED' | 'THROTTLED' | 'MAINTENANCE';
+
+export interface GpuNodeMetric {
+  nodeId: string;
+  datacenterRegion: string;
+  gpuModel: string;
+  gpuCount: number;
+  utilizationPct: number;
+  memoryUsedGb: number;
+  memoryTotalGb: number;
+  temperatureC: number;
+  powerDrawWatts: number;
+  powerLimitWatts: number;
+  healthStatus: GpuNodeHealth;
+  activeLeasesCount: number;
+  arbitrageSpotRatePerHour: number;
+  interconnectBandwidthGbps: number;
+  fanSpeedPct: number;
+  timestamp: string;
+}
+
+export interface ClusterUtilizationSummary {
+  totalGpusOnline: number;
+  totalGpusActive: number;
+  averageUtilizationPct: number;
+  totalMemoryUsedGb: number;
+  totalMemoryCapacityGb: number;
+  totalPowerWatts: number;
+  effectiveSpotRateSavingsPct: number;
+  activeWorkloadsCount: number;
+  timestamp: string;
+}
+
+export interface GpuWebSocketMessage {
+  type: 'METRICS_UPDATE' | 'HEARTBEAT_ACK' | 'NODE_ALERT' | 'INITIAL_STATE';
+  clusterSummary: ClusterUtilizationSummary;
+  nodes: GpuNodeMetric[];
+  sequenceId: number;
+  serverTimestamp: number;
+  hmacSignature?: string;
+}
+
+
