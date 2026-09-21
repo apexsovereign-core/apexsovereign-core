@@ -676,20 +676,15 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
           }`}
         >
           {/* Header */}
-          <div className="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center p-0.5">
-                <SovereignHexDiamond size={24} glow={false} />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-bold text-sm text-slate-100">ApexMind Sovereign</h3>
-                  <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  24/7 Enterprise Neural Mesh & Autopilot Ops
-                </p>
-              </div>
+          <div className="flex items-center justify-between border-b border-slate-800 p-4 bg-slate-950/80">
+            <div className="flex items-center space-x-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h3 className="text-sm font-semibold text-slate-200">ApexMind Sovereign</h3>
+              {verifiedSession && (
+                <span className="text-[10px] bg-emerald-950/80 text-emerald-300 font-mono px-1.5 py-0.5 rounded border border-emerald-500/40">
+                  2FA ACTIVE
+                </span>
+              )}
             </div>
 
             <div className="flex items-center space-x-1.5">
@@ -705,13 +700,13 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
               >
                 <Smartphone className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-mono font-medium">
-                  {verifiedSession ? '2FA Active' : 'SMS 2FA'}
+                  {verifiedSession ? '2FA' : 'SMS 2FA'}
                 </span>
               </button>
               <button
                 id="btn-open-admin-audit"
                 onClick={() => setShowAdminAuditModal(true)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800/60 transition-colors cursor-pointer"
                 title="Zero-Trust Memory & RLS Audit (ADMIN_ACCESS_T)"
               >
                 <ShieldCheck className="w-4 h-4" />
@@ -720,7 +715,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
                 id="btn-toggle-lead-form"
                 onClick={() => setShowLeadFields(!showLeadFields)}
                 className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                  showLeadFields ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  showLeadFields ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
                 title="Toggle Corporate Lead Context"
               >
@@ -729,15 +724,18 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
               <button
                 id="btn-toggle-expand-chat"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors cursor-pointer"
                 title={isExpanded ? 'Collapse' : 'Expand'}
               >
                 {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
-              <button
+              
+              {/* CLEARLY VISIBLE 'X' CLOSE BUTTON */}
+              <button 
                 id="btn-close-agent-chat"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer"
+                aria-label="Close Chat"
               >
                 <X className="w-4 h-4" />
               </button>
