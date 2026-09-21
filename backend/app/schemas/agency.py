@@ -36,7 +36,7 @@ class TransformationRequestCreate(BaseModel):
     contact_email: EmailStr = Field(..., description="Corporate email for formal scoping delivery")
     industry: IndustryType = Field(default="FINTECH")
     company_size: str = Field(default="200-1000", description="Employee count band")
-    current_stack: List[str] = Field(default_factory=lambda: ["Salesforce", "PostgreSQL", "Slack"])
+    current_stack: List[str] = Field(default_factory=lambda: ["Autonomous Neural Mesh", "PostgreSQL", "Decentralized Matrix"])
     automation_objectives: List[str] = Field(..., min_length=1)
     estimated_monthly_compute_hours: float = Field(default=120.0, ge=1.0)
     budget_tier: BudgetTier = Field(default="TIER_2_ENTERPRISE_CORE")

@@ -31,6 +31,7 @@ export type ActiveNavTab =
   | 'pricing' 
   | 'crm'
   | 'swarm'
+  | 'neural'
   | 'portal' 
   | 'requirements' 
   | 'signer' 
@@ -122,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </button>
 
-            {/* 3. Enterprise CRM & Work OS (Salesforce + M365 Synthesis) */}
+            {/* 3. Enterprise CRM & Work OS */}
             <button
               id="tab-crm"
               onClick={() => setActiveTab('crm')}
@@ -149,6 +150,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Bot className="w-3.5 h-3.5 text-emerald-400" />
               <span>Agent Swarm</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </button>
+
+            {/* 5. ApexSovereign Neural Interface (Native Command Core) */}
+            <button
+              id="tab-neural"
+              onClick={() => setActiveTab('neural')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'neural'
+                  ? 'bg-slate-800 text-emerald-300 shadow-sm border border-emerald-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Neural Core</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
             </button>
 
             {/* 5. Customer Workspace (Customer-Facing when authenticated) */}

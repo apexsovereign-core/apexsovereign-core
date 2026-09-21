@@ -333,7 +333,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
       badge: 'Public Onboarding',
       color: 'text-indigo-400 border-indigo-500/30 bg-indigo-950/40',
       quickPrompts: [
-        'Calculate Enterprise Savings vs Salesforce ($165/seat)',
+        'Calculate Enterprise Savings vs Legacy Per-Seat SaaS ($165/seat)',
         'Explain Weekly Monday 00:00 UTC Tariff Lock',
         'Compare Autonomous Core vs Sovereign Global Mesh',
       ],

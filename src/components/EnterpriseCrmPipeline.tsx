@@ -267,12 +267,12 @@ export const EnterpriseCrmPipeline: React.FC = () => {
         </div>
       )}
 
-      {/* Top Banner: Salesforce + Microsoft Synthesis */}
+      {/* Top Banner: Sovereign Pipeline Synthesis */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-semibold mb-1">
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>SALESFORCE PIPELINE & MICROSOFT 365 WORKPLACE SYNTHESIS</span>
+            <span>SOVEREIGN PIPELINE & COLLABORATIVE PRODUCTIVITY SYNTHESIS</span>
           </div>
           <h2 className="text-2xl font-extrabold text-white tracking-tight">
             Autonomous CRM & Collaborative Productivity Core
@@ -317,7 +317,7 @@ export const EnterpriseCrmPipeline: React.FC = () => {
             }`}
           >
             <BarChart2 className="w-3.5 h-3.5" />
-            <span>Autonomous Pipeline (Salesforce Engine)</span>
+            <span>Autonomous Pipeline (Sovereign Engine)</span>
           </button>
 
           <button
@@ -329,7 +329,7 @@ export const EnterpriseCrmPipeline: React.FC = () => {
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Productivity Conduits (Microsoft Core)</span>
+            <span>Productivity Conduits (Sovereign Docs)</span>
           </button>
         </div>
 
@@ -347,7 +347,7 @@ export const EnterpriseCrmPipeline: React.FC = () => {
         )}
       </div>
 
-      {/* VIEW 1: SALESFORCE-STYLE PIPELINE */}
+      {/* VIEW 1: SOVEREIGN PIPELINE */}
       {activeSubTab === 'pipeline' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Deal Cards & Stage Kanban (7 Cols) */}
@@ -516,7 +516,7 @@ export const EnterpriseCrmPipeline: React.FC = () => {
         </div>
       )}
 
-      {/* VIEW 2: MICROSOFT 365-STYLE PRODUCTIVITY CONDUITS */}
+      {/* VIEW 2: SOVEREIGN PRODUCTIVITY CONDUITS */}
       {activeSubTab === 'docs' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Document Index (4 Cols) */}

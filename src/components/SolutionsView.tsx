@@ -519,7 +519,7 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
                 className="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-indigo-200 text-[11px] font-mono transition-colors flex items-center justify-center gap-1.5 border border-indigo-500/20 cursor-pointer"
               >
                 <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
-                <span>See Weekly-Locked Comparison vs Salesforce & Microsoft</span>
+                <span>See Weekly-Locked Comparison vs Legacy Enterprise Monoliths</span>
               </button>
             </div>
           </div>

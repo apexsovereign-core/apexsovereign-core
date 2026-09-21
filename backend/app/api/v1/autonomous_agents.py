@@ -350,7 +350,7 @@ class AutonomousAgentSwarmOrchestrator:
             lead_score = 60
             recommended_plan = "Autonomous Core ($29/mo)"
             suggested_actions = [
-                "Compare vs Salesforce ($165/seat)",
+                "Calculate Savings vs Legacy Per-Seat SaaS",
                 "Review Weekly Pricing Epoch",
                 "Explore Self-Healing Agent Mesh"
             ]
