@@ -4,7 +4,7 @@
  * Engine: Real-Time WebSocket Hook with Sub-Second Metrics
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Cpu, 
   Activity, 
@@ -22,8 +22,10 @@ import {
   Clock,
   TrendingDown,
   ChevronRight,
-  Filter
+  Filter,
+  AlertTriangle
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useGpuMetricsWebSocket } from '../hooks/useGpuMetricsWebSocket';
 import { GpuNodeMetric } from '../types';
 import { GpuUtilizationLiveChart } from './GpuUtilizationLiveChart';
@@ -58,6 +60,69 @@ export const LiveGpuTelemetryStream: React.FC<LiveGpuTelemetryStreamProps> = ({
 
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
   const [activeTickRate, setActiveTickRate] = useState<number>(1000);
+
+  // Track previous health status for each node to detect transitions from 'OPTIMAL' to 'DEGRADED'
+  const prevHealthMapRef = useRef<Record<string, string>>({});
+  const [transitioningNodes, setTransitioningNodes] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const now = Date.now();
+    const newTransitions: Record<string, number> = {};
+    let hasNewTransition = false;
+
+    nodes.forEach(node => {
+      const prevHealth = prevHealthMapRef.current[node.nodeId];
+      // Detect transition strictly from 'OPTIMAL' to 'DEGRADED'
+      if (prevHealth === 'OPTIMAL' && node.healthStatus === 'DEGRADED') {
+        newTransitions[node.nodeId] = now;
+        hasNewTransition = true;
+      }
+      prevHealthMapRef.current[node.nodeId] = node.healthStatus;
+    });
+
+    if (hasNewTransition) {
+      setTransitioningNodes(prev => ({
+        ...prev,
+        ...newTransitions
+      }));
+
+      // Automatically reset transition state after animation cycle completes (850ms)
+      const timer = setTimeout(() => {
+        setTransitioningNodes(prev => {
+          const updated = { ...prev };
+          Object.keys(newTransitions).forEach(id => {
+            delete updated[id];
+          });
+          return updated;
+        });
+      }, 850);
+
+      return () => clearTimeout(timer);
+    }
+  }, [nodes]);
+
+  // Handler to simulate or manually test the OPTIMAL -> DEGRADED transition animation
+  const handleSimulateDegraded = (nodeId?: string) => {
+    const targetNode = nodeId 
+      ? filteredNodes.find(n => n.nodeId === nodeId) 
+      : (filteredNodes.find(n => n.healthStatus === 'OPTIMAL') || filteredNodes[0]);
+    
+    if (!targetNode) return;
+    const targetId = targetNode.nodeId;
+
+    setTransitioningNodes(prev => ({
+      ...prev,
+      [targetId]: Date.now()
+    }));
+
+    setTimeout(() => {
+      setTransitioningNodes(prev => {
+        const updated = { ...prev };
+        delete updated[targetId];
+        return updated;
+      });
+    }, 850);
+  };
 
   const filteredNodes = nodes.filter(node => {
     if (selectedFilter === 'ALL') return true;
@@ -306,99 +371,159 @@ export const LiveGpuTelemetryStream: React.FC<LiveGpuTelemetryStreamProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs text-slate-400 font-mono px-1">
           <span>BARE-METAL CLUSTERS ({filteredNodes.length} NODES)</span>
-          {lastUpdated && <span>Last heartbeat: {lastUpdated}</span>}
+          <div className="flex items-center gap-3">
+            <button
+              id="btn-simulate-degraded-transition"
+              onClick={() => handleSimulateDegraded()}
+              className="text-[10px] text-amber-400/90 hover:text-amber-300 hover:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Trigger OPTIMAL -> DEGRADED health status transition animation on a node"
+            >
+              <AlertTriangle className="w-3 h-3" />
+              <span>Simulate Degraded Transition</span>
+            </button>
+            {lastUpdated && <span>Last heartbeat: {lastUpdated}</span>}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredNodes.map(node => (
-            <div
-              key={node.nodeId}
-              onClick={() => onSelectNode && onSelectNode(node)}
-              className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-all space-y-3.5 group cursor-pointer hover:shadow-lg hover:shadow-emerald-950/20"
-            >
-              {/* Card Top: Node ID & Health Badge */}
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="font-mono text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
-                    {node.nodeId}
+        <div 
+          id="compute-tiers-grid" 
+          data-testid="compute-tiers-grid"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 compute-tiers-grid"
+        >
+          {filteredNodes.map(node => {
+            const isTransitioningDegraded = Boolean(transitioningNodes[node.nodeId]);
+
+            return (
+              <motion.div
+                key={node.nodeId}
+                id={`gpu-node-${node.nodeId}`}
+                data-node-id={node.nodeId}
+                data-health-status={node.healthStatus}
+                onClick={() => onSelectNode && onSelectNode(node)}
+                animate={
+                  isTransitioningDegraded
+                    ? {
+                        scale: [1, 1.035, 0.985, 1.015, 1],
+                        borderColor: [
+                          'rgba(51, 65, 85, 0.8)',
+                          'rgba(245, 158, 11, 0.9)',
+                          'rgba(217, 119, 6, 0.7)',
+                          'rgba(51, 65, 85, 0.8)',
+                        ],
+                        boxShadow: [
+                          '0 0 0 0 rgba(245, 158, 11, 0)',
+                          '0 0 24px 3px rgba(245, 158, 11, 0.35)',
+                          '0 0 10px 1px rgba(245, 158, 11, 0.15)',
+                          '0 0 0 0 rgba(245, 158, 11, 0)',
+                        ],
+                      }
+                    : {
+                        scale: 1,
+                      }
+                }
+                transition={{
+                  duration: 0.75,
+                  ease: [0.25, 1, 0.5, 1],
+                }}
+                className={`p-4 rounded-xl bg-slate-950/80 border transition-colors space-y-3.5 group cursor-pointer hover:shadow-lg hover:shadow-emerald-950/20 gpu-node-card ${
+                  isTransitioningDegraded
+                    ? 'border-amber-500/80 ring-1 ring-amber-500/40 transition-health-degraded animate-subtle-scale'
+                    : 'border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                {/* Card Top: Node ID & Health Badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-mono text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
+                      {node.nodeId}
+                    </div>
+                    <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                      <Server className="w-3 h-3 text-slate-500" />
+                      <span>{node.datacenterRegion}</span>
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                    <Server className="w-3 h-3 text-slate-500" />
-                    <span>{node.datacenterRegion}</span>
-                  </div>
-                </div>
 
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase ${
-                  node.healthStatus === 'OPTIMAL'
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : node.healthStatus === 'DEGRADED'
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                    : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                }`}>
-                  {node.healthStatus}
-                </span>
-              </div>
-
-              {/* Hardware Spec Strip */}
-              <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800/80 text-xs space-y-1 font-mono">
-                <div className="text-slate-200 font-medium truncate">
-                  {node.gpuModel}
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Network className="w-3 h-3 text-blue-400" />
-                    {node.interconnectBandwidthGbps} Gbps Fabric
-                  </span>
-                  <span className="text-emerald-400 font-bold">
-                    ${node.arbitrageSpotRatePerHour.toFixed(2)} / hr
-                  </span>
-                </div>
-              </div>
-
-              {/* Dynamic Utilization Gauge */}
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between font-mono text-[11px]">
-                  <span className="text-slate-400">GPU Compute Load</span>
-                  <span className="text-white font-bold">{node.utilizationPct}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-300 ${
-                      node.utilizationPct > 90 
-                        ? 'bg-gradient-to-r from-amber-500 to-rose-500' 
-                        : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (node.healthStatus === 'OPTIMAL') {
+                        handleSimulateDegraded(node.nodeId);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase transition-transform active:scale-95 ${
+                      node.healthStatus === 'OPTIMAL'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:border-amber-500/40'
+                        : node.healthStatus === 'DEGRADED'
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                     }`}
-                    style={{ width: `${node.utilizationPct}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Memory & Power & Thermals Footer */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 text-[11px] font-mono">
-                <div>
-                  <span className="text-slate-500 block text-[9px]">VRAM</span>
-                  <span className="text-slate-200 font-semibold">{Math.round(node.memoryUsedGb)}G</span>
-                  <span className="text-slate-500 text-[9px]">/{Math.round(node.memoryTotalGb)}G</span>
-                </div>
-
-                <div>
-                  <span className="text-slate-500 block text-[9px]">THERMAL</span>
-                  <span className={`font-semibold flex items-center gap-0.5 ${
-                    node.temperatureC > 75 ? 'text-rose-400' : 'text-slate-200'
-                  }`}>
-                    <Thermometer className="w-2.5 h-2.5" />
-                    {node.temperatureC}°C
+                    title={node.healthStatus === 'OPTIMAL' ? 'Click to simulate OPTIMAL -> DEGRADED transition' : undefined}
+                  >
+                    {node.healthStatus}
                   </span>
                 </div>
 
-                <div>
-                  <span className="text-slate-500 block text-[9px]">POWER</span>
-                  <span className="text-slate-200 font-semibold">{Math.round(node.powerDrawWatts)}W</span>
-                  <span className="text-slate-500 text-[9px]">/{Math.round(node.powerLimitWatts)}W</span>
+                {/* Hardware Spec Strip */}
+                <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800/80 text-xs space-y-1 font-mono">
+                  <div className="text-slate-200 font-medium truncate">
+                    {node.gpuModel}
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Network className="w-3 h-3 text-blue-400" />
+                      {node.interconnectBandwidthGbps} Gbps Fabric
+                    </span>
+                    <span className="text-emerald-400 font-bold">
+                      ${node.arbitrageSpotRatePerHour.toFixed(2)} / hr
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+
+                {/* Dynamic Utilization Gauge */}
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between font-mono text-[11px]">
+                    <span className="text-slate-400">GPU Compute Load</span>
+                    <span className="text-white font-bold">{node.utilizationPct}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        node.utilizationPct > 90 
+                          ? 'bg-gradient-to-r from-amber-500 to-rose-500' 
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                      }`}
+                      style={{ width: `${node.utilizationPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Memory & Power & Thermals Footer */}
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 text-[11px] font-mono">
+                  <div>
+                    <span className="text-slate-500 block text-[9px]">VRAM</span>
+                    <span className="text-slate-200 font-semibold">{Math.round(node.memoryUsedGb)}G</span>
+                    <span className="text-slate-500 text-[9px]">/{Math.round(node.memoryTotalGb)}G</span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-500 block text-[9px]">THERMAL</span>
+                    <span className={`font-semibold flex items-center gap-0.5 ${
+                      node.temperatureC > 75 ? 'text-rose-400' : 'text-slate-200'
+                    }`}>
+                      <Thermometer className="w-2.5 h-2.5" />
+                      {node.temperatureC}°C
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-500 block text-[9px]">POWER</span>
+                    <span className="text-slate-200 font-semibold">{Math.round(node.powerDrawWatts)}W</span>
+                    <span className="text-slate-500 text-[9px]">/{Math.round(node.powerLimitWatts)}W</span>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+@keyframes subtleScaleDegraded {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.035);
+  }
+  75% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-subtle-scale,
+.transition-health-degraded {
+  animation: subtleScaleDegraded 0.75s cubic-bezier(0.25, 1, 0.5, 1);
+}
