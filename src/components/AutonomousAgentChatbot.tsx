@@ -272,17 +272,15 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
         };
         setMessages((prev) => [...prev, agentMsg]);
       } else {
-        // Fallback response with simulated tool execution
-        const simulatedScore = 85;
-        const tier = 'ENTERPRISE_QUALIFIED';
+        // Direct actionable fallback response without canned repetitive banners
         const fallbackMsg: InboundChatMessage = {
           id: `agent_${Date.now()}`,
           sender: 'agent',
-          text: `[ApexMind Sovereign Operator] Query analyzed under active tier ${tier}. Live PayPal ledger fulfillment and Resend transactional notifications are armed with zero-drop failover.`,
+          text: `I've analyzed "${messageText}". I can directly assist you with compute tier sizing, live PayPal transaction reconciliation, or dispatching architecture documentation. Which operational area would you like to focus on?`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          qualificationTier: tier,
-          leadScore: simulatedScore,
-          suggestedActions: ['Review Sovereign Pricing', 'Verify PayPal Transaction', 'SMS 2FA Authentication'],
+          qualificationTier: 'ENTERPRISE_QUALIFIED',
+          leadScore: 85,
+          suggestedActions: ['Compare Compute Tiers', 'Reconcile PayPal Order', 'SMS 2FA Authentication'],
         };
         setMessages((prev) => [...prev, fallbackMsg]);
       }
@@ -290,9 +288,9 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
       const errReply: InboundChatMessage = {
         id: `agent_${Date.now()}`,
         sender: 'agent',
-        text: 'ApexMind Sovereign gateway online. In-chat PayPal transaction reconciliation and Supabase RLS row-level security are currently active.',
+        text: `I received your prompt: "${messageText}". How can I best guide your deployment or compute requirements right now?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedActions: ['Review Pricing', 'Connect Live PayPal', 'SMS 2FA'],
+        suggestedActions: ['Review Pricing Plans', 'Inspect Bare-Metal GPUs', 'Launch Agent Swarm'],
       };
       setMessages((prev) => [...prev, errReply]);
     } finally {

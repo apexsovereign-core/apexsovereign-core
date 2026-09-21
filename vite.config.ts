@@ -898,20 +898,20 @@ Deliver an authoritative, technically rigorous, executive response with structur
 
             if (gemini && userMsgRaw) {
               try {
-                const systemPrompt = `You are the supreme 24/7 Autonomous AI Concierge and Principal Systems Architect for ApexSovereign.ai.
-ApexSovereign.ai is the premier enterprise Work OS, GPU compute broker, and financial ledger platform.
-Core Architecture & Value Proposition:
-- Autonomous Multi-Agent Swarms: Replaces manual $165/seat enterprise software taxes with autonomous 24/7 neural agents ($0.426/agent-hour vs $45/hr legacy human operations).
-- Weekly-Calibrated Compute Pricing: Locked every Monday at 00:00 UTC (Current Epoch: ${epoch.epochId}) with a -14.85% wholesale discount pass-through ($0.01064 / 1k Compute Units).
-- Plans: Autonomous Core ($29/mo, 2,500 CU), Enterprise Accelerator ($99/mo, 25,000 CU, multi-agent swarm concurrency), Sovereign Global Mesh ($499/mo, 150,000 CU, bare-metal 8x NVIDIA H100 80GB SXM5 partitions, custom Supabase RLS isolation).
-- Tools: verify_paypal_transaction (atomic PostgreSQL SELECT ... FOR UPDATE), diagnose_pipeline_error (self-healing worker threads), dispatch_resend_documentation (tax-compliant itemized receipts & compliance packs via Resend), send_sms_verification_otp / verify_sms (cryptographic 6-digit OTP phone authentication).
+                const systemPrompt = `You are ApexMind Sovereign, the primary AI Concierge, Triage Agent, and Autonomous Work OS Assistant for ApexSovereign.ai.
 
-Guidelines for your answer:
-- Provide a completely bespoke, highly relevant, and direct response addressing PRECISELY what the customer asks, states, or queries.
-- If they ask about SMS or phone verification, explain our cryptographic 6-digit OTP zero-trust protocol and invite them to click "SMS 2FA Login" or provide their phone number.
-- If tools were run in this turn, incorporate the tool execution outcomes smoothly into your response.
-- If an email was provided, confirm that the documentation/receipt has been queued and dispatched via Resend.
-- Tone: Authoritative, crisp, technically sophisticated, zero fluff, zero repetitive generic canned responses. Keep response under 120 words unless deep technical analysis is requested.`;
+### CORE OPERATIONAL DIRECTIVES (ANTI-LOOP & DIRECT RESPONSE PROTOCOL):
+1. DIRECT ANSWER FIRST: Always address the user's specific question, prompt, or challenge immediately and conversationally. Provide actionable guidance, precise calculations, or clear architectural details first before offering follow-up options. No filler greetings or rhetorical wind-up.
+2. NEVER ECHO STATIC TEMPLATES: Do not repeat repetitive telemetry banners, canned system logs, or hardcoded execution blocks (e.g. NEVER output "[ApexMind Sovereign Operator] Query analyzed under active tier..." or static system status dumps) unless specifically asked for diagnostics.
+3. CONTEXTUAL STATE MANAGEMENT: Track the conversation turn-by-turn. If the user asks a follow-up or expresses frustration/urgency, adapt dynamically rather than resetting to a default greeting or repeating previous outputs.
+4. STRICT SECURITY & PRIVACY BOUNDARIES: Never leak internal database schemas, environment variables, private server credentials, or personal telemetry. Only discuss public value metrics, automated execution counts, efficiency gains, and platform capabilities.
+5. ACTIONABLE CONCIERGE CTAs: When presenting interactive suggestions or next steps, ensure they directly match the user's current context (e.g., pricing comparisons, live tier verification, or system diagnostics) and rotate them based on conversation flow.
+
+Operational Knowledge Base:
+- Multi-Agent Swarms: Autonomous Work OS replacing legacy $165/seat enterprise software taxes ($0.426/agent-hour vs $45/hr legacy human operations).
+- Weekly-Calibrated Compute Pricing: Locked every Monday at 00:00 UTC (Current Epoch: ${epoch.epochId}) with wholesale discount ($0.01064 / 1k Compute Units).
+- Plans: Autonomous Core ($29/mo, 2,500 CU), Enterprise Accelerator ($99/mo, 25,000 CU, multi-agent swarm concurrency), Sovereign Global Mesh ($499/mo, 150,000 CU, bare-metal 8x NVIDIA H100 80GB SXM5 partitions, custom Supabase RLS isolation).
+- Tools: verify_paypal_transaction, diagnose_pipeline_error, dispatch_resend_documentation, send_sms_verification_otp / verify_sms.`;
 
                 const historySnippet = (body.conversation_history || [])
                   .slice(-4)
@@ -966,8 +966,9 @@ Provide your bespoke AI Concierge response:`;
               } else if (isHot) {
                 reply = `Your infrastructure requirements qualify directly for Sovereign Global Mesh ($499/mo). Bare-metal inventory confirms 3 dedicated 8x NVIDIA H100 80GB SXM5 nodes available with NVLink 900 GB/s bandwidth. Current weekly tariff is locked at $0.01064 / 1k CU under Epoch ${epoch.epochId}.${contactEmail ? ` SOC 2 Type II audit documentation has been dispatched to ${contactEmail} via Resend.` : ''}`;
               } else {
-                // Bespoke tailored response addressing user's specific sentence
-                reply = `Understood regarding "${userMsgRaw.slice(0, 60)}${userMsgRaw.length > 60 ? '...' : ''}". ApexSovereign.ai operates a 24/7 autonomous multi-agent work OS that replaces legacy $165/seat software taxes with deterministic, weekly-calibrated compute tariffs (locked every Monday at 00:00 UTC under ${epoch.epochId}). We provide live PayPal billing reconciliation, self-healing pipeline recovery, and zero-trust SMS authentication. Would you like to inspect our weekly tariff rates, verify an existing order, or initiate SMS authentication?`;
+                // Direct bespoke response tailored to user's question without static templates
+                reply = `Regarding "${userMsgRaw.trim()}": ApexSovereign provides automated work execution and compute brokerage without per-seat taxes. Multi-agent swarms operate at $0.426/agent-hour, while compute allocations are calibrated weekly under Epoch ${epoch.epochId}. Would you like to review tier economics, verify a payment, or test autonomous agent pipelines?`;
+                actions = ['Compare Pricing Tiers', 'Calculate Per-Seat Savings', 'Verify PayPal Order'];
               }
             }
 
@@ -1289,6 +1290,25 @@ Provide your bespoke AI Concierge response:`;
 
         next();
       });
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url ? req.url.split('?')[0] : '';
+        if (url === '/health') {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            service: 'ApexSovereign.ai Autonomous Broker',
+            status: 'OPERATIONAL',
+            version: '2.5.0',
+            weekly_pricing: 'ACTIVE',
+            mode: 'PREVIEW',
+            timestamp: new Date().toISOString(),
+          }));
+          return;
+        }
+        next();
+      });
     }
   };
 }
@@ -1307,6 +1327,10 @@ export default defineConfig(() => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+    preview: {
+      port: 3000,
+      host: '0.0.0.0',
     },
   };
 });
