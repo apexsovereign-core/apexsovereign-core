@@ -146,7 +146,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         </div>
       </div>
 
-      {/* Institutional Workspace Sub-Navigation (Salesforce + Microsoft + Swarm Synthesis) */}
+      {/* Institutional Workspace Sub-Navigation (Sovereign Swarm Synthesis) */}
       <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900 border border-slate-800 overflow-x-auto">
         <button
           type="button"
@@ -173,7 +173,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
           <Workflow className="w-3.5 h-3.5" />
           <span>CRM & Productivity Conduits</span>
           <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${activeWorkspaceTab === 'crm' ? 'bg-slate-950 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
-            Salesforce+M365
+            Autonomous
           </span>
         </button>
 

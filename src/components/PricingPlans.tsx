@@ -277,34 +277,34 @@ export const PricingPlans: React.FC<PricingPlansProps> = ({
     });
   }, [discountMultiplier, lockedDiscountPct, activeEpochId]);
 
-  // Enterprise ROI comparison metrics vs Salesforce & Microsoft
+  // Enterprise ROI comparison metrics vs Legacy Monoliths
   const comparisonMetrics = useMemo(() => {
-    const salesforceMonthlyPerUser = 240;
-    const salesforceImplementationAmortizedAnnual = 48000;
-    const salesforceAnnualTco = (headcount * salesforceMonthlyPerUser * 12) + salesforceImplementationAmortizedAnnual;
+    const legacyCrmMonthlyPerUser = 240;
+    const legacyCrmImplementationAmortizedAnnual = 48000;
+    const legacyCrmAnnualTco = (headcount * legacyCrmMonthlyPerUser * 12) + legacyCrmImplementationAmortizedAnnual;
 
-    const microsoftMonthlyPerUser = 210;
-    const microsoftImplementationAmortizedAnnual = 42000;
-    const microsoftAnnualTco = (headcount * microsoftMonthlyPerUser * 12) + microsoftImplementationAmortizedAnnual;
+    const legacySuiteMonthlyPerUser = 210;
+    const legacySuiteImplementationAmortizedAnnual = 42000;
+    const legacySuiteAnnualTco = (headcount * legacySuiteMonthlyPerUser * 12) + legacySuiteImplementationAmortizedAnnual;
 
     const monthlyCuNeeded = monthlyWorkflows * 1.5;
     const computeCostAnnual = ((monthlyCuNeeded / 1000) * lockedCuPer1kUsd) * 12;
     const apexTierAnnual = headcount > 100 ? 4790 * discountMultiplier : 950 * discountMultiplier;
     const apexSovereignAnnualCost = Math.round(computeCostAnnual + apexTierAnnual);
 
-    const netAnnualSavingsVsSalesforce = Math.max(0, salesforceAnnualTco - apexSovereignAnnualCost);
-    const netAnnualSavingsVsMicrosoft = Math.max(0, microsoftAnnualTco - apexSovereignAnnualCost);
-    const savingsPercentage = Math.round((netAnnualSavingsVsSalesforce / salesforceAnnualTco) * 100);
+    const netAnnualSavingsVsLegacyCrm = Math.max(0, legacyCrmAnnualTco - apexSovereignAnnualCost);
+    const netAnnualSavingsVsLegacySuite = Math.max(0, legacySuiteAnnualTco - apexSovereignAnnualCost);
+    const savingsPercentage = Math.round((netAnnualSavingsVsLegacyCrm / legacyCrmAnnualTco) * 100);
 
-    const roiMultiple = Number((salesforceAnnualTco / Math.max(apexSovereignAnnualCost, 1)).toFixed(1));
+    const roiMultiple = Number((legacyCrmAnnualTco / Math.max(apexSovereignAnnualCost, 1)).toFixed(1));
     const manualHoursEliminatedAnnual = headcount * 6.2 * 50;
 
     return {
-      salesforceAnnualTco,
-      microsoftAnnualTco,
+      legacyCrmAnnualTco,
+      legacySuiteAnnualTco,
       apexSovereignAnnualCost,
-      netAnnualSavingsVsSalesforce,
-      netAnnualSavingsVsMicrosoft,
+      netAnnualSavingsVsLegacyCrm,
+      netAnnualSavingsVsLegacySuite,
       savingsPercentage,
       roiMultiple,
       manualHoursEliminatedAnnual
@@ -731,7 +731,7 @@ export const PricingPlans: React.FC<PricingPlansProps> = ({
 
       </div>
 
-      {/* 3. Global Economic Superiority Matrix (Salesforce vs Microsoft vs ApexSovereign) */}
+      {/* 3. Global Economic Superiority Matrix (Legacy Monoliths vs ApexSovereign) */}
       <div id="cfo-economic-matrix" className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 sm:p-8 space-y-8 shadow-xl">
         <div className="max-w-3xl space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono">
@@ -808,18 +808,18 @@ export const PricingPlans: React.FC<PricingPlansProps> = ({
         {/* 3-Column Comparison Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Salesforce Card */}
+          {/* Legacy Monolith #1 Card */}
           <div className="p-6 rounded-2xl bg-slate-950/60 border border-rose-950/50 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-rose-400">
-                  LEGACY MONOPOLY #1
+                  LEGACY MONOLITH #1
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/40 text-rose-400 border border-rose-800/40">
                   PER-SEAT TAX
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-white">Salesforce Enterprise + Einstein 1</h3>
+              <h3 className="text-lg font-bold text-white">Legacy Per-Seat Enterprise CRM</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Mandatory multi-year contracts, exorbitant per-user licensing, and heavy manual data entry drag across fragmented screens.
               </p>
@@ -847,7 +847,7 @@ export const PricingPlans: React.FC<PricingPlansProps> = ({
             <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
               <div className="text-[11px] font-mono text-slate-400 uppercase">Estimated Annual TCO</div>
               <div className="text-2xl font-bold font-mono text-rose-400 mt-1">
-                {formatCurrency(comparisonMetrics.salesforceAnnualTco)}
+                {formatCurrency(comparisonMetrics.legacyCrmAnnualTco)}
               </div>
               <div className="text-[10px] text-slate-500 mt-1">
                 Requires 9–14 months deployment timeline
@@ -855,18 +855,18 @@ export const PricingPlans: React.FC<PricingPlansProps> = ({
             </div>
           </div>
 
-          {/* Microsoft Dynamics Card */}
+          {/* Legacy Monolith #2 Card */}
           <div className="p-6 rounded-2xl bg-slate-950/60 border border-amber-950/50 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
-                  LEGACY MONOPOLY #2
+                  LEGACY MONOLITH #2
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/40 text-amber-400 border border-amber-800/40">
                   EA BUNDLE
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-white">Microsoft Dynamics 365 + Copilot</h3>
+              <h3 className="text-lg font-bold text-white">Legacy Bundled Enterprise Suite</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Enterprise Agreement commits with fragmented modules, context switching, and continuous consulting fees.
               </p>
@@ -894,10 +894,10 @@ export const PricingPlans: React.FC<PricingPlansProps> = ({
             <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
               <div className="text-[11px] font-mono text-slate-400 uppercase">Estimated Annual TCO</div>
               <div className="text-2xl font-bold font-mono text-amber-400 mt-1">
-                {formatCurrency(comparisonMetrics.microsoftAnnualTco)}
+                {formatCurrency(comparisonMetrics.legacySuiteAnnualTco)}
               </div>
               <div className="text-[10px] text-slate-500 mt-1">
-                Fragmented across M365 and Azure portals
+                Fragmented across multiple legacy portals
               </div>
             </div>
           </div>
@@ -962,7 +962,7 @@ export const PricingPlans: React.FC<PricingPlansProps> = ({
               NET ENTERPRISE VALUE GENERATED
             </div>
             <div className="text-3xl sm:text-4xl font-black font-mono text-white tracking-tight">
-              Save {formatCurrency(comparisonMetrics.netAnnualSavingsVsSalesforce)} / year
+              Save {formatCurrency(comparisonMetrics.netAnnualSavingsVsLegacyCrm)} / year
             </div>
             <p className="text-xs text-slate-300">
               Reclaim <span className="text-emerald-400 font-semibold">{comparisonMetrics.manualHoursEliminatedAnnual.toLocaleString()} hours</span> of manual data entry drag every single year with a verified <span className="text-emerald-400 font-semibold">{comparisonMetrics.roiMultiple}x ROI</span> multiple.

@@ -547,8 +547,8 @@ async def get_dynamic_billing_rates(
 
     # Legacy SaaS Economic Disruption Benchmarks
     legacy_benchmarks = {
-        "salesforce": {
-            "name": "Salesforce Enterprise + Einstein 1 Platform",
+        "legacy_crm": {
+            "name": "Legacy Enterprise CRM Monolith",
             "per_seat_monthly_usd": 165.0,
             "copilot_add_on_monthly_usd": 75.0,
             "avg_implementation_fee_usd": 48000.0,
@@ -556,8 +556,8 @@ async def get_dynamic_billing_rates(
             "contract_lock_in_months": 24,
             "pricing_paradigm": "Static Mandatory Per-Seat License",
         },
-        "microsoft": {
-            "name": "Microsoft Dynamics 365 + Copilot Studio",
+        "legacy_suite": {
+            "name": "Legacy Bundled Enterprise Suite",
             "per_seat_monthly_usd": 180.0,
             "copilot_add_on_monthly_usd": 30.0,
             "avg_implementation_fee_usd": 42000.0,

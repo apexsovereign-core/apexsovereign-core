@@ -141,14 +141,37 @@ export interface DynamicMarketRateData {
 export interface EnterpriseRoiMetrics {
   headcount: number;
   monthlyWorkflows: number;
-  salesforceAnnualTco: number;
-  microsoftAnnualTco: number;
+  legacyCrmAnnualTco: number;
+  legacySuiteAnnualTco: number;
   apexSovereignAnnualCost: number;
-  netAnnualSavingsVsSalesforce: number;
-  netAnnualSavingsVsMicrosoft: number;
+  netAnnualSavingsVsLegacyCrm: number;
+  netAnnualSavingsVsLegacySuite: number;
   savingsPercentage: number;
   roiMultiple: number;
   manualHoursEliminatedAnnual: number;
+}
+
+export interface NeuralMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  tokensUsed?: number;
+  latencyMs?: number;
+  toolsUsed?: string[];
+  streaming?: boolean;
+  auditSignature?: string;
+  model?: string;
+}
+
+export interface NeuralSessionState {
+  sessionId: string;
+  tenantId: string;
+  activeModel: 'apex-neural-3.8-sovereign' | 'apex-neural-fast-arbitrage' | 'apex-neural-enclave-deep';
+  tokenBudget: number;
+  tokensConsumed: number;
+  rlsSecurityLevel: string;
+  rateLimitRemaining: number;
 }
 
 export interface PaymentTransaction {

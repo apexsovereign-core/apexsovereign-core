@@ -38,6 +38,7 @@ from backend.app.services.neural_spot_arbitrage import router as neural_arbitrag
 from backend.app.services.dao_treasury_engine import router as dao_treasury_router
 from backend.app.agency import router as agency_router
 from backend.app.api.v1.leads import router as leads_router
+from backend.app.api.v1.neural_chat import router as neural_router
 from backend.app.core.exceptions import (
     ApexSovereignBaseException,
     IdempotencyConflictError,
@@ -170,6 +171,7 @@ app.include_router(neural_arbitrage_router)
 app.include_router(dao_treasury_router)
 app.include_router(agency_router)
 app.include_router(leads_router)
+app.include_router(neural_router)
 
 
 @app.get("/", summary="Root API Index")

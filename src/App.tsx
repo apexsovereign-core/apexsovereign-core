@@ -17,6 +17,7 @@ import { PricingPlans, SUBSCRIPTION_TIERS } from './components/PricingPlans';
 import { CustomerPortal } from './components/CustomerPortal';
 import { EnterpriseCrmPipeline } from './components/EnterpriseCrmPipeline';
 import { AutonomousAgentSwarm } from './components/AutonomousAgentSwarm';
+import { NeuralChatInterface } from './components/NeuralChatInterface';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
@@ -159,7 +160,7 @@ export default function App() {
           />
         )}
 
-        {/* Enterprise CRM & Work OS (Salesforce + Microsoft 365 Synthesis) */}
+        {/* Enterprise CRM & Sovereign Work OS */}
         {activeTab === 'crm' && (
           <div className="py-4">
             <EnterpriseCrmPipeline />
@@ -170,6 +171,16 @@ export default function App() {
         {activeTab === 'swarm' && (
           <div className="py-4">
             <AutonomousAgentSwarm />
+          </div>
+        )}
+
+        {/* ApexSovereign Neural Interface (Native Command Core) */}
+        {activeTab === 'neural' && (
+          <div className="py-4">
+            <NeuralChatInterface
+              currentUser={currentUser}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+            />
           </div>
         )}
 
