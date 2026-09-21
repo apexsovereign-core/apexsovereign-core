@@ -16,9 +16,10 @@ import {
   Check
 } from 'lucide-react';
 import { ResourceTier, SimulatedLedgerEntry, WebhookSimulationLog } from '../types';
+import { LiveGpuTelemetryStream } from './LiveGpuTelemetryStream';
 
 export const InteractiveSandbox: React.FC = () => {
-  const [activeSimulator, setActiveSimulator] = useState<'webhook' | 'idempotency' | 'compute' | 'health'>('webhook');
+  const [activeSimulator, setActiveSimulator] = useState<'webhook' | 'idempotency' | 'compute' | 'health' | 'telemetry'>('webhook');
 
   // Webhook Simulator State
   const [webhookMode, setWebhookMode] = useState<'valid' | 'tampered' | 'ssrf' | 'replay'>('valid');
@@ -319,6 +320,16 @@ export const InteractiveSandbox: React.FC = () => {
             }`}
           >
             /health & asyncpg Pool
+          </button>
+          <button
+            onClick={() => setActiveSimulator('telemetry')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeSimulator === 'telemetry'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            Live GPU Telemetry (WSS)
           </button>
         </div>
 
@@ -790,6 +801,13 @@ export const InteractiveSandbox: React.FC = () => {
 }`}
             </pre>
           </div>
+        </div>
+      )}
+
+      {/* Simulator 5: Real-Time WebSocket GPU Telemetry Stream */}
+      {activeSimulator === 'telemetry' && (
+        <div className="space-y-4">
+          <LiveGpuTelemetryStream />
         </div>
       )}
     </div>
