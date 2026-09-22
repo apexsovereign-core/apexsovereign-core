@@ -42,4 +42,4 @@ jobs:
               cd agency-repo
               git add app.py main.py requirements.txt Procfile render.yaml backend/ index.html
               git commit -m "chore: sync FastAPI ingress runtime and storefront from apexsovereign-core" || echo "No changes to commit"
-              git push origin main
+              git push --force origin main
