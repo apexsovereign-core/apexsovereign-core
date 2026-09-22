@@ -5,13 +5,15 @@ Production-grade deployment entrypoint for Render.
 
 import os
 import time
+from pathlib import Path
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 # Load local environment variables if .env exists
@@ -216,30 +218,23 @@ async def rbac_security_middleware(request: Request, call_next):
 # ---------------------------------------------------------------------------
 # Root, Health Check & Telemetry Metrics Endpoints
 # ---------------------------------------------------------------------------
-@app.get("/", tags=["Health"])
-async def root_status() -> Dict[str, Any]:
-    """
-    Root endpoint returning service identity, uptime, and operational status.
-    """
-    uptime_seconds = round(time.time() - START_TIME, 2)
-    db_status = get_db_health()
+FRONTEND_DIST = Path(__file__).resolve().parents[1] / "dist"
+FRONTEND_INDEX = FRONTEND_DIST / "index.html"
 
-    return {
-        "service": "ApexSovereign.ai Autonomous Compute Broker",
-        "status": "OPERATIONAL",
-        "version": "2.5.0",
-        "uptime_seconds": uptime_seconds,
-        "database": db_status,
-        "endpoints": {
-            "docs": "/docs",
-            "health": "/health",
-            "metrics": "/metrics",
-            "compute": "/compute",
-            "invoices": "/invoices",
-            "billing": "/billing",
-            "gateway": "/v3/engine/telemetry/billing/gateway",
+
+@app.get("/", tags=["Storefront"])
+async def storefront_index():
+    """Serve the production-built interactive storefront from the API origin."""
+    if FRONTEND_INDEX.is_file():
+        return FileResponse(FRONTEND_INDEX, media_type="text/html")
+    return JSONResponse(
+        status_code=503,
+        content={
+            "status": "DEGRADED",
+            "detail": "Frontend build artifact is unavailable on this deployment.",
+            "service": "ApexSovereign.ai Autonomous Compute Broker",
         },
-    }
+    )
 
 
 @app.get("/health", tags=["Health"])
@@ -879,6 +874,7 @@ async def audit_agent_memory_endpoint(request: Request):
 # ---------------------------------------------------------------------------
 # Autonomous PayPal Billing v2 Webhook Ingestion & Credit Settler
 # ---------------------------------------------------------------------------
+@app.post("/v1/paypal/webhook", tags=["Autonomous Agents"])
 @app.post("/v1/webhooks/paypal/agent-handler", tags=["Autonomous Agents"])
 async def paypal_webhook_agent_handler(request: Request):
     """
@@ -906,6 +902,11 @@ async def paypal_webhook_agent_handler(request: Request):
         "processed_by": "SETTLEMENT_RECONCILER_AGENT",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
+
+
+# Static assets are mounted last so all API routes above retain precedence.
+if FRONTEND_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
 
 
 if __name__ == "__main__":
