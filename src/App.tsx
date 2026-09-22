@@ -22,6 +22,7 @@ import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
 import { AdminAccessGate } from './components/AdminAccessGate';
+import { LivePlatformStatus } from './components/LivePlatformStatus';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
 import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight } from 'lucide-react';
 
@@ -135,6 +136,7 @@ export default function App() {
         onLogout={handleLogout}
         isAdminUnlocked={isAdminUnlocked}
       />
+      <LivePlatformStatus />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {/* Customer Facing Views (Public Storefront & Portal) */}
@@ -383,4 +385,3 @@ export default function App() {
     </div>
   );
 }
-

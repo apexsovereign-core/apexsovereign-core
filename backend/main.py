@@ -55,6 +55,8 @@ from compute_broker import (
     pool_manager,
     predictive_scaler,
     key_rotator,
+    LeaseRequest,
+    dispatch_compute_lease,
 )
 from payment_router import payment_router
 from metrics import PrometheusMetricsMiddleware, generate_prometheus_metrics_text
@@ -273,6 +275,12 @@ async def prometheus_metrics_endpoint() -> JSONResponse:
         media_type="text/plain; version=0.0.4; charset=utf-8",
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )
+
+
+@app.post("/v1/compute/allocate", tags=["Compute Broker"])
+def allocate_compute_compatibility(req: LeaseRequest, db: Session = Depends(get_db)):
+    """Stable frontend allocation contract backed by the canonical lease engine."""
+    return dispatch_compute_lease(req, db)
 
 
 @app.get("/telemetry/summary", tags=["Telemetry"])
