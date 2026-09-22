@@ -373,13 +373,13 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
   };
 
   return (
-    <div id="autonomous-agent-chatbot-root" className="fixed bottom-6 right-6 z-50">
+    <div id="autonomous-agent-chatbot-root" className="fixed inset-x-0 bottom-4 z-50 flex justify-end px-4 sm:inset-x-auto sm:right-6 sm:px-0">
       {/* Floating Activator Button */}
       {!isOpen && (
         <button
           id="btn-open-agent-chat"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 p-4 bg-emerald-500 text-slate-950 rounded-full shadow-2xl shadow-emerald-950/60 hover:bg-emerald-400 transition-all z-50 flex items-center space-x-2.5 cursor-pointer transform hover:scale-105 group font-bold"
+          className="fixed bottom-4 right-4 max-w-[calc(100vw-2rem)] p-4 bg-emerald-500 text-slate-950 rounded-full shadow-2xl shadow-emerald-950/60 hover:bg-emerald-400 transition-all z-50 flex items-center space-x-2.5 cursor-pointer transform hover:scale-105 group font-bold sm:bottom-6 sm:right-6"
           aria-label="Open AI Concierge"
         >
           <div className="relative flex items-center justify-center">
@@ -666,7 +666,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
         <div
           id="autonomous-agent-chat-window"
           className={`bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl shadow-black/80 flex flex-col transition-all duration-300 overflow-hidden ${
-            isExpanded ? 'w-[720px] h-[750px]' : 'w-[410px] sm:w-[460px] h-[610px]'
+            isExpanded ? 'w-full max-w-[min(720px,calc(100vw-2rem))] h-[min(75vh,750px)]' : 'w-full max-w-[460px] h-[min(610px,75vh)]'
           }`}
         >
           {/* Header */}

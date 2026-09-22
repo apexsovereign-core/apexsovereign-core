@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+:root {
+  color-scheme: dark;
+  background: #020617;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+#autonomous-agent-chat-window {
+  max-height: 75vh;
+  min-height: 0;
+}
+
 @keyframes subtleScaleDegraded {
   0% {
     transform: scale(1);
