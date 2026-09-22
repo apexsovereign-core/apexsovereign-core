@@ -14,10 +14,19 @@ jobs:
           - name: Setup Bun
             uses: oven-sh/setup-bun@v1
 
+          - name: Setup Rust
+            uses: dtolnay/rust-toolchain@stable
+            with:
+              components: rustfmt, clippy
+
           - name: Install and Build
             run: |
               bun install
+              bun run lint
               bun run build
+              cargo fmt --all -- --check
+              cargo clippy --workspace --all-targets --all-features -- -D warnings
+              cargo test --workspace --all-features
 
           - name: Push Built Assets to Agency Repo
             env:

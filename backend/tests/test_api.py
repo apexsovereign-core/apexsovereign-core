@@ -13,7 +13,7 @@ try:
 except ImportError:
     pytest = None
 
-from backend.app.config import require_env, MissingEnvironmentVariableError
+from backend.app.config import require_env, MissingEnvironmentVariableError, get_settings
 from backend.app.core.security import (
     generate_compute_lease_token,
     verify_compute_lease_token,
@@ -39,23 +39,38 @@ class TestApexSovereignCore(unittest.TestCase):
         self.assertIn("DEFINITELY_NON_EXISTENT_VAR_XYZ_99", str(ctx.exception))
 
     def test_compute_lease_hmac_verification(self):
-        os.environ["LEASE_HMAC_SECRET"] = "super_secret_hmac_signing_key_456"
-        job_id = "job-uuid-12345"
-        tenant_id = "tenant-uuid-67890"
+        test_settings = {
+            "DATABASE_URL": "postgresql://test:test@localhost:5432/apexsovereign",
+            "PAYPAL_CLIENT_ID": "test-paypal-client",
+            "PAYPAL_CLIENT_SECRET": "test-paypal-secret",
+            "PAYPAL_WEBHOOK_ID": "test-webhook-id",
+            "APP_SECRET_API_KEY": "test-app-secret-api-key",
+            "LEASE_HMAC_SECRET": "super_secret_hmac_signing_key_456",
+            "ENVIRONMENT": "test",
+        }
+        os.environ.update(test_settings)
+        get_settings.cache_clear()
+        try:
+            job_id = "job-uuid-12345"
+            tenant_id = "tenant-uuid-67890"
 
-        token, expires_at = generate_compute_lease_token(job_id, tenant_id, ttl_seconds=300)
-        self.assertIsNotNone(token)
+            token, expires_at = generate_compute_lease_token(job_id, tenant_id, ttl_seconds=300)
+            self.assertIsNotNone(token)
 
-        # Verify legitimate token
-        verified = verify_compute_lease_token(token)
-        self.assertEqual(verified["job_id"], job_id)
-        self.assertEqual(verified["tenant_id"], tenant_id)
-        self.assertEqual(verified["expires_at"], expires_at)
+            # Verify legitimate token
+            verified = verify_compute_lease_token(token)
+            self.assertEqual(verified["job_id"], job_id)
+            self.assertEqual(verified["tenant_id"], tenant_id)
+            self.assertEqual(verified["expires_at"], expires_at)
 
-        # Tampered token verification must fail
-        tampered_token = token[:-4] + "dead"
-        with self.assertRaises(ValueError):
-            verify_compute_lease_token(tampered_token)
+            # Tampered token verification must fail
+            tampered_token = token[:-4] + "dead"
+            with self.assertRaises(ValueError):
+                verify_compute_lease_token(tampered_token)
+        finally:
+            for name in test_settings:
+                os.environ.pop(name, None)
+            get_settings.cache_clear()
 
     def test_ssrf_paypal_cert_url_validation(self):
         # Legitimate PayPal URLs
@@ -97,4 +112,3 @@ class TestApexSovereignCore(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
