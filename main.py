@@ -1,6 +1,8 @@
 """
-ApexSovereign.ai - Main FastAPI Application & Lifecycle Manager
-Production-grade deployment entrypoint for Render.
+ApexSovereign.ai - Native Root Storefront and FastAPI Ingestion Runtime
+Production deployment entrypoint for the apex-ingestion-engine Render service.
+The root route serves the repository storefront; API routers provide ingestion,
+Supabase ledger integration, PayPal metering/webhooks, and enterprise telemetry.
 """
 from __future__ import annotations
 
