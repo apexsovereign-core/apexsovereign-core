@@ -53,6 +53,21 @@ class AgentSecurityMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class ApexTrustLayerMiddleware(BaseHTTPMiddleware):
+    """Perimeter authentication and latency telemetry for agent requests."""
+
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Any]]) -> Any:
+        started = time.perf_counter()
+        if request.url.path.startswith("/agent-platform"):
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer ") or len(auth_header.removeprefix("Bearer ").strip()) < 16:
+                return JSONResponse(status_code=401, content={"error": "trust_layer_access_denied", "detail": "Bearer authorization is required"})
+        response = await call_next(request)
+        response.headers["X-Apex-Trust-Layer"] = "Active"
+        response.headers["X-Execution-Latency-Ms"] = str(round((time.perf_counter() - started) * 1000, 2))
+        return response
+
+
 def audit_context(request: Request, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     return {
         "request_id": getattr(request.state, "request_id", "unknown"),

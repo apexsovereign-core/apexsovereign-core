@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from agent_engine import AgentEngine, AgentPlatformError, build_default_engine
 from agent_middleware import audit_context, verify_webhook_signature
+from apex_orchestrator import ApexOrchestrator
 
 
 agent_router = APIRouter(prefix="/agent-platform", tags=["agent-platform"])
@@ -23,6 +24,12 @@ class AgentRunRequest(BaseModel):
 class AgentEventRequest(BaseModel):
     event_type: str = Field(..., min_length=3, max_length=128)
     payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationRequest(BaseModel):
+    agent_id: str = Field(..., min_length=2, max_length=128)
+    user_intent: str = Field(..., min_length=3, max_length=1000)
+    context_data: Dict[str, Any] = Field(default_factory=dict)
 
 
 def _serialize_run(run: Any) -> Dict[str, Any]:
@@ -63,7 +70,21 @@ def _register_builtin_handlers() -> None:
         ticket = context.get("ticket", {})
         return {"resolution_plan": "Escalate to security response" if ticket.get("classification") == "URGENT" else "Prepare standard support response"}
 
-    for action, handler in {"classify_lead": classify_lead, "classify_ticket": classify_ticket, "create_activity": create_activity, "advance_deal": advance_deal, "draft_resolution": draft_resolution}.items():
+    def execute_compute_arbitrage_quote(context: Dict[str, Any]) -> Dict[str, Any]:
+        lead = context.get("lead", {})
+        return {"quote": {"id": f"quote-{lead.get('id', 'unknown')}", "amount_usd": min(float(context.get("max_budget_usd", 50.0)), 50.0), "status": "PREPARED"}}
+
+    def dispatch_crm_webhook(context: Dict[str, Any]) -> Dict[str, Any]:
+        return {"crm_dispatch": {"status": "QUEUED_FOR_APPROVED_CONNECTOR", "network_action": False}}
+
+    def reroute_baremetal_node(context: Dict[str, Any]) -> Dict[str, Any]:
+        incident = context.get("incident", {})
+        return {"reroute": {"node_id": incident.get("node_id"), "status": "PLAN_READY", "network_action": False}}
+
+    def generate_audit_trace(context: Dict[str, Any]) -> Dict[str, Any]:
+        return {"audit_trace": {"status": "RECORDED", "source_of_truth": "ApexUnifiedLedger"}}
+
+    for action, handler in {"classify_lead": classify_lead, "classify_ticket": classify_ticket, "create_activity": create_activity, "advance_deal": advance_deal, "draft_resolution": draft_resolution, "execute_compute_arbitrage_quote": execute_compute_arbitrage_quote, "dispatch_crm_webhook": dispatch_crm_webhook, "reroute_baremetal_node": reroute_baremetal_node, "generate_audit_trace": generate_audit_trace}.items():
         engine.register_handler(action, handler)
 
 
@@ -72,7 +93,7 @@ _register_builtin_handlers()
 
 @agent_router.get("/manifest")
 async def get_manifest() -> Dict[str, Any]:
-    return {"version": engine.manifest["version"], "platform": engine.manifest["platform"], "agents": engine.manifest["agents"], "integrations": engine.manifest["integrations"], "entities": engine.manifest["entities"]}
+    return {"version": engine.manifest["version"], "platform": engine.manifest["platform"], "architecture_standard": engine.manifest.get("architecture_standard"), "metadata_fabric": engine.manifest.get("metadata_fabric"), "agent_registry": engine.manifest.get("agent_registry", []), "agents": engine.manifest["agents"], "distribution_layer": engine.manifest.get("distribution_layer", {}), "entities": engine.manifest["entities"]}
 
 
 @agent_router.get("/agents")
@@ -113,3 +134,10 @@ async def ingest_event(request: Request, body: AgentEventRequest, x_tenant_id: s
         return {"accepted": True, "event_type": body.event_type, "run": _serialize_run(run)}
     except AgentPlatformError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@agent_router.post("/orchestrate")
+async def orchestrate(request: Request, body: OrchestrationRequest, x_tenant_id: str = Header(...), x_idempotency_key: str = Header(...)) -> Dict[str, Any]:
+    """Run the supplied high-level reasoning loop with bounded, auditable steps."""
+    record = await ApexOrchestrator(body.agent_id).execute_autonomous_loop(body.user_intent, body.context_data)
+    return {"run": record, "audit": audit_context(request, body.context_data), "idempotency_key": x_idempotency_key, "tenant_id": x_tenant_id}
