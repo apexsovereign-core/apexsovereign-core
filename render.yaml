@@ -18,7 +18,7 @@ services:
       - key: PAYPAL_CLIENT_SECRET
         sync: false
       - key: PAYPAL_NODE
-        value: sandbox
+        sync: false
       - key: PAYPAL_WEBHOOK_ID
         sync: false
       - key: SUPABASE_URL

@@ -17,6 +17,7 @@ from typing import Any, Dict, Optional
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
+from usage_metering import usage_meter
 
 logger = logging.getLogger("Apex.ProductionIngestion")
 production_router = APIRouter(prefix="/v1", tags=["Production Ingestion"])
@@ -64,7 +65,7 @@ async def ingest_data(request: Request, payload: IngestionPayload, background_ta
     if environment == "production" and not _verify_signature(raw_body, x_apex_signature):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="valid ingestion signature required")
     started = time.perf_counter()
-    background_tasks.add_task(log_transaction_to_supabase, payload)
+    background_tasks.add_task(usage_meter.record, tenant_id=payload.customer_id, event_type=payload.event_type, quantity=payload.quantity, metadata=payload.metadata)
     return {"status": "accepted", "ingestion_latency_ms": round((time.perf_counter() - started) * 1000, 3), "tracked_units": payload.quantity, "database_sync": "queued", "payment_gateway": "delegated_to_verified_paypal_gateway"}
 
 

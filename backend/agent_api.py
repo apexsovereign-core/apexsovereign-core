@@ -13,6 +13,7 @@ from apex_orchestrator import ApexOrchestrator
 from orchestrator_mesh import federated_mesh, mesh_router
 from action_ledger import ledger
 from federated_fabric import federated_fabric
+from usage_metering import usage_meter
 
 
 agent_router = APIRouter(prefix="/agent-platform", tags=["agent-platform"])
@@ -120,7 +121,8 @@ async def list_agents() -> Dict[str, Any]:
 async def start_run(request: Request, body: AgentRunRequest, x_tenant_id: str = Header(...), x_idempotency_key: str = Header(...)) -> Dict[str, Any]:
     try:
         run = engine.run(tenant_id=x_tenant_id, agent_name=body.agent_name, payload=body.payload, idempotency_key=x_idempotency_key)
-        return {"run": _serialize_run(run), "audit": audit_context(request, body.payload)}
+        meter = await usage_meter.record(tenant_id=x_tenant_id, event_type="agent_run", metadata={"agent_name": body.agent_name, "status": run.status})
+        return {"run": _serialize_run(run), "meter": meter, "audit": audit_context(request, body.payload)}
     except AgentPlatformError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -179,7 +181,8 @@ async def commit_agent_action(body: AgentActionRequest, x_agent_identity: Option
         commit = await ledger.commit(idempotency_key=body.idempotency_key, agent_identity=x_agent_identity, action_type=body.action_type, target_resource=body.target_resource)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return {"tenant_id": x_tenant_id, "status": commit.status, "idempotency_key": commit.idempotency_key, "agent": commit.agent, "transaction_id": commit.transaction_id, "action": commit.action, "resource": commit.resource}
+    meter = await usage_meter.record(tenant_id=x_tenant_id, event_type="agent_action", metadata={"action": body.action_type, "resource": body.target_resource})
+    return {"tenant_id": x_tenant_id, "status": commit.status, "idempotency_key": commit.idempotency_key, "agent": commit.agent, "transaction_id": commit.transaction_id, "action": commit.action, "resource": commit.resource, "meter": meter}
 
 
 @agent_router.get("/compliance/escalations")
