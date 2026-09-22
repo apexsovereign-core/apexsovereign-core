@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional
 
 import yaml
+from compliance_guardrails import ComplianceGate, PolicyDecision
+from observability import recovery_manager
 
 
 class AgentPlatformError(Exception):
@@ -99,6 +101,7 @@ class AgentEngine:
         self._runs: Dict[str, AgentRun] = {}
         self._idempotency: Dict[tuple[str, str], str] = {}
         self._handlers: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]] = {}
+        self.compliance = ComplianceGate(manifest)
 
         for name, raw in manifest["agents"].items():
             if len(raw.get("workflow", [])) > self.max_steps:
@@ -159,6 +162,13 @@ class AgentEngine:
         if existing_id:
             return self._runs[existing_id]
         plan = self.plan(agent_name, payload)
+        plan_decision = self.compliance.validate_plan(tenant_id=tenant_id, agent_name=agent_name, step_count=len(plan), payload=payload)
+        if not plan_decision.allowed:
+            run = AgentRun(str(uuid.uuid4()), tenant_id, agent_name, status="ESCALATED", input_payload=dict(payload), idempotency_key=idempotency_key)
+            run.error = plan_decision.reason
+            self._runs[run.run_id] = run
+            self._idempotency[key] = run.run_id
+            return run
         definition = next(agent for agent in self.agents() if agent.name == agent_name)
         run = AgentRun(str(uuid.uuid4()), tenant_id, agent_name, input_payload=dict(payload), idempotency_key=idempotency_key)
         self._runs[run.run_id] = run
@@ -168,8 +178,9 @@ class AgentEngine:
         try:
             for step in plan:
                 started = time.perf_counter()
-                if step.action in {"send_external_message", "close_ticket"}:
-                    raise GuardrailViolation(f"action {step.action!r} requires human approval")
+                step_decision = self.compliance.validate_step(tenant_id=tenant_id, agent_name=agent_name, action=step.action, payload=context)
+                if not step_decision.allowed:
+                    raise GuardrailViolation(step_decision.reason)
                 missing = [key for key in step.requires if _lookup(context, key) is None]
                 if missing:
                     raise AgentPlatformError(f"missing required inputs: {sorted(set(missing))}")
@@ -187,6 +198,7 @@ class AgentEngine:
         except Exception as exc:
             run.error = str(exc)
             run.status = "BLOCKED" if isinstance(exc, GuardrailViolation) else "FAILED"
+            run.output = {"recovery": recovery_manager.recover(str(exc), agent_name=agent_name, trace_id=run.run_id)}
         return run
 
     def get_run(self, run_id: str) -> Optional[AgentRun]:

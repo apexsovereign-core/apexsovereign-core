@@ -180,3 +180,13 @@ async def commit_agent_action(body: AgentActionRequest, x_agent_identity: Option
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"tenant_id": x_tenant_id, "status": commit.status, "idempotency_key": commit.idempotency_key, "agent": commit.agent, "transaction_id": commit.transaction_id, "action": commit.action, "resource": commit.resource}
+
+
+@agent_router.get("/compliance/escalations")
+async def compliance_escalations(x_tenant_id: str = Header(...)) -> Dict[str, Any]:
+    return {"tenant_id": x_tenant_id, "items": engine.compliance.escalations.list(x_tenant_id)}
+
+
+@agent_router.get("/compliance/audit")
+async def compliance_audit(x_tenant_id: str = Header(...)) -> Dict[str, Any]:
+    return {"tenant_id": x_tenant_id, "events": engine.compliance.audit.events(x_tenant_id)}

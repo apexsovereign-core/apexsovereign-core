@@ -60,7 +60,8 @@ from payment_router import payment_router
 from metrics import PrometheusMetricsMiddleware, generate_prometheus_metrics_text
 from weekly_pricing_engine import weekly_pricing_engine
 from agent_api import agent_router
-from agent_middleware import AgentSecurityMiddleware, ApexTrustLayerMiddleware
+from agent_middleware import AgentSecurityMiddleware, ApexTrustLayerMiddleware, ObservabilityMiddleware
+from observability import telemetry
 from production_ingestion import production_router
 
 # Ensure models are imported into Base.metadata before init_db
@@ -181,6 +182,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.add_middleware(PrometheusMetricsMiddleware)
 app.add_middleware(AgentSecurityMiddleware)
 app.add_middleware(ApexTrustLayerMiddleware)
+app.add_middleware(ObservabilityMiddleware)
 
 
 # ---------------------------------------------------------------------------
@@ -271,6 +273,11 @@ async def prometheus_metrics_endpoint() -> JSONResponse:
         media_type="text/plain; version=0.0.4; charset=utf-8",
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )
+
+
+@app.get("/telemetry/summary", tags=["Telemetry"])
+async def telemetry_summary() -> Dict[str, Any]:
+    return telemetry.snapshot()
 
 
 # ---------------------------------------------------------------------------
