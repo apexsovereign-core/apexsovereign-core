@@ -53,11 +53,7 @@ export const CodeExplorer: React.FC<CodeExplorerProps> = ({
     e.preventDefault();
     setTokenError(null);
 
-    const validTokens = [
-      'apex-sec-admin-2026',
-      'apex-sovereign-master-audit',
-      'sovereign_clearance_omega_9'
-    ];
+    const validTokens: string[] = [];
     
     // Check against configured env variable if available
     const envToken = (import.meta as any).env?.VITE_ADMIN_ACCESS_TOKEN;
@@ -177,7 +173,7 @@ export const CodeExplorer: React.FC<CodeExplorerProps> = ({
                   type="password"
                   value={adminTokenInput}
                   onChange={(e) => setAdminTokenInput(e.target.value)}
-                  placeholder="Enter administrative token (e.g. apex-sec-admin-2026)"
+                  placeholder="Enter configured administrative token"
                   className="w-full pl-3 pr-24 py-2.5 bg-slate-950 border border-slate-800 focus:border-rose-500/60 focus:ring-1 focus:ring-rose-500/50 rounded-xl text-xs font-mono text-slate-100 placeholder-slate-600 focus:outline-none"
                 />
                 <button

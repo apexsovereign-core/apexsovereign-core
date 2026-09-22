@@ -61,7 +61,7 @@ export const AutonomousAgentChatbot: React.FC<AutonomousAgentChatbotProps> = ({
 
   // Zero-Trust Admin Clearance Modal
   const [showAdminAuditModal, setShowAdminAuditModal] = useState(false);
-  const [adminTokenInput, setAdminTokenInput] = useState('apex-sec-admin-2026');
+  const [adminTokenInput, setAdminTokenInput] = useState('');
   const [adminAuditResult, setAdminAuditResult] = useState<any>(null);
   const [auditLoading, setAuditLoading] = useState(false);
   const [copiedAuditSig, setCopiedAuditSig] = useState<string | null>(null);

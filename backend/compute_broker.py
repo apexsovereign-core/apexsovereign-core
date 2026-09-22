@@ -830,7 +830,7 @@ def get_audit_logs(limit: int = 50, db: Session = Depends(get_db)):
 @compute_router.post("/rotate-keys")
 def trigger_key_rotation(x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token")):
     """Rotates HMAC signing keys. Protected by admin clearance token."""
-    expected_token = os.getenv("APP_SECRET_API_KEY", "apex-sec-admin-2026")
+    expected_token = os.getenv("APP_SECRET_API_KEY", "")
     if not x_admin_token or x_admin_token != expected_token:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin token required for key rotation.")
     new_version = key_rotator.rotate_keys()

@@ -187,7 +187,8 @@ async def rbac_security_middleware(request: Request, call_next):
     if path.startswith("/admin") or path.startswith("/api/admin") or path.startswith("/vault/admin"):
         admin_token = request.headers.get("x-admin-access-token") or request.headers.get("authorization", "").replace("Bearer ", "")
         user_role = (request.headers.get("x-user-role") or "").lower()
-        if not admin_token or admin_token not in ["apex-sec-admin-2026", "apex-sovereign-master-audit", "ADMIN_ACCESS_T"] or user_role in ["lead", "visitor"]:
+        configured_admin_token = os.getenv("ADMIN_ACCESS_T", "")
+        if not configured_admin_token or not admin_token or admin_token != configured_admin_token or user_role in ["lead", "visitor"]:
             return JSONResponse(
                 status_code=403,
                 content={
@@ -456,9 +457,9 @@ async def admin_recalibrate_weekly_pricing(
         request.headers.get("authorization", "").replace("Bearer ", "").strip() or
         body.get("admin_access_token", "")
     )
-    env_admin = os.getenv("ADMIN_ACCESS_T", "apex-sec-admin-2026")
+    env_admin = os.getenv("ADMIN_ACCESS_T", "")
 
-    if token != env_admin and token not in ["apex-sec-admin-2026", "apex-sovereign-master-audit"]:
+    if not env_admin or token != env_admin:
         return JSONResponse(
             status_code=403,
             content={
@@ -734,14 +735,16 @@ async def send_sms_otp_endpoint(body: Dict[str, Any] = None):
     # Mask phone
     masked_phone = f"{cleaned_phone[:3]}••••••{cleaned_phone[-4:]}" if len(cleaned_phone) > 6 else cleaned_phone
 
-    return {
+    response = {
         "status": "OTP_DISPATCHED",
         "phone_number": masked_phone,
         "expires_in_seconds": 300,
         "purpose": purpose,
-        "dev_preview_otp": otp,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
+    if not IS_PROD:
+        response["dev_preview_otp"] = otp
+    return response
 
 @app.post("/auth/verify-sms", tags=["Authentication & Security"])
 async def verify_sms_endpoint(body: Dict[str, Any] = None):
@@ -819,9 +822,9 @@ async def audit_agent_memory_endpoint(request: Request):
         request.headers.get("x-admin-access-token") or
         request.headers.get("authorization", "").replace("Bearer ", "").strip()
     )
-    env_admin = os.getenv("ADMIN_ACCESS_T", "apex-sec-admin-2026")
+    env_admin = os.getenv("ADMIN_ACCESS_T", "")
 
-    if token != env_admin and token not in ["apex-sec-admin-2026", "apex-sovereign-master-audit"]:
+    if not env_admin or token != env_admin:
         return JSONResponse(
             status_code=403,
             content={
