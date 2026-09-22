@@ -24,8 +24,8 @@ logger = logging.getLogger("apexsovereign.neural_interface")
 router = APIRouter(prefix="/api/v1/neural", tags=["ApexSovereign Neural Interface"])
 
 # HMAC Audit Secret & Admin Master Key
-HMAC_SECRET = os.environ.get("AGENT_HMAC_SECRET", "apex-sec-prod-secret-2026")
-ADMIN_ACCESS_T = os.environ.get("ADMIN_ACCESS_T", "apex-sec-admin-2026")
+HMAC_SECRET = os.environ.get("AGENT_HMAC_SECRET", "")
+ADMIN_ACCESS_T = os.environ.get("ADMIN_ACCESS_T", "")
 
 # In-memory sliding window tenant rate limiter & token budgets
 class TenantRateLimiter:

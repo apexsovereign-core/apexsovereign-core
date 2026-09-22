@@ -32,8 +32,8 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger("apexsovereign.autonomous_agent_swarm")
 
 # Zero-Trust Admin Clearance Secret
-ADMIN_ACCESS_T = os.environ.get("ADMIN_ACCESS_T", "apex-sec-admin-2026")
-HMAC_SECRET = os.environ.get("AGENT_HMAC_SECRET", "apex-sec-prod-secret-2026")
+ADMIN_ACCESS_T = os.environ.get("ADMIN_ACCESS_T", "")
+HMAC_SECRET = os.environ.get("AGENT_HMAC_SECRET", "")
 
 
 class AutonomousToolExecutor:
@@ -388,7 +388,7 @@ class AutonomousAgentSwarmOrchestrator:
         Zero-Trust Protected Memory & Fine-Tuning Telemetry Audit.
         Strictly gated behind ADMIN_ACCESS_T clearance.
         """
-        if admin_token != ADMIN_ACCESS_T and admin_token not in ["apex-sec-admin-2026", "apex-sovereign-master-audit"]:
+        if not ADMIN_ACCESS_T or admin_token != ADMIN_ACCESS_T:
             return {
                 "status": "FORBIDDEN",
                 "error": "Cryptographic zero-trust boundary: Valid ADMIN_ACCESS_T token is required to inspect protected agent memory."

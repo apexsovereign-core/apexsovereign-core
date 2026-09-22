@@ -40,8 +40,8 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
 
   const envAdminToken = 
     ((import.meta as any).env?.VITE_ADMIN_ACCESS_T as string) || 
-    ((import.meta as any).env?.VITE_ADMIN_ACCESS_TOKEN as string) || 
-    'apex-sec-admin-2026';
+    ((import.meta as any).env?.VITE_ADMIN_ACCESS_TOKEN as string) ||
+    '';
 
   const isUserAdmin = currentUser?.role === 'admin';
   const isAuthorized = isUserAdmin || sessionAdminUnlocked;
@@ -56,12 +56,7 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
       return;
     }
 
-    const authorizedTokens = [
-      envAdminToken,
-      'apex-sec-admin-2026',
-      'apex-sovereign-master-audit',
-      'sovereign-staff-2026'
-    ];
+    const authorizedTokens = envAdminToken ? [envAdminToken] : [];
 
     if (authorizedTokens.includes(cleanInput)) {
       setTokenSuccess(true);
@@ -90,27 +85,7 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
   };
 
   const handleStaffQuickLogin = () => {
-    setTokenInput('apex-sec-admin-2026');
-    setTokenSuccess(true);
-    setSessionAdminUnlocked(true);
-
-    if (onElevateAdmin) {
-      const elevatedAdminUser: CustomerUser = {
-        id: 'usr_staff_architect',
-        email: 'lead.architect@apexsovereign.ai',
-        fullName: 'Lead Principal Architect & Admin',
-        company: 'ApexSovereign Global Infrastructure',
-        tenantId: 'tenant-admin-node01',
-        role: 'admin',
-        plan: 'enterprise',
-        computeCredits: 500000,
-        maxQuota: 1000000,
-        apiKey: 'sk_live_admin_' + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-        createdAt: new Date().toISOString(),
-        subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-      };
-      onElevateAdmin(elevatedAdminUser);
-    }
+    setTokenError('Quick staff login is disabled. Enter the configured administrative token.');
   };
 
   const handleLockSession = () => {

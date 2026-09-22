@@ -381,8 +381,9 @@ function apexSovereignApiPlugin(): Plugin {
                              (req.headers.cookie?.match(/ADMIN_ACCESS_T=([^;]+)/)?.[1]);
           const userRole = (req.headers['x-user-role'] || '').toString().toLowerCase();
 
-          const isAuthorizedAdmin = 
-            (adminToken === 'apex-sec-admin-2026' || adminToken === 'apex-sovereign-master-audit' || adminToken === 'ADMIN_ACCESS_T') &&
+          const configuredAdminToken = process.env.ADMIN_ACCESS_T || '';
+          const isAuthorizedAdmin = Boolean(configuredAdminToken) &&
+            adminToken === configuredAdminToken &&
             userRole !== 'lead' && userRole !== 'visitor';
 
           if (!isAuthorizedAdmin) {
@@ -468,7 +469,7 @@ function apexSovereignApiPlugin(): Plugin {
           const baseCuRate = 0.0125;
           const lockedCuRate = Number((baseCuRate * discountMultiplier).toFixed(6));
 
-          const hmac = crypto.createHmac('sha256', 'apex-sec-prod-secret-2026')
+          const hmac = crypto.createHmac('sha256', (process.env.AGENT_HMAC_SECRET || ''))
             .update(`${epoch.epochId}:${discountPct}:${lockedCuRate}`)
             .digest('hex');
 
@@ -529,7 +530,7 @@ function apexSovereignApiPlugin(): Plugin {
             try { body = JSON.parse(bodyStr); } catch (_) {}
             
             const token = req.headers['x-admin-access-token'] || body.admin_access_token;
-            if (token !== 'apex-sec-admin-2026' && token !== 'apex-sovereign-master-audit') {
+            if (!process.env.ADMIN_ACCESS_T || token !== process.env.ADMIN_ACCESS_T) {
               res.setHeader('Content-Type', 'application/json');
               res.statusCode = 403;
               res.end(JSON.stringify({
@@ -541,7 +542,7 @@ function apexSovereignApiPlugin(): Plugin {
 
             const epoch = getCurrentWeeklyEpoch();
             const discountPct = 15.25;
-            const hmac = crypto.createHmac('sha256', 'apex-sec-prod-secret-2026')
+            const hmac = crypto.createHmac('sha256', (process.env.AGENT_HMAC_SECRET || ''))
               .update(`ADMIN_RECALIBRATE:${epoch.epochId}:${Date.now()}`)
               .digest('hex');
 
@@ -709,7 +710,7 @@ Deliver an authoritative, technically rigorous, executive response with structur
             }
 
             const latencyMs = Date.now() - startTime;
-            const auditSig = crypto.createHmac('sha256', 'apex-sec-prod-secret-2026')
+            const auditSig = crypto.createHmac('sha256', (process.env.AGENT_HMAC_SECRET || ''))
               .update(`${tenantId}:${totalTokens}:${latencyMs}:${crypto.createHash('sha256').update(accumulated).digest('hex')}`)
               .digest('hex');
 
@@ -785,7 +786,7 @@ Deliver an authoritative, technically rigorous, executive response with structur
                 resultStatus: 'SUCCESS',
                 latencyMs: 38.5,
                 timestamp: new Date().toISOString(),
-                auditSignature: crypto.createHmac('sha256', 'apex-sec-prod-secret-2026').update(`VERIFY:${orderId}:${tenantId}`).digest('hex'),
+                auditSignature: crypto.createHmac('sha256', (process.env.AGENT_HMAC_SECRET || '')).update(`VERIFY:${orderId}:${tenantId}`).digest('hex'),
                 summary: `PayPal v2 Order ${orderId} verified atomically with Supabase row lock. 25,000 Compute Units allocated.`
               });
 
@@ -811,7 +812,7 @@ Deliver an authoritative, technically rigorous, executive response with structur
                 resultStatus: 'SUCCESS',
                 latencyMs: 52.4,
                 timestamp: new Date().toISOString(),
-                auditSignature: crypto.createHmac('sha256', 'apex-sec-prod-secret-2026').update(`HEAL:${pipeId}`).digest('hex'),
+                auditSignature: crypto.createHmac('sha256', (process.env.AGENT_HMAC_SECRET || '')).update(`HEAL:${pipeId}`).digest('hex'),
                 summary: `Pipeline ${pipeId} diagnosed & healed. Worker thread pool flushed, Supabase WAL restored, cluster re-balanced.`
               });
 
@@ -1138,7 +1139,7 @@ Provide your bespoke AI Concierge response:`;
               clearance_level: 'ZERO_TRUST_LEVEL_2',
             };
 
-            const auditSignature = crypto.createHmac('sha256', 'apex-sec-prod-secret-2026')
+            const auditSignature = crypto.createHmac('sha256', (process.env.AGENT_HMAC_SECRET || ''))
               .update(`SMS_VERIFIED:${cleanedPhone}:${tenantId}:${sessionToken}:${authTime}`)
               .digest('hex');
 
@@ -1189,7 +1190,7 @@ Provide your bespoke AI Concierge response:`;
         // 6. Zero-Trust Protected Agent Memory & Fine-Tuning Telemetry Audit
         if (url === '/leads/agent/memory-audit') {
           const token = req.headers['x-admin-access-token'] || req.headers['authorization']?.replace('Bearer ', '');
-          if (token !== 'apex-sec-admin-2026' && token !== 'apex-sovereign-master-audit') {
+          if (!process.env.ADMIN_ACCESS_T || token !== process.env.ADMIN_ACCESS_T) {
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 403;
             res.end(JSON.stringify({
