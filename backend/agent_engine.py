@@ -71,8 +71,8 @@ def _lookup(payload: Mapping[str, Any], dotted_key: str) -> Any:
 
 def load_manifest(path: Path) -> Dict[str, Any]:
     document = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    if not isinstance(document, dict) or document.get("version") != "1.0":
-        raise ManifestValidationError("manifest version 1.0 is required")
+    if not isinstance(document, dict) or str(document.get("version", "")).split(".")[0] not in {"1", "2"}:
+        raise ManifestValidationError("manifest version 1.x or 2.x is required")
     agents = document.get("agents")
     if not isinstance(agents, dict) or not agents:
         raise ManifestValidationError("manifest must declare at least one agent")
@@ -93,7 +93,9 @@ class AgentEngine:
 
     def __init__(self, manifest: Mapping[str, Any], *, max_steps: int = 12) -> None:
         self.manifest = manifest
-        self.max_steps = min(max_steps, int(manifest.get("platform", {}).get("max_steps_per_run", 12)))
+        platform_config = manifest.get("platform", {})
+        configured_max_steps = platform_config.get("max_steps_per_run", 12) if isinstance(platform_config, Mapping) else 12
+        self.max_steps = min(max_steps, int(configured_max_steps))
         self._runs: Dict[str, AgentRun] = {}
         self._idempotency: Dict[tuple[str, str], str] = {}
         self._handlers: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]] = {}

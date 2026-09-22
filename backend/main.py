@@ -60,7 +60,7 @@ from payment_router import payment_router
 from metrics import PrometheusMetricsMiddleware, generate_prometheus_metrics_text
 from weekly_pricing_engine import weekly_pricing_engine
 from agent_api import agent_router
-from agent_middleware import AgentSecurityMiddleware
+from agent_middleware import AgentSecurityMiddleware, ApexTrustLayerMiddleware
 
 # Ensure models are imported into Base.metadata before init_db
 try:
@@ -179,6 +179,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ---------------------------------------------------------------------------
 app.add_middleware(PrometheusMetricsMiddleware)
 app.add_middleware(AgentSecurityMiddleware)
+app.add_middleware(ApexTrustLayerMiddleware)
 
 
 # ---------------------------------------------------------------------------
