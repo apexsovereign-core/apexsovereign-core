@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-PAYPAL_MODE = os.getenv("PAYPAL_MODE", "live").lower()
+PAYPAL_MODE = os.getenv("PAYPAL_NODE", os.getenv("PAYPAL_MODE", "sandbox")).lower()
 PAYPAL_BASE_URL = (
     "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
 )
