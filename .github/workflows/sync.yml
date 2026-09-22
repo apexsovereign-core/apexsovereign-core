@@ -40,6 +40,13 @@ jobs:
               
               # Ensure the static folder exists in the agency repo
               mkdir -p agency-repo/rust-engine/static
+
+              # Synchronize the canonical Python ingress runtime at repository root.
+              # The existing Rust source remains intact for rollback and CI coverage.
+              cp app.py main.py requirements.txt Procfile render.yaml agency-repo/
+              rm -rf agency-repo/backend
+              cp -r backend agency-repo/backend
+              cp index.html agency-repo/index.html
               
               # Copy the built Vite assets
               rm -rf agency-repo/rust-engine/static/*
@@ -47,6 +54,6 @@ jobs:
               
               # Commit and push changes back to the agency repo
               cd agency-repo
-              git add rust-engine/static/
-              git commit -m "chore: sync latest frontend build from apexsovereign-core" || echo "No changes to commit"
+              git add rust-engine/static/ app.py main.py requirements.txt Procfile render.yaml backend/ index.html
+              git commit -m "chore: sync FastAPI ingress runtime and storefront from apexsovereign-core" || echo "No changes to commit"
               git push origin main
