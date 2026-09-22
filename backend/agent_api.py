@@ -12,6 +12,7 @@ from agent_middleware import audit_context, verify_webhook_signature
 from apex_orchestrator import ApexOrchestrator
 from orchestrator_mesh import federated_mesh, mesh_router
 from action_ledger import ledger
+from federated_fabric import federated_fabric
 
 
 agent_router = APIRouter(prefix="/agent-platform", tags=["agent-platform"])
@@ -167,7 +168,7 @@ async def route_mesh(request: Request, body: MeshRouteRequest, x_tenant_id: str 
 
 @agent_router.get("/federated/{object_key}")
 async def federated_lookup(object_key: str, x_tenant_id: str = Header(...)) -> Dict[str, Any]:
-    return {"tenant_id": x_tenant_id, "result": federated_mesh.fetch_live_external_object(object_key)}
+    return {"tenant_id": x_tenant_id, "result": await federated_fabric.fetch(object_key)}
 
 
 @agent_router.post("/actions/commit")
