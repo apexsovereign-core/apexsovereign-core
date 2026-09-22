@@ -77,6 +77,7 @@ from agent_middleware import AgentSecurityMiddleware, ApexTrustLayerMiddleware, 
 from observability import telemetry
 from usage_metering import usage_meter
 from production_ingestion import production_router
+from v21_mesh import MeshEvent, WorkflowProvision, mesh
 
 # Ensure models are imported into Base.metadata before init_db
 try:
@@ -114,8 +115,12 @@ async def lifespan(app: FastAPI):
     except Exception as worker_exc:
         print(f"[ApexSovereign Worker] Worker startup note: {worker_exc}")
 
+    await mesh.start()
+    print("[ApexSovereign] v21 autonomous data mesh supervisor initialized.")
+
     yield
 
+    await mesh.stop()
     print("[ApexSovereign] Graceful shutdown completed. Releasing thread pools.")
 
 
@@ -292,6 +297,35 @@ def allocate_compute_compatibility(req: LeaseRequest, db: Session = Depends(get_
 @app.get("/telemetry/summary", tags=["Telemetry"])
 async def telemetry_summary() -> Dict[str, Any]:
     return {**telemetry.snapshot(), "usage_meter": usage_meter.snapshot()}
+
+
+@app.get("/v21/mesh/status", tags=["v21 Enterprise Mesh"])
+async def v21_mesh_status() -> Dict[str, Any]:
+    """Executive-safe status for the autonomous supervisor and chained ledger."""
+    return mesh.snapshot()
+
+
+@app.get("/v21/telemetry/events", tags=["v21 Enterprise Mesh"])
+async def v21_telemetry_events(limit: int = 20) -> Dict[str, Any]:
+    """Return recent non-secret event states for the control panel."""
+    return {"events": mesh.events_since(limit), "count": len(mesh.events_since(limit))}
+
+
+@app.post("/v21/workflows/provision", tags=["v21 Enterprise Mesh"])
+async def v21_provision_workflow(request: WorkflowProvision) -> Dict[str, Any]:
+    """Provision a guarded workflow request without exposing credentials or billing actions."""
+    if request.controls.get("restricted_data") and request.controls.get("compliance_approved") is not True:
+        return {"status": "blocked", "reason": "restricted_data_requires_compliance_approval"}
+    event = await mesh.enqueue(
+        MeshEvent(
+            tenant_id=request.tenant_id,
+            event_type="workflow.provisioned",
+            quantity=1,
+            metadata={"workflow_type": request.workflow_type, "priority": request.priority, **request.controls},
+        ),
+        source="control_panel",
+    )
+    return {"status": "accepted", "workflow_id": event["event_id"], "ledger": event}
 
 
 # ---------------------------------------------------------------------------
