@@ -73,7 +73,7 @@ export const AdminAccessGate: React.FC<AdminAccessGateProps> = ({
           plan: 'enterprise',
           computeCredits: 500000,
           maxQuota: 1000000,
-          apiKey: currentUser?.apiKey || ('sk_live_admin_' + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('')),
+          apiKey: currentUser?.apiKey || ('sk_demo_admin_' + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('')),
           createdAt: currentUser?.createdAt || new Date().toISOString(),
           subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
         };

@@ -257,7 +257,7 @@ async def provision_instant_trial(
     conn: Connection = Depends(get_db_tx),
 ) -> Dict[str, Any]:
     tenant_id = f"tenant_trial_{secrets.token_hex(4)}"
-    api_key = f"sk_live_apex_{secrets.token_hex(16)}"
+    api_key = f"sk_demo_apex_{secrets.token_hex(16)}"
     credits = 1000.0  # 1,000 complimentary compute units
 
     # Commit trial tenant under atomic PostgreSQL transaction

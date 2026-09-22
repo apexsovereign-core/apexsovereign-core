@@ -95,7 +95,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         plan: tier === 'admin' ? 'enterprise' : tier,
         computeCredits: creditsMap[tier],
         maxQuota: quotaMap[tier],
-        apiKey: `sk_live_apex_${tier}_` + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+        apiKey: `sk_demo_apex_${tier}_` + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
         createdAt: new Date().toISOString(),
         subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
       };

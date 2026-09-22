@@ -35,7 +35,7 @@ export const VariableSigner: React.FC = () => {
 
   const [variables, setVariables] = useState<Record<string, string>>({
     DATABASE_URL: 'postgresql://postgres.xxx:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require',
-    APP_SECRET_API_KEY: 'sk_live_apex_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+    APP_SECRET_API_KEY: 'sk_demo_apex_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
     LEASE_HMAC_SECRET: 'sec_hmac_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
     PAYPAL_CLIENT_ID: 'AZ_paypal_client_id_placeholder',
     PAYPAL_CLIENT_SECRET: 'EL_paypal_client_secret_placeholder',
@@ -60,7 +60,7 @@ export const VariableSigner: React.FC = () => {
       label: '2. APP_SECRET_API_KEY',
       description: 'Master API key validated via secrets.compare_digest for the X-API-Key header.',
       isSecret: true,
-      generator: () => generateRandomKey('sk_live_apex'),
+      generator: () => generateRandomKey('sk_demo_apex'),
     },
     {
       key: 'LEASE_HMAC_SECRET',

@@ -83,7 +83,7 @@ export const CodeExplorer: React.FC<CodeExplorerProps> = ({
             plan: 'enterprise',
             computeCredits: 999999,
             maxQuota: 1000000,
-            apiKey: 'sk_live_apex_sec_admin_' + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+            apiKey: 'sk_demo_apex_sec_admin_' + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
             createdAt: new Date().toISOString(),
             subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
           };
@@ -107,7 +107,7 @@ export const CodeExplorer: React.FC<CodeExplorerProps> = ({
         plan: 'enterprise',
         computeCredits: 500000,
         maxQuota: 1000000,
-        apiKey: 'sk_live_apex_admin_' + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+        apiKey: 'sk_demo_apex_admin_' + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
         createdAt: new Date().toISOString(),
         subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
       };
