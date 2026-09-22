@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: apex-ingress-engine
+    name: apex-ingestion-engine
     runtime: python
     region: oregon
     plan: starter
