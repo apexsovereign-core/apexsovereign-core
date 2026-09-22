@@ -16,7 +16,7 @@ import hashlib
 import threading
 from collections import deque
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from pydantic import BaseModel, Field
