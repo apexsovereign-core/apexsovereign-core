@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 from agent_engine import AgentEngine, AgentPlatformError, build_default_engine
 from agent_middleware import audit_context, verify_webhook_signature
 from apex_orchestrator import ApexOrchestrator
+from orchestrator_mesh import federated_mesh, mesh_router
+from action_ledger import ledger
 
 
 agent_router = APIRouter(prefix="/agent-platform", tags=["agent-platform"])
@@ -30,6 +32,18 @@ class OrchestrationRequest(BaseModel):
     agent_id: str = Field(..., min_length=2, max_length=128)
     user_intent: str = Field(..., min_length=3, max_length=1000)
     context_data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class MeshRouteRequest(BaseModel):
+    intent: str = Field(..., min_length=3, max_length=1000)
+    target_agent: str = Field(..., min_length=2, max_length=128)
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentActionRequest(BaseModel):
+    idempotency_key: str = Field(..., min_length=8, max_length=128)
+    action_type: str = Field(..., min_length=2, max_length=128)
+    target_resource: str = Field(..., min_length=2, max_length=255)
 
 
 def _serialize_run(run: Any) -> Dict[str, Any]:
@@ -141,3 +155,27 @@ async def orchestrate(request: Request, body: OrchestrationRequest, x_tenant_id:
     """Run the supplied high-level reasoning loop with bounded, auditable steps."""
     record = await ApexOrchestrator(body.agent_id).execute_autonomous_loop(body.user_intent, body.context_data)
     return {"run": record, "audit": audit_context(request, body.context_data), "idempotency_key": x_idempotency_key, "tenant_id": x_tenant_id}
+
+
+@agent_router.post("/mesh/route")
+async def route_mesh(request: Request, body: MeshRouteRequest, x_tenant_id: str = Header(...), x_idempotency_key: str = Header(...)) -> Dict[str, Any]:
+    result = await mesh_router.route_and_execute(body.intent, body.target_agent, body.payload)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return {"tenant_id": x_tenant_id, "idempotency_key": x_idempotency_key, "result": result, "audit": audit_context(request, body.payload)}
+
+
+@agent_router.get("/federated/{object_key}")
+async def federated_lookup(object_key: str, x_tenant_id: str = Header(...)) -> Dict[str, Any]:
+    return {"tenant_id": x_tenant_id, "result": federated_mesh.fetch_live_external_object(object_key)}
+
+
+@agent_router.post("/actions/commit")
+async def commit_agent_action(body: AgentActionRequest, x_agent_identity: Optional[str] = Header(default=None), x_tenant_id: str = Header(...), x_idempotency_key: str = Header(...)) -> Dict[str, Any]:
+    if not x_agent_identity:
+        raise HTTPException(status_code=403, detail="Agent Identity Verification Failed.")
+    try:
+        commit = await ledger.commit(idempotency_key=body.idempotency_key, agent_identity=x_agent_identity, action_type=body.action_type, target_resource=body.target_resource)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"tenant_id": x_tenant_id, "status": commit.status, "idempotency_key": commit.idempotency_key, "agent": commit.agent, "transaction_id": commit.transaction_id, "action": commit.action, "resource": commit.resource}
