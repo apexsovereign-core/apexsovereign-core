@@ -1,0 +1,70 @@
+version: "1.0"
+platform:
+  name: ApexSovereign Enterprise Agent Fabric
+  mode: supervised_autonomy
+  default_timeout_seconds: 30
+  max_steps_per_run: 12
+  retry_policy:
+    max_attempts: 3
+    backoff_seconds: 0.25
+agents:
+  inbound_pipeline:
+    description: Qualifies inbound demand and advances a deal through deterministic stages.
+    triggers: [lead.created, webhook.crm.lead_created]
+    capabilities: [classify_lead, create_activity, advance_deal]
+    workflow:
+      - id: qualify
+        action: classify_lead
+        requires: [lead.email, lead.company]
+      - id: log_activity
+        action: create_activity
+        requires: [lead.id]
+      - id: advance_pipeline
+        action: advance_deal
+        requires: [deal.id, lead.qualification]
+    guardrails:
+      approval_required: false
+      max_external_actions: 0
+  customer_resolution:
+    description: Triage support tickets and prepare a resolution plan.
+    triggers: [ticket.created, webhook.support.ticket_created]
+    capabilities: [classify_ticket, draft_resolution, create_activity]
+    workflow:
+      - id: triage
+        action: classify_ticket
+        requires: [ticket.id, ticket.subject]
+      - id: prepare_resolution
+        action: draft_resolution
+        requires: [ticket.classification]
+      - id: record_activity
+        action: create_activity
+        requires: [ticket.id]
+    guardrails:
+      approval_required: true
+      max_external_actions: 0
+integrations:
+  webhook_contract:
+    signature_header: X-Apex-Signature
+    replay_window_seconds: 300
+    idempotency_header: X-Idempotency-Key
+  productivity:
+    supported_events: [calendar.event_created, email.received, crm.record_updated]
+    delivery_mode: outbound_webhook
+security:
+  require_tenant_scope: true
+  redact_fields: [api_key, authorization, access_token, refresh_token]
+  audit_all_steps: true
+  allow_network_actions: false
+  human_approval_for: [send_external_message, close_ticket]
+entities: [accounts, contacts, deals, tickets, activity_logs, agent_runs, agent_steps]
+metrics: [agent_runs_total, agent_steps_total, agent_run_duration_seconds, agent_guardrail_blocks_total]
+engineering:
+  deterministic_first: true
+  llm_policy: optional_classifier_only
+  failure_mode: persist_and_retry
+  idempotency: required
+  max_concurrency_per_tenant: 4
+metadata:
+  source: canonical-apexsovereign-core
+  generated_at: 2026-09-22
+  note: Native implementation contract; no uploaded AI Studio asset file was present.
