@@ -61,6 +61,7 @@ from metrics import PrometheusMetricsMiddleware, generate_prometheus_metrics_tex
 from weekly_pricing_engine import weekly_pricing_engine
 from agent_api import agent_router
 from agent_middleware import AgentSecurityMiddleware, ApexTrustLayerMiddleware
+from production_ingestion import production_router
 
 # Ensure models are imported into Base.metadata before init_db
 try:
@@ -305,6 +306,7 @@ async def system_predictive_scaling_status() -> Dict[str, Any]:
 app.include_router(compute_router)
 app.include_router(payment_router)
 app.include_router(agent_router)
+app.include_router(production_router)
 
 # Enterprise Wire / ACH Invoicing Router
 try:
