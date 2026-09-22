@@ -66,7 +66,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
   const handleRotateKey = () => {
     if (confirm('Are you sure you want to rotate your API key? Any active scripts using this key will need to be updated.')) {
-      const newKey = 'sk_live_apex_' + Array.from({ length: 28 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      const newKey = 'sk_demo_apex_' + Array.from({ length: 28 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
       onUpdateUser({
         ...user,
         apiKey: newKey
@@ -475,7 +475,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
         <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 font-mono text-xs">
           <span className="text-slate-300 select-all truncate">
-            {showApiKey ? user.apiKey : 'sk_live_apex_' + '•'.repeat(24)}
+            {showApiKey ? user.apiKey : 'sk_demo_apex_' + '•'.repeat(24)}
           </span>
           <div className="flex items-center gap-2 shrink-0">
             <button

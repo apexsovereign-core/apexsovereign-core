@@ -102,9 +102,9 @@ class TestApexSovereignCore(unittest.TestCase):
         self.assertGreater(cost_gpu_a100, 3.0)
 
     def test_constant_time_api_key_check(self):
-        key_a = "sk_live_very_secret_api_token"
-        key_b = "sk_live_very_secret_api_token"
-        key_c = "sk_live_wrong_token"
+        key_a = "test_api_key_api_token"
+        key_b = "test_api_key_api_token"
+        key_c = "test_wrong_token"
 
         self.assertTrue(secrets.compare_digest(key_a, key_b))
         self.assertFalse(secrets.compare_digest(key_a, key_c))

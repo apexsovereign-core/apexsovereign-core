@@ -47,7 +47,7 @@ PAYPAL_CLIENT_ID="your_paypal_client_id"
 PAYPAL_CLIENT_SECRET="your_paypal_client_secret"
 PAYPAL_WEBHOOK_ID="WH-91827364501928374"
 PAYPAL_MODE="sandbox"
-APP_SECRET_API_KEY="sk_live_apex_sovereign_enterprise_secret_token_12345"
+APP_SECRET_API_KEY="generate-a-random-server-side-secret"
 ENVIRONMENT="development"
 PORT=3000
 ```
