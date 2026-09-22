@@ -64,6 +64,7 @@ from weekly_pricing_engine import weekly_pricing_engine
 from agent_api import agent_router
 from agent_middleware import AgentSecurityMiddleware, ApexTrustLayerMiddleware, ObservabilityMiddleware
 from observability import telemetry
+from usage_metering import usage_meter
 from production_ingestion import production_router
 
 # Ensure models are imported into Base.metadata before init_db
@@ -285,7 +286,7 @@ def allocate_compute_compatibility(req: LeaseRequest, db: Session = Depends(get_
 
 @app.get("/telemetry/summary", tags=["Telemetry"])
 async def telemetry_summary() -> Dict[str, Any]:
-    return telemetry.snapshot()
+    return {**telemetry.snapshot(), "usage_meter": usage_meter.snapshot()}
 
 
 # ---------------------------------------------------------------------------
