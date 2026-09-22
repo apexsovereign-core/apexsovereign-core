@@ -1,5 +1,12 @@
 -- ApexSovereign Enterprise Data Fabric v1
 -- Tenant-scoped CRM, support, activity, and agent execution state.
+CREATE TABLE IF NOT EXISTS apex_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
+    customer_id VARCHAR(128) NOT NULL, event_type VARCHAR(128) NOT NULL, quantity BIGINT NOT NULL CHECK (quantity > 0),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_apex_transactions_customer ON apex_transactions(customer_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL, domain VARCHAR(255), lifecycle_stage VARCHAR(64) NOT NULL DEFAULT 'PROSPECT',

@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+from observability import telemetry
 
 
 REDACTED_FIELDS = {"authorization", "api_key", "access_token", "refresh_token", "password", "secret"}
@@ -65,6 +66,20 @@ class ApexTrustLayerMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-Apex-Trust-Layer"] = "Active"
         response.headers["X-Execution-Latency-Ms"] = str(round((time.perf_counter() - started) * 1000, 2))
+        return response
+
+
+class ObservabilityMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Any]]) -> Any:
+        trace_id = request.headers.get("X-Trace-ID") or telemetry.start_trace(method=request.method, path=request.url.path)
+        request.state.trace_id = trace_id
+        try:
+            response = await call_next(request)
+            telemetry.finish_trace(trace_id, status=str(response.status_code))
+        except Exception as exc:
+            telemetry.finish_trace(trace_id, status="500", error=str(exc))
+            raise
+        response.headers["X-Trace-ID"] = trace_id
         return response
 
 
