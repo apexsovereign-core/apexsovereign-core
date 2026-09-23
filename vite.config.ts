@@ -689,6 +689,319 @@ function apexSovereignApiPlugin(): Plugin {
           return;
         }
 
+        // 1.5 Model Fine-Tuning & Sovereign Inference Gateway Endpoints
+        // In-memory model registry & state store for Vite dev server
+        if (!(global as any).__APEX_TUNING_STATE) {
+          (global as any).__APEX_TUNING_STATE = {
+            activeModel: {
+              model_id: 'apex-lora-tenant01-v2',
+              name: 'Apex-Llama3-8B-Sovereign-LoRA-v2',
+              type: 'LORA_ADAPTER',
+              base_model: 'apex-7b',
+              vram_gb: 18.5,
+              adapter_id: 'lora_adapter_9941a',
+              activated_at: new Date().toISOString(),
+              activated_by: 'SYSTEM_BOOT',
+            },
+            registry: {
+              'apex-7b': {
+                model_id: 'apex-7b',
+                name: 'Apex-7B Foundation',
+                architecture: 'Llama-3-Sovereign-7B',
+                parameters: '7.24B',
+                type: 'BASE_FOUNDATION',
+                context_window: 32768,
+                vram_required_gb: 16.0,
+                status: 'READY',
+                description: 'Ultra-low latency base model optimized for high-throughput edge agent routing.',
+              },
+              'apex-70b-sovereign': {
+                model_id: 'apex-70b-sovereign',
+                name: 'Apex-70B-Sovereign (Core Enterprise)',
+                architecture: 'Llama-3-Sovereign-70B-Instruct',
+                parameters: '70.6B',
+                type: 'BASE_FOUNDATION',
+                context_window: 65536,
+                vram_required_gb: 72.0,
+                status: 'READY',
+                description: 'Flagship multi-agent enterprise foundation for complex financial reasoning and contract signing.',
+              },
+              'apex-lora-tenant01-v2': {
+                model_id: 'apex-lora-tenant01-v2',
+                name: 'Apex-Llama3-8B-Sovereign-LoRA-v2',
+                architecture: 'LoRA Rank-16 / Alpha-32',
+                parameters: '42M trainable adapter weights',
+                type: 'LORA_ADAPTER',
+                base_model: 'apex-7b',
+                context_window: 32768,
+                vram_required_gb: 18.5,
+                status: 'READY',
+                description: 'Fine-tuned on institutional CRM telemetry, GPU pricing arbitrage, and auto-negotiation logs.',
+              },
+              'apex-crm-fastadap-v1': {
+                model_id: 'apex-crm-fastadap-v1',
+                name: 'Apex-CRM-FastAdap-v1',
+                architecture: 'LoRA Rank-8 / Alpha-16',
+                parameters: '21M trainable adapter weights',
+                type: 'LORA_ADAPTER',
+                base_model: 'apex-7b',
+                context_window: 16384,
+                vram_required_gb: 17.2,
+                status: 'READY',
+                description: 'Zero-shot customer intent classifier and contract milestone evaluator.',
+              }
+            },
+            jobs: [
+              {
+                job_id: 'job_tune_001',
+                name: 'CRM Intent & Multi-Tenant Telemetry LoRA',
+                tenant_id: 'tenant-sovereign-01',
+                base_model: 'apex-7b',
+                status: 'COMPLETED',
+                progress_pct: 100.0,
+                current_epoch: 3,
+                total_epochs: 3,
+                learning_rate: 0.0002,
+                batch_size: 8,
+                dataset_records: 1250,
+                dataset_tokens: 420000,
+                gpu_spot_node: 'us-east-h100-burst-01',
+                vram_allocated_gb: 74.2,
+                loss_curve: [
+                  { step: 50, loss: 0.842, eval_loss: 0.865, epoch: 0.4 },
+                  { step: 100, loss: 0.691, eval_loss: 0.710, epoch: 0.8 },
+                  { step: 150, loss: 0.514, eval_loss: 0.540, epoch: 1.2 },
+                  { step: 200, loss: 0.385, eval_loss: 0.412, epoch: 1.6 },
+                  { step: 250, loss: 0.264, eval_loss: 0.288, epoch: 2.0 },
+                  { step: 300, loss: 0.182, eval_loss: 0.201, epoch: 2.4 },
+                  { step: 350, loss: 0.138, eval_loss: 0.152, epoch: 2.8 },
+                  { step: 400, loss: 0.119, eval_loss: 0.126, epoch: 3.0 },
+                ],
+                final_loss: 0.119,
+                artifact_model_id: 'apex-lora-tenant01-v2',
+                created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+                completed_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+              },
+              {
+                job_id: 'job_tune_002',
+                name: 'Real-time Sovereign Arbitrage Policy LoRA',
+                tenant_id: 'tenant-sovereign-01',
+                base_model: 'apex-7b',
+                status: 'TRAINING',
+                progress_pct: 68.0,
+                current_epoch: 2,
+                total_epochs: 3,
+                learning_rate: 0.00015,
+                batch_size: 4,
+                dataset_records: 840,
+                dataset_tokens: 290000,
+                gpu_spot_node: 'eu-central-h100-burst-02',
+                vram_allocated_gb: 68.5,
+                loss_curve: [
+                  { step: 30, loss: 0.850, eval_loss: 0.870, epoch: 0.3 },
+                  { step: 60, loss: 0.720, eval_loss: 0.742, epoch: 0.7 },
+                  { step: 90, loss: 0.580, eval_loss: 0.605, epoch: 1.1 },
+                  { step: 120, loss: 0.420, eval_loss: 0.448, epoch: 1.5 },
+                  { step: 150, loss: 0.310, eval_loss: 0.335, epoch: 1.9 },
+                  { step: 180, loss: 0.225, eval_loss: 0.248, epoch: 2.3 },
+                ],
+                final_loss: 0.225,
+                artifact_model_id: null,
+                created_at: new Date(Date.now() - 1800000).toISOString(),
+                completed_at: null,
+              }
+            ]
+          };
+        }
+
+        const tuningState = (global as any).__APEX_TUNING_STATE;
+
+        if (url === '/v1/tuning/jobs/status' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            status: 'OPERATIONAL',
+            active_jobs_count: tuningState.jobs.filter((j: any) => j.status === 'TRAINING' || j.status === 'PENDING').length,
+            jobs: tuningState.jobs,
+            active_tenant_models: { 'tenant-sovereign-01': tuningState.activeModel },
+            timestamp: new Date().toISOString(),
+          }));
+          return;
+        }
+
+        if (url === '/v1/tuning/jobs/create' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', () => {
+            let body: any = {};
+            try { body = JSON.parse(bodyStr); } catch (_) {}
+            const jobId = `job_tune_${Date.now()}`;
+            const jobName = body.name || `LoRA Tuning Task #${tuningState.jobs.length + 1}`;
+            const epochs = Number(body.epochs || 3);
+            const baseModel = body.base_model || 'apex-7b';
+            const lr = Number(body.learning_rate || 0.0002);
+            const batchSize = Number(body.batch_size || 8);
+            const nowIso = new Date().toISOString();
+
+            const newJob = {
+              job_id: jobId,
+              name: jobName,
+              tenant_id: body.tenant_id || 'tenant-sovereign-01',
+              base_model: baseModel,
+              status: 'TRAINING',
+              progress_pct: 12.0,
+              current_epoch: 1,
+              total_epochs: epochs,
+              learning_rate: lr,
+              batch_size: batchSize,
+              dataset_records: 960,
+              dataset_tokens: 315000,
+              gpu_spot_node: 'us-east-h100-burst-01',
+              vram_allocated_gb: 74.2,
+              loss_curve: [
+                { step: 20, loss: 0.848, eval_loss: 0.865, epoch: 0.2 },
+                { step: 40, loss: 0.760, eval_loss: 0.785, epoch: 0.4 },
+              ],
+              final_loss: 0.760,
+              artifact_model_id: null,
+              created_at: nowIso,
+              completed_at: null,
+            };
+
+            tuningState.jobs.unshift(newJob);
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: 'JOB_SCHEDULED',
+              job_id: jobId,
+              details: newJob,
+              dataset_summary: {
+                status: 'DATASET_PREPARED',
+                total_records: 960,
+                estimated_tokens: 315000,
+                format: 'JSONL_PROMPT_COMPLETION',
+              },
+              audit_hash: crypto.createHash('sha256').update(`job_created:${jobId}:${nowIso}`).digest('hex'),
+              timestamp: nowIso,
+            }));
+          });
+          return;
+        }
+
+        if (url === '/v1/models/registry' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            status: 'OPERATIONAL',
+            models_count: Object.keys(tuningState.registry).length,
+            registry: tuningState.registry,
+            active_models: { 'tenant-sovereign-01': tuningState.activeModel },
+            timestamp: new Date().toISOString(),
+          }));
+          return;
+        }
+
+        if (url === '/v1/models/hot-swap' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', () => {
+            let body: any = {};
+            try { body = JSON.parse(bodyStr); } catch (_) {}
+            const modelId = body.model_id || 'apex-lora-tenant01-v2';
+            const modelMeta = tuningState.registry[modelId] || {
+              model_id: modelId,
+              name: modelId,
+              type: 'CUSTOM_WEIGHTS',
+              vram_required_gb: 18.0,
+            };
+
+            const prevModel = tuningState.activeModel.model_id;
+            tuningState.activeModel = {
+              model_id: modelId,
+              name: modelMeta.name,
+              type: modelMeta.type,
+              base_model: modelMeta.base_model || modelId,
+              vram_gb: modelMeta.vram_required_gb || 18.0,
+              adapter_id: modelMeta.type === 'LORA_ADAPTER' ? modelId : null,
+              activated_at: new Date().toISOString(),
+              activated_by: 'CONSOLE_HOT_SWAP',
+            };
+
+            const nowIso = new Date().toISOString();
+            const auditHash = crypto.createHash('sha256').update(`hotswap:${prevModel}:${modelId}:${nowIso}`).digest('hex');
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: 'HOT_SWAP_SUCCESSFUL',
+              tenant_id: body.tenant_id || 'tenant-sovereign-01',
+              active_model: tuningState.activeModel,
+              previous_model_id: prevModel,
+              hot_swap_latency_ms: 12.4,
+              container_restart_required: false,
+              audit_hash: auditHash,
+              timestamp: nowIso,
+            }));
+          });
+          return;
+        }
+
+        if (url === '/v1/models/inference' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', () => {
+            let body: any = {};
+            try { body = JSON.parse(bodyStr); } catch (_) {}
+            const prompt = body.prompt || 'Synthesize sovereign arbitrage status.';
+            const tenantId = body.tenant_id || 'tenant-sovereign-01';
+            const activeModel = tuningState.activeModel;
+            const nowIso = new Date().toISOString();
+
+            let completion = '';
+            if (activeModel.type === 'LORA_ADAPTER') {
+              completion = `[ACTIVE WEIGHTS: ${activeModel.name} | ADAPTER MODE]\n` +
+                `Sovereign tenant intent validated against fine-tuned LoRA checkpoint (${activeModel.model_id}). ` +
+                `Autonomous cluster dispatch confirmed with sub-50ms zero-copy memory routing. ` +
+                `GPU Arbitrage delta locked: 41.2% wholesale margin.`;
+            } else {
+              completion = `[ACTIVE WEIGHTS: ${activeModel.name} | BASE FOUNDATION]\n` +
+                `Standard sovereign inference executed via foundational ${activeModel.name} weights. ` +
+                `Cluster execution confirmed across distributed telemetry fabric.`;
+            }
+
+            const promptTokens = Math.max(1, prompt.split(' ').length * 2);
+            const completionTokens = Math.max(1, completion.split(' ').length * 2);
+            const totalTokens = promptTokens + completionTokens;
+            const cuDeducted = Number(((totalTokens / 1000) * 1.0).toFixed(4));
+            const auditHash = crypto.createHash('sha256').update(`inference:${tenantId}:${totalTokens}:${nowIso}`).digest('hex');
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: 'SUCCESS',
+              inference_id: `inf_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              tenant_id: tenantId,
+              model_id: activeModel.model_id,
+              model_name: activeModel.name,
+              model_type: activeModel.type,
+              completion: completion,
+              usage: {
+                prompt_tokens: promptTokens,
+                completion_tokens: completionTokens,
+                total_tokens: totalTokens,
+                cu_rate_per_1k_tokens: 1.0,
+                cu_deducted: cuDeducted,
+                remaining_cu_balance: 486820.5 - cuDeducted,
+              },
+              latency_ms: 19.4,
+              audit_hash: auditHash,
+              timestamp: nowIso,
+            }));
+          });
+          return;
+        }
+
         // 1b. Domain Cutover & DNS Health Diagnostic Verification Endpoint
         if (url === '/api/domain-cutover-check') {
           exec('python3 backend/domain_cutover_check.py --json', { timeout: 12000 }, (_err, stdout) => {
