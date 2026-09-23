@@ -19,6 +19,7 @@ import { EnterpriseCrmPipeline } from './components/EnterpriseCrmPipeline';
 import { AutonomousAgentSwarm } from './components/AutonomousAgentSwarm';
 import { NeuralChatInterface } from './components/NeuralChatInterface';
 import { AgentOperationsPanel } from './components/AgentOperationsPanel';
+import { VaultSecurityConsole } from './components/VaultSecurityConsole';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
@@ -250,6 +251,13 @@ export default function App() {
               currentUser={currentUser}
               onOpenAuth={() => setIsAuthModalOpen(true)}
             />
+          </div>
+        )}
+
+        {/* Sovereign Vault Perimeter & Automated Threat Defense Gateway */}
+        {activeTab === 'vault' && (
+          <div className="py-4">
+            <VaultSecurityConsole currentUser={currentUser} />
           </div>
         )}
 

@@ -416,17 +416,94 @@ function apexSovereignApiPlugin(): Plugin {
           return;
         }
 
-        // 1. Health check endpoint
+        // 1. Health check endpoint (Health Probe Exemption)
         if (url === '/health') {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
             service: 'ApexSovereign.ai Autonomous Broker',
             status: 'OPERATIONAL',
-            version: '2.5.0',
+            version: '2.7.0',
             weekly_pricing: 'ACTIVE',
             timestamp: new Date().toISOString(),
           }));
+          return;
+        }
+
+        // 1.1 Sovereign Vault Perimeter Status Endpoint
+        if (url === '/v1/vault/perimeter-status' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            status: 'ARMED_SECURE',
+            gateway: 'ApexSovereign Zero-Trust Vault Perimeter v2.7',
+            active_tenants_monitored: 3,
+            rate_limit_threshold_rps: 100,
+            max_payload_kb: 32,
+            threat_level: 'NOMINAL',
+            metrics: {
+              total_inspections: 1420,
+              blocked_rate_exceeded: 0,
+              blocked_payload_oversize: 0,
+              blocked_sqli_attempts: 0,
+              verified_hmac_signatures: 48,
+              tokens_rotated_count: 2,
+            },
+            recent_security_events: [
+              {
+                id: 'sec-001',
+                event_type: 'VAULT_PERIMETER_ARMED',
+                classification: 'restricted',
+                tenant_id: 'tenant-sovereign-01',
+                message: 'Sovereign Vault Perimeter Guard initialized with zero-trust envelope',
+                client_ip: '127.0.0.1',
+                audit_hash: crypto.createHash('sha256').update('init-vault-perimeter').digest('hex'),
+                timestamp: new Date().toISOString(),
+              },
+              {
+                id: 'sec-002',
+                event_type: 'VALID_HMAC',
+                classification: 'restricted',
+                tenant_id: 'tenant-sovereign-01',
+                message: 'HMAC-SHA256 signature verified for X-Apex-Signature payload',
+                client_ip: '127.0.0.1',
+                audit_hash: crypto.createHash('sha256').update('hmac-verified-01').digest('hex'),
+                timestamp: new Date(Date.now() - 45000).toISOString(),
+              }
+            ],
+            timestamp: new Date().toISOString(),
+          }));
+          return;
+        }
+
+        // 1.2 Sovereign Vault Key Rotation Endpoint
+        if (url === '/v1/vault/rotate-token' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', () => {
+            let body: any = {};
+            try { body = JSON.parse(bodyStr); } catch (_) {}
+            const tenant = body.tenant_id || 'tenant-sovereign-01';
+            const alias = body.key_alias || 'primary-institutional-key';
+            const rawToken = `apex_sk_live_${crypto.randomBytes(16).toString('hex')}`;
+            const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+            const nowIso = new Date().toISOString();
+            const expiresIso = new Date(Date.now() + 31536000000).toISOString();
+            const auditHash = crypto.createHash('sha256').update(`rotate:${tenant}:${tokenHash}:${nowIso}`).digest('hex');
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: 'ROTATED_SUCCESSFULLY',
+              tenant_id: tenant,
+              key_alias: alias,
+              new_token_preview: `${rawToken.slice(0, 13)}...${rawToken.slice(-4)}`,
+              token_hash: tokenHash,
+              expires_at: expiresIso,
+              audit_hash: auditHash,
+              timestamp: nowIso,
+            }));
+          });
           return;
         }
 

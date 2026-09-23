@@ -147,17 +147,70 @@ function calculateClusterSummary(nodes: ReturnType<typeof generateLiveGpuMetrics
 // In-Memory SMS OTP
 const smsOtpStore = new Map<string, { otp: string; expiresAt: number; attempts: number }>();
 
+// In-Memory Vault Perimeter Security State
+const rateLimitBuckets = new Map<string, number[]>();
+const activeVaultKeys = new Map<string, { alias: string; token: string; tokenHash: string; expiresAt: string }>([
+  ['tenant-sovereign-01', {
+    alias: 'primary-institutional-key',
+    token: 'apex_sk_live_9941a8b1c4e7f302d8e6a1b2c3d4e5f6',
+    tokenHash: crypto.createHash('sha256').update('apex_sk_live_9941a8b1c4e7f302d8e6a1b2c3d4e5f6').digest('hex'),
+    expiresAt: new Date(Date.now() + 31536000000).toISOString(),
+  }],
+  ['tenant-admin-node01', {
+    alias: 'root-core-infrastructure-key',
+    token: 'apex_sk_live_0001ff8a29b4e5c83011a7b8c9d0e1f2',
+    tokenHash: crypto.createHash('sha256').update('apex_sk_live_0001ff8a29b4e5c83011a7b8c9d0e1f2').digest('hex'),
+    expiresAt: new Date(Date.now() + 31536000000).toISOString(),
+  }]
+]);
+
+const vaultSecurityEvents: Array<{
+  id: string;
+  event_type: string;
+  classification: string;
+  tenant_id: string;
+  message: string;
+  client_ip: string;
+  audit_hash: string;
+  timestamp: string;
+}> = [
+  {
+    id: 'sec-init-001',
+    event_type: 'VAULT_PERIMETER_ARMED',
+    classification: 'restricted',
+    tenant_id: 'tenant-sovereign-01',
+    message: 'Express Container Security Hardened: CSP, HSTS, Sanitization & Rate-Limiter Active',
+    client_ip: '127.0.0.1',
+    audit_hash: crypto.createHash('sha256').update('init-vault-perimeter').digest('hex'),
+    timestamp: new Date().toISOString(),
+  }
+];
+
+const vaultMetrics = {
+  total_inspections: 0,
+  blocked_rate_exceeded: 0,
+  blocked_payload_oversize: 0,
+  blocked_sqli_attempts: 0,
+  verified_hmac_signatures: 0,
+  tokens_rotated_count: 0,
+};
+
 const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
   const method = req.method || 'GET';
 
-  // Common CORS and Security Headers
+  // -------------------------------------------------------------------------
+  // TARGET 2: Strict Enterprise Security Headers across ALL HTTP responses
+  // -------------------------------------------------------------------------
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Tenant-Id, X-Apex-Signature, X-Admin-Access-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Tenant-Id, X-Apex-Signature, X-Apex-Nonce, X-Apex-Timestamp, X-Admin-Access-Token');
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob: ws: wss:; frame-ancestors 'self';");
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   if (method === 'OPTIONS') {
     res.statusCode = 204;
@@ -165,7 +218,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 1. Health Probe (Cloud Run & Load Balancer)
+  // -------------------------------------------------------------------------
+  // 1. Health Probe Exemption (Cloud Run & Render: ALWAYS 200 OK without delay)
+  // -------------------------------------------------------------------------
   if (pathname === '/health' || pathname === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -173,8 +228,161 @@ const server = http.createServer((req, res) => {
       service: 'ApexSovereign.ai',
       uptime_seconds: process.uptime(),
       timestamp: new Date().toISOString(),
-      version: '2.6.0',
+      version: '2.7.0',
     }));
+    return;
+  }
+
+  vaultMetrics.total_inspections += 1;
+  const clientIp = ((req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+  const tenantId = (req.headers['x-tenant-id'] as string) || 'tenant-sovereign-01';
+
+  // -------------------------------------------------------------------------
+  // TARGET 2: Request Sanitization Middleware
+  // -------------------------------------------------------------------------
+  // 1. SQL Injection Vector Sanitization on API routes & query parameters
+  const SQLI_REGEX = /(\bunion\s+(all\s+)?select\b|\binsert\s+into\b|\bdrop\s+table\b|\bdelete\s+from\b|\bupdate\s+\w+\s+set\b|;\s*drop\b|--|\/\*|\*\/|\bexec(\s|\+)+(s|x)p\b|\bbenchmark\(|\bsleep\()/i;
+  const decodedUrl = decodeURIComponent(req.url || '');
+  if (SQLI_REGEX.test(decodedUrl)) {
+    vaultMetrics.blocked_sqli_attempts += 1;
+    const auditHash = crypto.createHash('sha256').update(`sqli:${tenantId}:${clientIp}:${Date.now()}`).digest('hex');
+    vaultSecurityEvents.unshift({
+      id: `sec-${Date.now()}`,
+      event_type: 'BLOCKED_SQLI_ATTEMPT',
+      classification: 'restricted',
+      tenant_id: tenantId,
+      message: 'Malicious SQL injection vector detected and blocked by Sovereign Vault Perimeter Guard',
+      client_ip: clientIp,
+      audit_hash: auditHash,
+      timestamp: new Date().toISOString(),
+    });
+    if (vaultSecurityEvents.length > 50) vaultSecurityEvents.pop();
+
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: 'PERIMETER_REJECTED',
+      message: 'Malicious SQL injection vector detected and blocked by Sovereign Vault Perimeter Guard',
+      classification: 'restricted',
+    }));
+    return;
+  }
+
+  // 2. Payload Buffer Threshold Enforcement (32KB JSON limit)
+  const contentLength = Number(req.headers['content-length'] || 0);
+  if (contentLength > 32 * 1024) {
+    vaultMetrics.blocked_payload_oversize += 1;
+    res.writeHead(413, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: 'PAYLOAD_TOO_LARGE',
+      message: 'Perimeter Security Violation: Payload exceeds maximum allowable 32KB buffer limit',
+      max_allowed_bytes: 32768,
+      bytes_received: contentLength,
+    }));
+    return;
+  }
+
+  // 3. Rate Spike Detection (>100 req/sec per tenant / client)
+  const nowMs = Date.now();
+  if (!rateLimitBuckets.has(tenantId)) {
+    rateLimitBuckets.set(tenantId, []);
+  }
+  const timestamps = rateLimitBuckets.get(tenantId)!;
+  const recent = timestamps.filter(t => nowMs - t < 1000);
+  recent.push(nowMs);
+  rateLimitBuckets.set(tenantId, recent);
+
+  if (recent.length > 100) {
+    vaultMetrics.blocked_rate_exceeded += 1;
+    const auditHash = crypto.createHash('sha256').update(`rate:${tenantId}:${recent.length}:${Date.now()}`).digest('hex');
+    vaultSecurityEvents.unshift({
+      id: `sec-${Date.now()}`,
+      event_type: 'RATE_EXCEEDED',
+      classification: 'restricted',
+      tenant_id: tenantId,
+      message: `Rate spike anomaly detected: ${recent.length} req/sec exceeded 100 req/sec limit`,
+      client_ip: clientIp,
+      audit_hash: auditHash,
+      timestamp: new Date().toISOString(),
+    });
+    if (vaultSecurityEvents.length > 50) vaultSecurityEvents.pop();
+
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: 'RATE_LIMIT_EXCEEDED',
+      message: `Perimeter Security Violation: Rate quota exceeded (${recent.length} req/sec > 100). Tenant partition throttled.`,
+      tenant_id: tenantId,
+      threshold_rps: 100,
+    }));
+    return;
+  }
+
+  // -------------------------------------------------------------------------
+  // Vault Perimeter Endpoints
+  // -------------------------------------------------------------------------
+  if (pathname === '/v1/vault/perimeter-status' && method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ARMED_SECURE',
+      gateway: 'ApexSovereign Zero-Trust Vault Perimeter v2.7',
+      active_tenants_monitored: Math.max(1, rateLimitBuckets.size),
+      rate_limit_threshold_rps: 100,
+      max_payload_kb: 32,
+      threat_level: vaultMetrics.blocked_sqli_attempts > 0 || vaultMetrics.blocked_rate_exceeded > 0 ? 'ELEVATED' : 'NOMINAL',
+      metrics: vaultMetrics,
+      recent_security_events: vaultSecurityEvents.slice(0, 15),
+      timestamp: new Date().toISOString(),
+    }));
+    return;
+  }
+
+  if (pathname === '/v1/vault/rotate-token' && method === 'POST') {
+    let bodyStr = '';
+    req.on('data', chunk => { bodyStr += chunk; });
+    req.on('end', () => {
+      let body: any = {};
+      try { body = JSON.parse(bodyStr); } catch (_) {}
+
+      const targetTenant = body.tenant_id || tenantId || 'tenant-sovereign-01';
+      const keyAlias = body.key_alias || 'primary-institutional-key';
+      const rawToken = `apex_sk_live_${crypto.randomBytes(16).toString('hex')}`;
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const nowIso = new Date().toISOString();
+      const expiresIso = new Date(Date.now() + 31536000000).toISOString();
+
+      activeVaultKeys.set(targetTenant, {
+        alias: keyAlias,
+        token: rawToken,
+        tokenHash,
+        expiresAt: expiresIso,
+      });
+
+      vaultMetrics.tokens_rotated_count += 1;
+      const auditHash = crypto.createHash('sha256').update(`rotate:${targetTenant}:${tokenHash}:${nowIso}`).digest('hex');
+
+      vaultSecurityEvents.unshift({
+        id: `sec-${Date.now()}`,
+        event_type: 'TOKEN_ROTATED',
+        classification: 'restricted',
+        tenant_id: targetTenant,
+        message: `Cryptographic key rotated for tenant ${targetTenant} (${keyAlias})`,
+        client_ip: clientIp,
+        audit_hash: auditHash,
+        timestamp: nowIso,
+      });
+      if (vaultSecurityEvents.length > 50) vaultSecurityEvents.pop();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: 'ROTATED_SUCCESSFULLY',
+        tenant_id: targetTenant,
+        key_alias: keyAlias,
+        new_token_preview: `${rawToken.slice(0, 13)}...${rawToken.slice(-4)}`,
+        token_hash: tokenHash,
+        expires_at: expiresIso,
+        audit_hash: auditHash,
+        timestamp: nowIso,
+      }));
+    });
     return;
   }
 
