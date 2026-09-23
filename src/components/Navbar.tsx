@@ -32,6 +32,7 @@ export type ActiveNavTab =
   | 'crm'
   | 'swarm'
   | 'neural'
+  | 'vault'
   | 'portal' 
   | 'requirements' 
   | 'signer' 
@@ -165,6 +166,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Terminal className="w-3.5 h-3.5 text-emerald-400" />
               <span>Neural Core</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            </button>
+
+            {/* 6. Security & Vault Control Tab */}
+            <button
+              id="tab-vault"
+              onClick={() => setActiveTab('vault')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'vault'
+                  ? 'bg-slate-800 text-cyan-300 shadow-sm border border-cyan-500/40 ring-1 ring-cyan-500/20'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Security & Vault</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
             </button>
 
             {/* 5. Customer Workspace (Customer-Facing when authenticated) */}
