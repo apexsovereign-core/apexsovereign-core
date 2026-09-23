@@ -18,6 +18,7 @@ import { CustomerPortal } from './components/CustomerPortal';
 import { EnterpriseCrmPipeline } from './components/EnterpriseCrmPipeline';
 import { AutonomousAgentSwarm } from './components/AutonomousAgentSwarm';
 import { NeuralChatInterface } from './components/NeuralChatInterface';
+import { AgentOperationsPanel } from './components/AgentOperationsPanel';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
@@ -241,9 +242,10 @@ export default function App() {
           </div>
         )}
 
-        {/* ApexSovereign Neural Interface (Native Command Core) */}
+        {/* ApexSovereign Neural Interface (Native Command Core) & Live Agent Operations */}
         {activeTab === 'neural' && (
-          <div className="py-4">
+          <div className="py-4 space-y-6">
+            <AgentOperationsPanel currentUser={currentUser} />
             <NeuralChatInterface
               currentUser={currentUser}
               onOpenAuth={() => setIsAuthModalOpen(true)}
