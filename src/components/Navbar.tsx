@@ -25,10 +25,12 @@ import {
   Bot,
   Globe,
   BarChart2,
-  Brain
+  Brain,
+  Activity
 } from 'lucide-react';
 
 export type ActiveNavTab = 
+  | 'executive'
   | 'solutions' 
   | 'pricing' 
   | 'crm'
@@ -75,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Official Sovereign Hex-Diamond Logo & Brand Identity */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveTab(currentUser ? 'portal' : 'solutions')}
+              onClick={() => setActiveTab('executive')}
               className="flex items-center gap-3 text-left focus:outline-none group cursor-pointer"
             >
               <SovereignHexDiamond size={38} glow animated />
@@ -96,6 +98,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Navigation Controls */}
           <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1">
+            {/* 0. Master Executive OS Console (Default Primary Workspace) */}
+            <button
+              id="tab-executive"
+              onClick={() => setActiveTab('executive')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'executive'
+                  ? 'bg-gradient-to-r from-cyan-950 to-slate-900 text-cyan-300 shadow-sm border border-cyan-500/50 ring-1 ring-cyan-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+              <span>Executive OS</span>
+              <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-cyan-500/20 text-cyan-300 rounded border border-cyan-500/40">
+                MASTER
+              </span>
+            </button>
+
             {/* 1. Solutions & Autonomous Agency Overview (Public) */}
             <button
               id="tab-solutions"
