@@ -21,6 +21,7 @@ import { NeuralChatInterface } from './components/NeuralChatInterface';
 import { AgentOperationsPanel } from './components/AgentOperationsPanel';
 import { VaultSecurityConsole } from './components/VaultSecurityConsole';
 import { MeshFederationConsole } from './components/MeshFederationConsole';
+import { ModelTuningConsole } from './components/ModelTuningConsole';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
@@ -266,6 +267,13 @@ export default function App() {
         {activeTab === 'mesh' && (
           <div className="py-4">
             <MeshFederationConsole currentUser={currentUser} />
+          </div>
+        )}
+
+        {/* Automated AI Model Fine-Tuning Pipeline & Sovereign Inference Gateway */}
+        {activeTab === 'tuning' && (
+          <div className="py-4">
+            <ModelTuningConsole currentUser={currentUser} />
           </div>
         )}
 
