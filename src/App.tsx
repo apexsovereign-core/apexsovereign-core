@@ -22,6 +22,7 @@ import { AgentOperationsPanel } from './components/AgentOperationsPanel';
 import { VaultSecurityConsole } from './components/VaultSecurityConsole';
 import { MeshFederationConsole } from './components/MeshFederationConsole';
 import { ModelTuningConsole } from './components/ModelTuningConsole';
+import { MasterExecutiveConsole } from './components/MasterExecutiveConsole';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
@@ -31,7 +32,7 @@ import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
 import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveNavTab>('solutions');
+  const [activeTab, setActiveTab] = useState<ActiveNavTab>('executive');
   const [selectedFileForCodeExplorer, setSelectedFileForCodeExplorer] = useState<string>('config_py');
 
   // Customer User Authentication & Session State
@@ -208,6 +209,16 @@ export default function App() {
       <LivePlatformStatus />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        {/* Master Executive Operating System Console (Default Primary Workspace) */}
+        {activeTab === 'executive' && (
+          <div className="py-4">
+            <MasterExecutiveConsole
+              currentUser={currentUser}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+            />
+          </div>
+        )}
+
         {/* Customer Facing Views (Public Storefront & Portal) */}
         {activeTab === 'solutions' && (
           <SolutionsView
