@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useGpuMetricsWebSocket } from '../hooks/useGpuMetricsWebSocket';
+import { useGpuTelemetry, TelemetryMetric } from '../hooks/useGpuTelemetry';
 import { GpuNodeMetric } from '../types';
 import { GpuUtilizationLiveChart } from './GpuUtilizationLiveChart';
 
@@ -57,6 +58,16 @@ export const LiveGpuTelemetryStream: React.FC<LiveGpuTelemetryStreamProps> = ({
   } = useGpuMetricsWebSocket({
     heartbeatIntervalMs: 4000,
   });
+
+  // Dedicated Target 1 Hook: Real-time telemetry over /ws/gpu-metrics with 20-tick sliding buffer
+  const {
+    currentMetric,
+    metrics: telemetryTicks,
+    isConnected: isWsTelemetryConnected,
+    isReconnecting: isWsTelemetryReconnecting,
+    connectionStatus: wsTelemetryStatus,
+    reconnect: reconnectWsTelemetry,
+  } = useGpuTelemetry();
 
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
   const [activeTickRate, setActiveTickRate] = useState<number>(1000);
@@ -239,7 +250,188 @@ export const LiveGpuTelemetryStream: React.FC<LiveGpuTelemetryStreamProps> = ({
         </div>
       </div>
 
-      {/* Cluster Aggregate Cards */}
+      {/* Dedicated Target 3: Live Telemetry Stream Gauge & Visual Status Indicator */}
+      {!currentMetric && telemetryTicks.length === 0 ? (
+        /* Fallback Grace: Sleek preloader skeleton awaiting initial ticks */
+        <div className="rounded-2xl border border-slate-800/90 bg-slate-950/70 p-5 space-y-4 shadow-inner animate-pulse">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-[0_0_10px_#f59e0b]" />
+              </span>
+              <div className="h-4 w-56 bg-slate-800/80 rounded" />
+            </div>
+            <div className="h-4 w-28 bg-slate-800/80 rounded" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+            <div className="h-24 bg-slate-900/60 rounded-xl border border-slate-800/60 p-3 space-y-2.5">
+              <div className="h-3 w-28 bg-slate-800 rounded" />
+              <div className="h-7 w-20 bg-slate-700/80 rounded" />
+              <div className="h-2 w-full bg-slate-800 rounded" />
+            </div>
+            <div className="h-24 bg-slate-900/60 rounded-xl border border-slate-800/60 p-3 space-y-2.5">
+              <div className="h-3 w-32 bg-slate-800 rounded" />
+              <div className="h-7 w-24 bg-slate-700/80 rounded" />
+              <div className="h-2 w-full bg-slate-800 rounded" />
+            </div>
+            <div className="h-24 bg-slate-900/60 rounded-xl border border-slate-800/60 p-3 space-y-2.5">
+              <div className="h-3 w-24 bg-slate-800 rounded" />
+              <div className="h-7 w-16 bg-slate-700/80 rounded" />
+              <div className="h-2 w-full bg-slate-800 rounded" />
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-2 pt-1 text-xs font-mono text-slate-500">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+            <span>Establishing zero-trust WebSocket channel on /ws/gpu-metrics...</span>
+          </div>
+        </div>
+      ) : (
+        /* Real-Time Gauge Display */
+        <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-[#050912] via-[#0b1422] to-[#12314a]/60 p-5 shadow-[0_0_30px_rgba(67,228,255,0.07)] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1e3852]">
+            {/* Visual Status Indicator: Glowing green pulse dot when connected, or amber when reconnecting */}
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3.5 w-3.5">
+                {isWsTelemetryConnected ? (
+                  <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-[0_0_14px_#10b981]" />
+                  </>
+                ) : (
+                  <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500 shadow-[0_0_14px_#f59e0b]" />
+                  </>
+                )}
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-white">
+                    Live Stream: {currentMetric?.gpu_model || 'NVIDIA H100 SXM5'}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                    isWsTelemetryConnected 
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse'
+                  }`}>
+                    {isWsTelemetryConnected ? 'STREAMING ACTIVE' : 'RECONNECTING (3000ms)'}
+                  </span>
+                </div>
+                <div className="text-[11px] font-mono text-slate-400">
+                  Target Route: <code className="text-cyan-400">/ws/gpu-metrics</code> • Buffer: {telemetryTicks.length}/20 sliding ticks
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 font-mono text-[11px] text-slate-400">
+              <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Tick: {currentMetric?.timestamp ? new Date(currentMetric.timestamp).toLocaleTimeString() : 'NOW'}</span>
+              {!isWsTelemetryConnected && (
+                <button
+                  onClick={reconnectWsTelemetry}
+                  className="ml-2 px-2 py-0.5 rounded bg-[#12314a] text-cyan-300 border border-cyan-500/30 hover:bg-[#1e3852] transition-colors cursor-pointer"
+                >
+                  Reconnect
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Real-Time Gauges: Utilization, VRAM Bar, Core Temperature */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 1. Live Utilization Percentage Gauge */}
+            <div className="p-4 rounded-xl bg-[#050912]/80 border border-[#1e3852] space-y-2 shadow-inner">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                  <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                  LIVE COMPUTE LOAD
+                </span>
+                <span className="text-[10px] text-slate-500">REAL-TIME</span>
+              </div>
+              <div className="flex items-baseline justify-between font-mono">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  {currentMetric?.utilization_pct.toFixed(1)}%
+                </span>
+                <span className="text-xs text-cyan-400 font-bold">
+                  {currentMetric && currentMetric.utilization_pct > 85 ? 'HIGH COMPUTE' : 'NOMINAL'}
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 transition-all duration-300 shadow-[0_0_10px_rgba(67,228,255,0.4)]"
+                  style={{ width: `${Math.min(100, Math.max(5, currentMetric?.utilization_pct || 0))}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 2. VRAM Allocation Bar (memory_used_gb / memory_total_gb) */}
+            <div className="p-4 rounded-xl bg-[#050912]/80 border border-[#1e3852] space-y-2 shadow-inner">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                <span className="flex items-center gap-1.5 text-purple-300 font-semibold">
+                  <HardDrive className="w-3.5 h-3.5 text-purple-400" />
+                  VRAM ALLOCATION
+                </span>
+                <span className="text-[10px] text-slate-500">ZERO-COPY POOL</span>
+              </div>
+              <div className="flex items-baseline justify-between font-mono">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    {Math.round(currentMetric?.memory_used_gb || 0)}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    / {Math.round(currentMetric?.memory_total_gb || 640)} GB
+                  </span>
+                </div>
+                <span className="text-xs text-purple-400 font-bold">
+                  {currentMetric ? Math.round((currentMetric.memory_used_gb / Math.max(1, currentMetric.memory_total_gb)) * 100) : 0}%
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-400 transition-all duration-300 shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+                  style={{ 
+                    width: `${Math.min(100, Math.max(5, currentMetric ? (currentMetric.memory_used_gb / Math.max(1, currentMetric.memory_total_gb)) * 100 : 0))}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 3. Core Temperature Gauge */}
+            <div className="p-4 rounded-xl bg-[#050912]/80 border border-[#1e3852] space-y-2 shadow-inner">
+              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                <span className="flex items-center gap-1.5 text-amber-300 font-semibold">
+                  <Thermometer className="w-3.5 h-3.5 text-amber-400" />
+                  CORE TEMPERATURE
+                </span>
+                <span className="text-[10px] text-slate-500">THERMAL ENVELOPE</span>
+              </div>
+              <div className="flex items-baseline justify-between font-mono">
+                <span className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                  (currentMetric?.temperature_c || 0) > 75 ? 'text-rose-400' : 'text-white'
+                }`}>
+                  {currentMetric?.temperature_c.toFixed(1)}°C
+                </span>
+                <span className={`text-xs font-bold ${
+                  (currentMetric?.temperature_c || 0) > 75 ? 'text-rose-400' : 'text-emerald-400'
+                }`}>
+                  {(currentMetric?.temperature_c || 0) > 75 ? 'THERMAL ALERT' : 'OPTIMAL COOLING'}
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    (currentMetric?.temperature_c || 0) > 75 
+                      ? 'bg-gradient-to-r from-amber-500 to-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]' 
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(10, ((currentMetric?.temperature_c || 40) / 95) * 100))}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {clusterSummary && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Average Utilization */}

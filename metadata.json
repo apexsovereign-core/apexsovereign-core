@@ -1,6 +1,6 @@
 {
-  "name": "ApexSovereign.ai | The Sovereign Global Work OS",
-  "description": "Dominate the Future: Autonomous Intelligence, Absolute Scale. Enterprise Work OS, autonomous compute broker, and financial ledger backend.",
+  "name": "ApexSovereign.ai | Autonomous Enterprise Work OS",
+  "description": "ApexSovereign.ai — Autonomous Enterprise Work OS & Sovereign Compute Broker Platform. Zero-trust execution, real-time zero-copy data fabrics, and deterministic agent orchestration.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

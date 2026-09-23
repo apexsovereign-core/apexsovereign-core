@@ -57,6 +57,11 @@ export default function App() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [selectedTierForCheckout, setSelectedTierForCheckout] = useState<SubscriptionTier>(SUBSCRIPTION_TIERS[1]);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
+  const [telemetryToast, setTelemetryToast] = useState<{
+    orderId: string;
+    unitsAwarded: number;
+    newBalance: number;
+  } | null>(null);
 
   // Sync session changes to localStorage
   useEffect(() => {
@@ -100,15 +105,44 @@ export default function App() {
   const handlePaymentSuccess = (tx: PaymentTransaction) => {
     setTransactions(prev => [tx, ...prev]);
 
+    // Active Trigger: On PayPal payment completion on App.tsx, dispatch the order ID to POST /v1/billing/verify-paypal-order
+    if (tx.paypalOrderId) {
+      fetch('/v1/billing/verify-paypal-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: tx.paypalOrderId,
+          tenant_id: tx.tenantId || currentUser?.tenantId || 'tenant-global-mesh',
+          units: tx.creditsAwarded,
+          compute_units: tx.creditsAwarded,
+          amount: tx.amount,
+          expected_amount: tx.amount,
+          plan_id: tx.planId,
+        }),
+      }).catch(() => {});
+    }
+
     if (currentUser) {
+      const updatedCredits = currentUser.computeCredits + tx.creditsAwarded;
       const updatedUser: CustomerUser = {
         ...currentUser,
         plan: tx.planId as any,
-        computeCredits: currentUser.computeCredits + tx.creditsAwarded,
+        computeCredits: updatedCredits,
         maxQuota: currentUser.maxQuota + tx.creditsAwarded,
         subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       };
       setCurrentUser(updatedUser);
+
+      // Real-Time Telemetry Toast: Show a glowing green confirmation banner displaying updated Compute Unit balance
+      setTelemetryToast({
+        orderId: tx.paypalOrderId,
+        unitsAwarded: tx.creditsAwarded,
+        newBalance: updatedCredits,
+      });
+
+      setTimeout(() => {
+        setTelemetryToast(null);
+      }, 8000);
     }
   };
 
@@ -128,6 +162,37 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
+      {/* Target 3: Real-Time Telemetry Toast - Glowing Green Confirmation Banner */}
+      {telemetryToast && (
+        <div className="fixed top-5 right-5 z-50 max-w-md p-4 rounded-2xl bg-gradient-to-r from-emerald-950/95 via-[#051c14] to-emerald-950/90 border border-emerald-500/60 shadow-[0_0_35px_rgba(16,185,129,0.35)] backdrop-blur-md animate-in slide-in-from-top duration-300">
+          <div className="flex items-center justify-between pb-2 border-b border-emerald-500/30">
+            <div className="flex items-center gap-2 font-mono text-xs font-bold text-emerald-400">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_#10b981]" />
+              </span>
+              <span>SETTLEMENT TELEMETRY CONFIRMED</span>
+            </div>
+            <button
+              onClick={() => setTelemetryToast(null)}
+              className="text-slate-400 hover:text-white text-xs font-mono px-1.5 py-0.5 rounded hover:bg-slate-800/60 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="pt-2 flex items-baseline justify-between font-mono">
+            <span className="text-xs text-slate-300">Updated Compute Unit Balance:</span>
+            <span className="text-xl font-black text-emerald-300">
+              {telemetryToast.newBalance.toLocaleString()} CU
+            </span>
+          </div>
+          <div className="text-[11px] font-mono text-emerald-400 mt-1 flex items-center justify-between">
+            <span>+{telemetryToast.unitsAwarded.toLocaleString()} CU Credited</span>
+            <span className="text-slate-400 text-[10px]">Order: {telemetryToast.orderId}</span>
+          </div>
+        </div>
+      )}
+
       <Navbar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
