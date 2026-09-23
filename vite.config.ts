@@ -507,6 +507,188 @@ function apexSovereignApiPlugin(): Plugin {
           return;
         }
 
+        // 1.3 Mesh Federation & Cross-Region Failover Endpoints
+        if (url === '/v1/mesh/failover-status' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            status: 'OPERATIONAL',
+            quorum_state: {
+              active_leader_region: 'us-east',
+              quorum_consensus: 'UNANIMOUS_3_OF_3',
+              failover_count: 0,
+              last_failover_timestamp: null,
+              last_failover_reason: null,
+            },
+            regions: {
+              'us-east': {
+                region_id: 'us-east',
+                name: 'US-East (N. Virginia Equinix IBX DC10)',
+                role: 'PRIMARY_LEADER',
+                health: 'HEALTHY',
+                latency_ms: 18.4,
+                packet_loss_pct: 0.0,
+                nodes_online: 32,
+                active_gpus: 256,
+                gpu_models: ['NVIDIA H100 SXM5', 'NVIDIA A100 80GB'],
+                traffic_allocation_pct: 65,
+                last_heartbeat: new Date().toISOString(),
+              },
+              'eu-central': {
+                region_id: 'eu-central',
+                name: 'EU-Central (Frankfurt Interxion FRA1)',
+                role: 'SECONDARY_STANDBY',
+                health: 'HEALTHY',
+                latency_ms: 78.2,
+                packet_loss_pct: 0.2,
+                nodes_online: 24,
+                active_gpus: 192,
+                gpu_models: ['NVIDIA H100 SXM5', 'NVIDIA L40S'],
+                traffic_allocation_pct: 25,
+                last_heartbeat: new Date().toISOString(),
+              },
+              'ap-south': {
+                region_id: 'ap-south',
+                name: 'AP-South (Singapore Singtel Mega-DC)',
+                role: 'SECONDARY_STANDBY',
+                health: 'HEALTHY',
+                latency_ms: 142.6,
+                packet_loss_pct: 0.4,
+                nodes_online: 16,
+                active_gpus: 128,
+                gpu_models: ['NVIDIA A100 80GB', 'NVIDIA RTX 6000 Ada'],
+                traffic_allocation_pct: 10,
+                last_heartbeat: new Date().toISOString(),
+              },
+            },
+            total_nodes_online: 72,
+            total_active_gpus: 576,
+            system_logs: [
+              {
+                id: 'mesh-log-01',
+                event_type: 'MESH_QUORUM_ESTABLISHED',
+                classification: 'internal',
+                message: 'Distributed multi-region mesh consensus active across US-East, EU-Central, AP-South',
+                region_id: 'us-east',
+                audit_hash: crypto.createHash('sha256').update('mesh_init_consensus').digest('hex'),
+                timestamp: new Date().toISOString(),
+              },
+              {
+                id: 'mesh-log-02',
+                event_type: 'CLUSTER_HEARTBEAT_PROBE',
+                classification: 'internal',
+                message: 'Cluster heartbeat synchronized. Average cross-region latency 79.7ms, packet loss <0.3%',
+                region_id: 'us-east',
+                audit_hash: crypto.createHash('sha256').update('cluster_heartbeat_sync').digest('hex'),
+                timestamp: new Date(Date.now() - 30000).toISOString(),
+              }
+            ],
+            timestamp: new Date().toISOString(),
+          }));
+          return;
+        }
+
+        if (url === '/v1/mesh/trigger-failover' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', () => {
+            let body: any = {};
+            try { body = JSON.parse(bodyStr); } catch (_) {}
+            const targetRegion = body.target_region || 'eu-central';
+            const reason = body.reason || 'Manual administrator drill via Mesh Console';
+            const previousLeader = 'us-east';
+            const nowIso = new Date().toISOString();
+            const auditHash = crypto.createHash('sha256').update(`failover:${previousLeader}:${targetRegion}:${nowIso}`).digest('hex');
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: 'FAILOVER_EXECUTED',
+              previous_leader: previousLeader,
+              active_leader: targetRegion,
+              reason: reason,
+              audit_hash: auditHash,
+              timestamp: nowIso,
+            }));
+          });
+          return;
+        }
+
+        // 1.4 Federated Multi-Region Billing Sync Endpoints
+        if (url === '/v1/billing/federated-sync' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', () => {
+            let body: any = {};
+            try { body = JSON.parse(bodyStr); } catch (_) {}
+            const sourceRegion = body.source_region || 'eu-central';
+            const tenantId = body.tenant_id || 'tenant-sovereign-01';
+            const operations = body.operations || [];
+            const batchId = body.batch_id || `batch_${sourceRegion}_${Date.now()}`;
+            const nowIso = new Date().toISOString();
+
+            let netDelta = 0;
+            for (const op of operations) {
+              const opType = (op.op_type || 'DEDUCT').toUpperCase();
+              const units = Number(op.units || 0);
+              if (opType === 'CREDIT' || opType === 'ALLOCATE') {
+                netDelta += units;
+              } else {
+                netDelta -= units;
+              }
+            }
+
+            const preimage = `${tenantId}:${sourceRegion}:${JSON.stringify(operations)}`;
+            const batchSignature = crypto.createHash('sha256').update(preimage).digest('hex');
+            const auditHash = crypto.createHash('sha256').update(`${batchId}:${batchSignature}:${nowIso}`).digest('hex');
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: 'SETTLED_ATOMIC',
+              batch_id: batchId,
+              batch_signature: batchSignature,
+              source_region: sourceRegion,
+              tenant_id: tenantId,
+              operations_processed: operations.length,
+              net_units_delta: netDelta,
+              already_processed: false,
+              audit_hash: auditHash,
+              timestamp: nowIso,
+            }));
+          });
+          return;
+        }
+
+        if (url === '/v1/billing/federated-status' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json');
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            status: 'OPERATIONAL',
+            regions: {
+              'us-east': { total_credits: 150000.0, total_deductions: 4210.5, sync_batches: 18, last_sync: new Date().toISOString() },
+              'eu-central': { total_credits: 50000.0, total_deductions: 1840.2, sync_batches: 9, last_sync: new Date().toISOString() },
+              'ap-south': { total_credits: 25000.0, total_deductions: 920.0, sync_batches: 5, last_sync: new Date().toISOString() },
+            },
+            total_batches_synced: 32,
+            audit_log: [
+              {
+                id: 'sync-001',
+                batch_id: 'batch_eu_central_edge01',
+                tenant_id: 'tenant-sovereign-01',
+                source_region: 'eu-central',
+                units_processed: 450.0,
+                operation_type: 'DEDUCT',
+                batch_signature: '7e2b10a4f5c9e8d7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3',
+                status: 'SETTLED_ATOMIC',
+                timestamp: new Date().toISOString(),
+              }
+            ],
+            timestamp: new Date().toISOString(),
+          }));
+          return;
+        }
+
         // 1b. Domain Cutover & DNS Health Diagnostic Verification Endpoint
         if (url === '/api/domain-cutover-check') {
           exec('python3 backend/domain_cutover_check.py --json', { timeout: 12000 }, (_err, stdout) => {

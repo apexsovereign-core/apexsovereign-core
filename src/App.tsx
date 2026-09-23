@@ -20,6 +20,7 @@ import { AutonomousAgentSwarm } from './components/AutonomousAgentSwarm';
 import { NeuralChatInterface } from './components/NeuralChatInterface';
 import { AgentOperationsPanel } from './components/AgentOperationsPanel';
 import { VaultSecurityConsole } from './components/VaultSecurityConsole';
+import { MeshFederationConsole } from './components/MeshFederationConsole';
 import { AuthModal } from './components/AuthModal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
@@ -258,6 +259,13 @@ export default function App() {
         {activeTab === 'vault' && (
           <div className="py-4">
             <VaultSecurityConsole currentUser={currentUser} />
+          </div>
+        )}
+
+        {/* Autonomous Multi-Tenant Mesh Federation & Failover Controller */}
+        {activeTab === 'mesh' && (
+          <div className="py-4">
+            <MeshFederationConsole currentUser={currentUser} />
           </div>
         )}
 

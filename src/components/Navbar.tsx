@@ -23,6 +23,7 @@ import {
   Lock,
   Workflow,
   Bot,
+  Globe,
   BarChart2
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ export type ActiveNavTab =
   | 'swarm'
   | 'neural'
   | 'vault'
+  | 'mesh'
   | 'portal' 
   | 'requirements' 
   | 'signer' 
@@ -181,6 +183,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
               <span>Security & Vault</span>
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            </button>
+
+            {/* 7. Mesh Federation Control Tab */}
+            <button
+              id="tab-mesh"
+              onClick={() => setActiveTab('mesh')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'mesh'
+                  ? 'bg-slate-800 text-cyan-300 shadow-sm border border-cyan-500/40 ring-1 ring-cyan-500/20'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Mesh Federation</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
             </button>
 
             {/* 5. Customer Workspace (Customer-Facing when authenticated) */}
