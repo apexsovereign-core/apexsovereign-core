@@ -63,8 +63,20 @@
       "destination": "https://apexsovereign-agency.onrender.com/health"
     },
     {
+      "source": "/api/v1/:path*",
+      "destination": "https://apexsovereign-agency.onrender.com/v1/:path*"
+    },
+    {
       "source": "/api/v21/:path*",
       "destination": "https://apexsovereign-agency.onrender.com/v21/:path*"
+    },
+    {
+      "source": "/api/webhooks/paypal",
+      "destination": "https://apexsovereign-agency.onrender.com/api/webhooks/paypal"
+    },
+    {
+      "source": "/api/health",
+      "destination": "https://apexsovereign-agency.onrender.com/health"
     },
     {
       "source": "/telemetry/:path*",
