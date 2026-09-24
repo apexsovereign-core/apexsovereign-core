@@ -46,7 +46,11 @@ export type ActiveNavTab =
   | 'sandbox' 
   | 'code' 
   | 'schema' 
-  | 'deploy';
+  | 'deploy'
+  | 'compute'
+  | 'security'
+  | 'benchmarks'
+  | 'developers';
 
 interface NavbarProps {
   activeTab: ActiveNavTab;
@@ -127,6 +131,72 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Workflow className="w-3.5 h-3.5 text-emerald-400" />
               <span>Platform & Solutions</span>
+            </button>
+
+            {/* Target 2: Top Navigation Expansion for Technical Evaluators */}
+            <button
+              id="tab-compute"
+              onClick={() => setActiveTab('compute')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'compute'
+                  ? 'bg-slate-800 text-cyan-300 shadow-sm border border-cyan-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Compute</span>
+            </button>
+
+            <button
+              id="tab-benchmarks"
+              onClick={() => setActiveTab('benchmarks')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'benchmarks'
+                  ? 'bg-slate-800 text-cyan-300 shadow-sm border border-cyan-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <BarChart2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Benchmarks</span>
+            </button>
+
+            <button
+              id="tab-security-nav"
+              onClick={() => setActiveTab('security')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'security'
+                  ? 'bg-slate-800 text-cyan-300 shadow-sm border border-cyan-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Security</span>
+            </button>
+
+            <button
+              id="tab-architecture-nav"
+              onClick={() => setActiveTab('architecture')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'architecture'
+                  ? 'bg-slate-800 text-purple-300 shadow-sm border border-purple-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-purple-400" />
+              <span>Architecture</span>
+            </button>
+
+            <button
+              id="tab-developers"
+              onClick={() => setActiveTab('developers')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'developers'
+                  ? 'bg-slate-800 text-cyan-300 shadow-sm border border-cyan-500/40 ring-1 ring-cyan-500/20'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Developers</span>
             </button>
 
             {/* 2. Pricing & Plans (Public Customer Storefront) */}

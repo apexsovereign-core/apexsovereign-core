@@ -26,6 +26,10 @@ import { SUBSCRIPTION_TIERS } from './PricingPlans';
 import { SubscriptionTier } from '../types';
 import { AutonomousNeuralAnalytics } from './AutonomousNeuralAnalytics';
 import { FrictionlessAgentSandbox } from './FrictionlessAgentSandbox';
+import { EnterpriseHero } from './EnterpriseHero';
+import { TechnicalEvidencePanel } from './TechnicalEvidencePanel';
+import { GlobalSwarmMap } from './GlobalSwarmMap';
+import { CostIntelligenceOptimizer } from './CostIntelligenceOptimizer';
 
 interface SolutionsViewProps {
   onSelectPlan: (tier: SubscriptionTier) => void;
@@ -33,6 +37,10 @@ interface SolutionsViewProps {
   onNavigatePricing: () => void;
   onNavigateCrm?: () => void;
   onNavigateSwarm?: () => void;
+  onOpenControlPlane?: () => void;
+  onExploreArchitecture?: () => void;
+  onNavigateDevelopers?: () => void;
+  onNavigateSecurity?: () => void;
 }
 
 export const SolutionsView: React.FC<SolutionsViewProps> = ({
@@ -40,7 +48,11 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
   onOpenConcierge,
   onNavigatePricing,
   onNavigateCrm,
-  onNavigateSwarm
+  onNavigateSwarm,
+  onOpenControlPlane,
+  onExploreArchitecture,
+  onNavigateDevelopers,
+  onNavigateSecurity
 }) => {
   const [teamSize, setTeamSize] = useState<number>(25);
   const [manualHoursPerWeek, setManualHoursPerWeek] = useState<number>(40);
@@ -96,20 +108,37 @@ export const SolutionsView: React.FC<SolutionsViewProps> = ({
   };
 
   return (
-    <div className="space-y-16 py-6 animate-in fade-in duration-300">
-      {/* Hero Section */}
-      <div className="text-center max-w-4xl mx-auto space-y-5">
+    <div className="space-y-16 py-4 animate-in fade-in duration-300">
+      {/* Target 2: Authoritative Enterprise Infrastructure Hero */}
+      <EnterpriseHero
+        onOpenControlPlane={onOpenControlPlane || (() => onSelectPlan(recommendedTier))}
+        onExploreArchitecture={onExploreArchitecture || onNavigatePricing}
+        onNavigateDevelopers={onNavigateDevelopers}
+        onNavigateSecurity={onNavigateSecurity}
+      />
+
+      {/* Target 3: Technical Architecture & Evidence Matrix Component */}
+      <TechnicalEvidencePanel />
+
+      {/* Module 3: Automated Cost-Intelligence Optimizer */}
+      <CostIntelligenceOptimizer onDeployWorkload={() => onSelectPlan(recommendedTier)} />
+
+      {/* Module 3: Advanced Global Compute Swarm Map */}
+      <GlobalSwarmMap />
+
+      {/* Secondary Strategic Solutions Header */}
+      <div className="text-center max-w-4xl mx-auto space-y-5 pt-8 border-t border-slate-800">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>INSTITUTIONAL B2B SAAS & AI AUTOMATION AGENCY (AAA)</span>
+          <span>AUTONOMOUS WORK OS & ENTERPRISE EXECUTION MESH</span>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
-          Autonomous Enterprise Execution.<br />
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+          Enterprise Operations Orchestration.<br />
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400">
             Zero Human Bottlenecks.
           </span>
-        </h1>
+        </h2>
 
         <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
           ApexSovereign.ai combines bare-metal GPU clusters, multi-tenant PostgreSQL data isolation, and event-driven AI agents to automate global enterprise operations on pure autopilot.

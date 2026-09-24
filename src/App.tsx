@@ -28,11 +28,26 @@ import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AutonomousAgentChatbot } from './components/AutonomousAgentChatbot';
 import { AdminAccessGate } from './components/AdminAccessGate';
 import { LivePlatformStatus } from './components/LivePlatformStatus';
+import { DeveloperPortal } from './components/DeveloperPortal';
+import { TrustComplianceHub } from './components/TrustComplianceHub';
+import { TechnicalEvidencePanel } from './components/TechnicalEvidencePanel';
+import { GlobalSwarmMap } from './components/GlobalSwarmMap';
+import { CostIntelligenceOptimizer } from './components/CostIntelligenceOptimizer';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
 import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveNavTab>('executive');
+  const [activeTab, setActiveTab] = useState<ActiveNavTab>(() => {
+    try {
+      const path = window.location.pathname.toLowerCase();
+      if (path.includes('developer') || path.includes('sandbox')) return 'developers';
+      if (path.includes('security') || path.includes('compliance')) return 'security';
+      if (path.includes('benchmark')) return 'benchmarks';
+      if (path.includes('compute')) return 'compute';
+      if (path.includes('architecture')) return 'architecture';
+    } catch (_) {}
+    return 'executive';
+  });
   const [selectedFileForCodeExplorer, setSelectedFileForCodeExplorer] = useState<string>('config_py');
 
   // Customer User Authentication & Session State
@@ -231,7 +246,45 @@ export default function App() {
             onNavigatePricing={() => setActiveTab('pricing')}
             onNavigateCrm={() => setActiveTab('crm')}
             onNavigateSwarm={() => setActiveTab('swarm')}
+            onOpenControlPlane={() => setActiveTab('executive')}
+            onExploreArchitecture={() => setActiveTab('architecture')}
+            onNavigateDevelopers={() => setActiveTab('developers')}
+            onNavigateSecurity={() => setActiveTab('security')}
           />
+        )}
+
+        {/* Module 1: The Tier 2 Developer Onboarding & Sandbox Portal */}
+        {activeTab === 'developers' && (
+          <div className="py-4">
+            <DeveloperPortal
+              currentUser={currentUser}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+            />
+          </div>
+        )}
+
+        {/* Module 2: The Tier 3 Enterprise Trust & Compliance Layer */}
+        {activeTab === 'security' && (
+          <div className="py-4">
+            <TrustComplianceHub />
+          </div>
+        )}
+
+        {/* Technical Benchmarks & Arbitrage Comparison */}
+        {activeTab === 'benchmarks' && (
+          <div className="py-4 space-y-6">
+            <TechnicalEvidencePanel />
+            <CostIntelligenceOptimizer onDeployWorkload={() => handleSelectTierForPurchase(SUBSCRIPTION_TIERS[1], 'monthly')} />
+          </div>
+        )}
+
+        {/* Module 3: Global Compute Swarm & Multi-AZ Federation */}
+        {activeTab === 'compute' && (
+          <div className="py-4 space-y-6">
+            <GlobalSwarmMap />
+            <MeshFederationConsole currentUser={currentUser} />
+          </div>
         )}
 
         {activeTab === 'pricing' && (
@@ -341,18 +394,28 @@ export default function App() {
         )}
 
         {activeTab === 'architecture' && (
-          <AdminAccessGate
-            currentUser={currentUser}
-            onElevateAdmin={handleElevateAdmin}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onReturnToStorefront={() => setActiveTab('solutions')}
-            toolName="Backend Architecture & Database Specifications"
-          >
-            <ArchitectureView
-              onExploreCode={handleExploreCode}
-              onOpenSandbox={handleOpenSandbox}
-            />
-          </AdminAccessGate>
+          <div className="py-4 space-y-6">
+            <TechnicalEvidencePanel />
+            {isAdminUnlocked || currentUser?.role === 'admin' ? (
+              <ArchitectureView
+                onExploreCode={handleExploreCode}
+                onOpenSandbox={handleOpenSandbox}
+              />
+            ) : (
+              <AdminAccessGate
+                currentUser={currentUser}
+                onElevateAdmin={handleElevateAdmin}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+                onReturnToStorefront={() => setActiveTab('solutions')}
+                toolName="Low-Level Architecture Specifications & Deep Inspection"
+              >
+                <ArchitectureView
+                  onExploreCode={handleExploreCode}
+                  onOpenSandbox={handleOpenSandbox}
+                />
+              </AdminAccessGate>
+            )}
+          </div>
         )}
 
         {activeTab === 'sandbox' && (
@@ -451,28 +514,59 @@ export default function App() {
             <span>PayPal REST v2 Encrypted</span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px] font-mono">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] font-mono">
+            <button
+              onClick={() => setActiveTab('architecture')}
+              className="hover:text-cyan-300 transition-colors cursor-pointer text-slate-400"
+            >
+              /architecture
+            </button>
+            <button
+              onClick={() => setActiveTab('compute')}
+              className="hover:text-cyan-300 transition-colors cursor-pointer text-slate-400"
+            >
+              /compute
+            </button>
+            <button
+              onClick={() => setActiveTab('security')}
+              className="hover:text-cyan-300 transition-colors cursor-pointer text-slate-400"
+            >
+              /security
+            </button>
+            <button
+              onClick={() => setActiveTab('benchmarks')}
+              className="hover:text-cyan-300 transition-colors cursor-pointer text-slate-400"
+            >
+              /benchmarks
+            </button>
+            <button
+              onClick={() => setActiveTab('developers')}
+              className="hover:text-cyan-300 transition-colors cursor-pointer text-slate-400"
+            >
+              /developers
+            </button>
+            <span className="text-slate-700 hidden sm:inline">•</span>
             <button
               onClick={() => setActiveTab('solutions')}
               className="hover:text-slate-300 transition-colors cursor-pointer"
             >
-              Platform Overview
+              Overview
             </button>
             <button
               onClick={() => setActiveTab('pricing')}
               className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors cursor-pointer"
             >
-              Pricing & Subscriptions
+              Pricing
             </button>
             {currentUser && (
               <button
                 onClick={() => setActiveTab('portal')}
                 className="hover:text-slate-300 transition-colors cursor-pointer"
               >
-                Client Workspace
+                Workspace
               </button>
             )}
-            <span className="text-slate-700">•</span>
+            <span className="text-slate-700 hidden sm:inline">•</span>
             <button
               onClick={() => setActiveTab('signer')}
               className="text-slate-600 hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
