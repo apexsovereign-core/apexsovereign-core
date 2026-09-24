@@ -417,7 +417,7 @@ function apexSovereignApiPlugin(): Plugin {
         }
 
         // 1. Health check endpoint (Health Probe Exemption)
-        if (url === '/health') {
+        if (url === '/health' || url === '/api/health' || url === '/v1/platform/health-matrix') {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
