@@ -682,7 +682,7 @@ services:
     plan: standard
     branch: main
     buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
-    startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT --workers 4 --proxy-headers"
+    startCommand: "python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT --workers 4 --proxy-headers"
     healthCheckPath: /health
     autoDeploy: true
 
