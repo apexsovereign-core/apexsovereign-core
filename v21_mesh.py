@@ -1,12 +1,6 @@
 """
 ApexSovereign.ai - Pillar II: The Computational Mesh & V21 Execution Engine (v21_mesh.py)
 Autonomous Work OS & Sovereign Compute Broker Operating Core.
-
-Features:
-- Cryptographically chained event ledger with SHA-256 genesis linking (previous_hash -> event_hash).
-- Autonomous supervisor loop handling queues up to 5,000 events with auto-recovery and self-healing.
-- Hard-stop deterministic compliance gate rejecting unauthorized restricted payloads.
-- Metered event emission with atomic sync to Supabase and live PayPal settlement bridges.
 """
 
 import os
@@ -21,10 +15,9 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from pydantic import BaseModel, Field
 
-# Constants & Genesis State
 GENESIS_HASH = "0000000000000000000000000000000000000000000000000000000000000000"
 MAX_QUEUE_CAPACITY = 5000
-MAX_PAYLOAD_BYTES = 32768  # 32KB hard limit
+MAX_PAYLOAD_BYTES = 32768
 
 v21_mesh_router = APIRouter(prefix="/v21/mesh", tags=["Pillar II: Computational Mesh v21"])
 
@@ -41,10 +34,6 @@ class MeshEvent(BaseModel):
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class ComputationalMeshEngine:
-    """
-    V21 Execution Engine managing cryptographically verified event lineage,
-    high-concurrency supervisor loops, and automated ledger persistence.
-    """
     def __init__(self):
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=MAX_QUEUE_CAPACITY)
         self.ledger: List[Dict[str, Any]] = []
@@ -74,7 +63,6 @@ class ComputationalMeshEngine:
             return
         self.is_running = True
         self.worker_task = asyncio.create_task(self._supervisor_worker())
-        print("[ApexSovereign Mesh] Autonomous V21 supervisor loop online (Max capacity: 5000 events).")
 
     async def stop_supervisor_loop(self):
         self.is_running = False
@@ -86,9 +74,6 @@ class ComputationalMeshEngine:
                 pass
 
     async def _supervisor_worker(self):
-        """
-        Resilient event consumer loop. Auto-recovers from transient network/ledger failures.
-        """
         while self.is_running:
             try:
                 event = await self.queue.get()
@@ -98,13 +83,11 @@ class ComputationalMeshEngine:
                 break
             except Exception as loop_err:
                 self.failed_count += 1
-                print(f"[ApexSovereign Mesh Warning] Event execution error: {loop_err}. Engaging self-healing recovery...")
                 await asyncio.sleep(0.1)
                 self.recovered_count += 1
 
     async def _process_single_event(self, event: MeshEvent):
         async with self.lock:
-            # Enforce cryptographic chaining
             event.previous_hash = self.last_hash
             payload_digest = self.compute_payload_digest(event.payload)
             event.event_hash = self.calculate_event_hash(
@@ -116,15 +99,11 @@ class ComputationalMeshEngine:
                 timestamp=event.timestamp
             )
             self.last_hash = event.event_hash
-            
             record = event.dict()
             self.ledger.append(record)
             if len(self.ledger) > 10000:
                 self.ledger = self.ledger[-10000:]
-            
             self.processed_count += 1
-
-            # Asynchronous Supabase & Billing Ledger Sync (non-blocking)
             asyncio.create_task(self._sync_ledger_to_external_vaults(record))
 
     async def _sync_ledger_to_external_vaults(self, record: Dict[str, Any]):
@@ -132,7 +111,6 @@ class ComputationalMeshEngine:
         supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         if not supabase_url or not supabase_key:
             return
-        
         try:
             import httpx
             async with httpx.AsyncClient(timeout=4.0) as client:
@@ -156,9 +134,6 @@ class ComputationalMeshEngine:
             pass
 
     def evaluate_compliance(self, event: MeshEvent):
-        """
-        Deterministic compliance gate. Hard-stops unauthorized restricted payloads.
-        """
         classification = (event.data_classification or "internal").lower()
         if classification == "restricted":
             required_marker = os.getenv("COMPLIANCE_SIGNATURE_KEY", "sovereign_restricted_compliance_clearance_2026")
@@ -168,16 +143,34 @@ class ComputationalMeshEngine:
                     detail="Compliance Gate Hard Stop: 'restricted' classification requires explicit cryptographic compliance_marker."
                 )
 
-# Global Singleton Instance
-mesh_engine = ComputationalMeshEngine()
+    async def enqueue(self, event: Any, source: str = "v1.mesh") -> Dict[str, Any]:
+        """Ingestion compatibility adapter for async event enqueuing."""
+        if not self.is_running:
+            await self.start_supervisor_loop()
+        if isinstance(event, dict):
+            event_obj = MeshEvent(**event)
+        elif isinstance(event, MeshEvent):
+            event_obj = event
+        else:
+            event_obj = MeshEvent(
+                tenant_id=getattr(event, "tenant_id", "tenant-sovereign-01"),
+                event_type=getattr(event, "event_type", "mesh.event"),
+                payload=getattr(event, "metadata", {})
+            )
+        await self.queue.put(event_obj)
+        return {
+            "status": "ENQUEUED",
+            "event_id": event_obj.event_id,
+            "source": source,
+            "timestamp": event_obj.timestamp
+        }
 
-# Router Endpoints
+mesh_engine = ComputationalMeshEngine()
+# Compatibility alias
+mesh = mesh_engine
+
 @v21_mesh_router.get("/status")
 async def get_mesh_status():
-    """
-    Returns real-time status of the V21 Computational Mesh, supervisor queue depth,
-    cryptographic chain head, and event counts.
-    """
     return {
         "status": "OPERATIONAL",
         "engine": "ApexSovereign V21 Computational Mesh",
@@ -194,21 +187,10 @@ async def get_mesh_status():
 
 @v21_mesh_router.post("/emit")
 async def emit_mesh_event(event: MeshEvent):
-    """
-    Ingests and cryptographically chains a new event into the V21 execution engine.
-    Applies deterministic compliance gates and limits metadata to 32KB.
-    """
-    # 1. Deterministic Compliance Check
     mesh_engine.evaluate_compliance(event)
-
-    # 2. Payload size check
     mesh_engine.compute_payload_digest(event.payload)
-
-    # 3. Ensure supervisor loop is spinning
     if not mesh_engine.is_running:
         await mesh_engine.start_supervisor_loop()
-
-    # 4. Immediate synchronous hash calculation for guaranteed caller verification
     async with mesh_engine.lock:
         event.previous_hash = mesh_engine.last_hash
         digest = mesh_engine.compute_payload_digest(event.payload)
@@ -241,9 +223,6 @@ async def emit_mesh_event(event: MeshEvent):
 
 @v21_mesh_router.get("/ledger")
 async def get_mesh_ledger(limit: int = 50):
-    """
-    Retrieves the most recent cryptographically verified event blocks from the ledger.
-    """
     items = mesh_engine.ledger[-limit:]
     return {
         "count": len(items),
@@ -254,13 +233,8 @@ async def get_mesh_ledger(limit: int = 50):
 
 @v21_mesh_router.get("/verify-chain")
 async def verify_chain_lineage():
-    """
-    Performs a full zero-trust cryptographic audit verifying the uninterrupted
-    SHA-256 event hash chain from genesis to the current chain head.
-    """
     current_expected = GENESIS_HASH
     violations = []
-    
     for idx, item in enumerate(mesh_engine.ledger):
         if item.get("previous_hash") != current_expected:
             violations.append({
