@@ -681,13 +681,22 @@ const server = http.createServer((req, res) => {
         ? `Provisioning [${targetGpu}] on apex-hyper-mesh-global...`
         : `Qualified: ${targetGpu} (Intent ${score}/100)`;
 
+      const statusEnumText = statusState === 'PROVISIONING' 
+        ? `PROVISIONING_${targetGpu.replace(/\s+/g, '_').toUpperCase()}`
+        : 'PENDING_REVIEW';
+      const nodeId = `node-spot-${crypto.createHash('md5').update(tenant).digest('hex').slice(0, 8)}`;
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-        status: statusState,
+        status: statusEnumText,
+        intent_score: score,
+        classified_tier: tier,
+        target_gpu: targetGpu,
+        allocated_node_id: nodeId,
+        merkle_audit_hash: auditHash,
+        message: `Triage successful. Auto-allocation dispatched for node ${nodeId} on spot market.`,
         session_id: sessionId,
         tenant_id: tenant,
-        target_gpu: targetGpu,
-        intent_score: score,
         qualification_tier: tier,
         recommended_plan: recPlan,
         action_banner_text: actionBanner,
@@ -697,7 +706,7 @@ const server = http.createServer((req, res) => {
         audit_event_hash: auditHash,
         cluster_routing: {
           assigned_cluster: 'apex-hyper-mesh-global',
-          assigned_node: 'node-us-east-01 (Ashburn, VA)',
+          assigned_node: `${nodeId} (Ashburn, VA)`,
           target_hardware: targetGpu,
           interconnect: '3.2 Tbps NVIDIA Quantum-2 InfiniBand',
           failover_sla: 'Sub-Second Live Migration (eBPF sockmap/XDP)',
@@ -1150,7 +1159,7 @@ const wss = new WebSocketServer({ noServer: true });
 server.on('upgrade', (request, socket, head) => {
   const parsedUrl = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
-  if (pathname === '/ws/gpu-metrics' || pathname === '/api/v1/ws/gpu-metrics') {
+  if (pathname === '/ws/gpu-metrics' || pathname === '/api/v1/ws/gpu-metrics' || pathname === '/v1/telemetry/ws' || pathname === '/api/v1/telemetry/ws') {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
