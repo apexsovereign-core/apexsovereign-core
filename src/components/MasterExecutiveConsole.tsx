@@ -27,6 +27,8 @@ import {
 import { CustomerUser } from '../types';
 import { ConciergeWidget } from './ConciergeWidget';
 import { TelemetryStream } from './TelemetryStream';
+import { StatefulFailoverPanel } from './StatefulFailoverPanel';
+import { EnterpriseBillingConsole } from './EnterpriseBillingConsole';
 
 interface SubsystemItem {
   name: string;
@@ -296,6 +298,16 @@ export const MasterExecutiveConsole: React.FC<MasterExecutiveConsoleProps> = ({
 
       {/* OPERATIONAL COMMAND PHASE 2: Dual-Transport Bare-Metal Telemetry Stream */}
       <TelemetryStream />
+
+      {/* OPERATIONAL COMMAND PHASE 3: Sub-Second Stateful Failover & SLA Escrow Reserves */}
+      <StatefulFailoverPanel
+        tenantId={currentUser?.tenantId || 'tenant-sovereign-01'}
+      />
+
+      {/* OPERATIONAL COMMAND PHASE 4: Institutional Enterprise Billing & Net-30/60 Invoicing */}
+      <EnterpriseBillingConsole
+        tenantId={currentUser?.tenantId || 'tenant-sovereign-01'}
+      />
 
       {/* Target 1: System Component Status Grid (All 9 Subsystems) */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
