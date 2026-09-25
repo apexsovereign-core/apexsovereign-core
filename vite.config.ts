@@ -1618,14 +1618,23 @@ function apexSovereignApiPlugin(): Plugin {
               ? `Provisioning [${targetGpu}] on apex-hyper-mesh-global...`
               : `Qualified: ${targetGpu} (Intent ${score}/100)`;
 
+            const statusEnumText = statusState === 'PROVISIONING' 
+              ? `PROVISIONING_${targetGpu.replace(/\s+/g, '_').toUpperCase()}`
+              : 'PENDING_REVIEW';
+            const nodeId = `node-spot-${crypto.createHash('md5').update(tenant).digest('hex').slice(0, 8)}`;
+
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 200;
             res.end(JSON.stringify({
-              status: statusState,
+              status: statusEnumText,
+              intent_score: score,
+              classified_tier: tier,
+              target_gpu: targetGpu,
+              allocated_node_id: nodeId,
+              merkle_audit_hash: auditHash,
+              message: `Triage successful. Auto-allocation dispatched for node ${nodeId} on spot market.`,
               session_id: sessionId,
               tenant_id: tenant,
-              target_gpu: targetGpu,
-              intent_score: score,
               qualification_tier: tier,
               recommended_plan: recPlan,
               action_banner_text: actionBanner,
@@ -1635,7 +1644,7 @@ function apexSovereignApiPlugin(): Plugin {
               audit_event_hash: auditHash,
               cluster_routing: {
                 assigned_cluster: 'apex-hyper-mesh-global',
-                assigned_node: 'node-us-east-01 (Ashburn, VA)',
+                assigned_node: `${nodeId} (Ashburn, VA)`,
                 target_hardware: targetGpu,
                 interconnect: '3.2 Tbps NVIDIA Quantum-2 InfiniBand',
                 failover_sla: 'Sub-Second Live Migration (eBPF sockmap/XDP)',
