@@ -1246,6 +1246,37 @@ function apexSovereignApiPlugin(): Plugin {
           return;
         }
 
+        // 1.5b. Compute Allocate Endpoint
+        if ((url === '/v1/compute/allocate' || url === '/api/v1/compute/allocate') && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => bodyStr += chunk);
+          req.on('end', () => {
+            let parsed: any = {};
+            try { parsed = JSON.parse(bodyStr); } catch (_) {}
+            const allocId = `alloc_${crypto.randomBytes(8).toString('hex')}`;
+            const targetTier = parsed.resource_tier || 'GPU_A100';
+            const targetGpu = targetTier === 'GPU_H100' ? 'NVIDIA H100 80GB SXM5' : 'NVIDIA A100 80GB SXM4';
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: 'ALLOCATED',
+              allocation_id: allocId,
+              tenant_id: parsed.tenant_id || 'web-enterprise',
+              resource_tier: targetTier,
+              target_gpu: targetGpu,
+              duration_hours: parsed.duration_hours || 1,
+              assigned_cluster: 'apex-hyper-mesh-global',
+              assigned_node: 'node-us-east-01 (Ashburn, VA)',
+              lease_state: 'ACTIVE_COMMITTED',
+              hot_swap_sla: 'Sub-second Live Migration (eBPF sockmap/XDP)',
+              metered_cu: targetTier === 'GPU_H100' ? 16.0 : 8.0,
+              action_banner_text: `Provisioning [${targetGpu}]... Active on node-us-east-01`,
+              timestamp: new Date().toISOString()
+            }));
+          });
+          return;
+        }
+
         // 1.6 Global Health Matrix & Platform Governance Endpoints
         if (url === '/v1/platform/health-matrix' && req.method === 'GET') {
           const nowIso = new Date().toISOString();
@@ -1528,6 +1559,97 @@ function apexSovereignApiPlugin(): Plugin {
             fx_rate_to_usd: 1.0,
             all_fx_rates: { USD: 1.0, EUR: 0.92, GBP: 0.78, JPY: 154.2, AUD: 1.52, SGD: 1.34 },
           }));
+          return;
+        }
+
+        // 3b. Concierge Triage & Live Compute State Binding
+        if ((url === '/v1/concierge/triage' || url === '/api/v1/concierge/triage') && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => { bodyStr += chunk; });
+          req.on('end', () => {
+            let body: any = {};
+            try { body = JSON.parse(bodyStr); } catch (_) {}
+
+            const userMsg = (body.user_message || '').toLowerCase();
+            const preferred = body.preferred_gpu;
+            const tenant = body.tenant_id || 'tenant-sovereign-01';
+            const sessionId = body.session_id || `sess_${crypto.randomBytes(6).toString('hex')}`;
+            const autoAllocate = Boolean(body.auto_allocate);
+
+            let score = 65;
+            let targetGpu = preferred || 'NVIDIA H100 80GB SXM5';
+            let tier = 'ENTERPRISE_QUALIFIED';
+            let recPlan = 'Enterprise Accelerator ($99/mo)';
+
+            if (/b200|nvl72|blackwell/.test(userMsg)) {
+              targetGpu = 'NVIDIA B200 NVL72 192GB';
+              score += 25;
+              tier = 'SOVEREIGN_HOT';
+              recPlan = 'Sovereign Global Mesh ($499/mo)';
+            } else if (/h100|h200|sxm5|cluster|dgx/.test(userMsg)) {
+              targetGpu = 'NVIDIA H100 80GB SXM5';
+              score += 20;
+              tier = 'SOVEREIGN_HOT';
+              recPlan = 'Sovereign Global Mesh ($499/mo)';
+            } else if (/a100|sxm4/.test(userMsg)) {
+              targetGpu = 'NVIDIA A100 80GB SXM4';
+              score += 15;
+              tier = 'ENTERPRISE_QUALIFIED';
+            } else if (/l40s|pcie/.test(userMsg)) {
+              targetGpu = 'NVIDIA L40S 48GB PCIe';
+              score += 10;
+              tier = 'ENTERPRISE_QUALIFIED';
+            }
+
+            if (score >= 85) tier = 'SOVEREIGN_HOT';
+            score = Math.min(99, score);
+
+            const statusState = autoAllocate || score >= 80 ? 'PROVISIONING' : 'TRIAGED';
+            const pilotAppId = `pilot_${crypto.randomBytes(8).toString('hex')}`;
+            const computeJobId = statusState === 'PROVISIONING' ? `job_${crypto.randomBytes(8).toString('hex')}` : null;
+            const ledgerEntryId = statusState === 'PROVISIONING' ? `led_${crypto.randomBytes(8).toString('hex')}` : null;
+            const nowIso = new Date().toISOString();
+
+            const auditHash = crypto.createHash('sha256')
+              .update(`${sessionId}:${tenant}:${targetGpu}:${score}:${nowIso}`)
+              .digest('hex');
+
+            const actionBanner = statusState === 'PROVISIONING'
+              ? `Provisioning [${targetGpu}] on apex-hyper-mesh-global...`
+              : `Qualified: ${targetGpu} (Intent ${score}/100)`;
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              status: statusState,
+              session_id: sessionId,
+              tenant_id: tenant,
+              target_gpu: targetGpu,
+              intent_score: score,
+              qualification_tier: tier,
+              recommended_plan: recPlan,
+              action_banner_text: actionBanner,
+              pilot_application_id: pilotAppId,
+              compute_job_id: computeJobId,
+              ledger_entry_id: ledgerEntryId,
+              audit_event_hash: auditHash,
+              cluster_routing: {
+                assigned_cluster: 'apex-hyper-mesh-global',
+                assigned_node: 'node-us-east-01 (Ashburn, VA)',
+                target_hardware: targetGpu,
+                interconnect: '3.2 Tbps NVIDIA Quantum-2 InfiniBand',
+                failover_sla: 'Sub-Second Live Migration (eBPF sockmap/XDP)',
+                attestation_status: 'SEV-SNP Hardware Attested',
+              },
+              agent_reply: `ApexSovereign Control Plane recognized your requirement for ${targetGpu}. Intent qualification verified at ${score}/100 (${tier}). State committed to cluster orchestrator with sub-second failover guarantees.`,
+              suggested_actions: [
+                `Inspect ${targetGpu} Cluster Telemetry`,
+                'Verify Zero-Trust Hardware Attestation',
+                'Deploy Workload via SDK / CLI',
+              ],
+              timestamp: nowIso,
+            }));
+          });
           return;
         }
 

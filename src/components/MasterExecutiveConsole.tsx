@@ -25,6 +25,7 @@ import {
   FileText
 } from 'lucide-react';
 import { CustomerUser } from '../types';
+import { ConciergeWidget } from './ConciergeWidget';
 
 interface SubsystemItem {
   name: string;
@@ -286,6 +287,11 @@ export const MasterExecutiveConsole: React.FC<MasterExecutiveConsoleProps> = ({
           </div>
         </div>
       </div>
+
+      {/* OPERATIONAL COMMAND 01: Live State Binding Concierge Widget */}
+      <ConciergeWidget
+        tenantId={currentUser?.tenantId || 'tenant-sovereign-01'}
+      />
 
       {/* Target 1: System Component Status Grid (All 9 Subsystems) */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">

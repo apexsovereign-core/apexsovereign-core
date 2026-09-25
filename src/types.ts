@@ -203,7 +203,7 @@ export interface ComputeJob {
 
 export interface AgentToolExecution {
   id: string;
-  toolName: 'verify_paypal_transaction' | 'diagnose_pipeline_error' | 'dispatch_resend_documentation' | 'check_gpu_spot_inventory' | 'reconcile_tenant_credits' | 'auto_rebalance_swarm';
+  toolName: 'verify_paypal_transaction' | 'diagnose_pipeline_error' | 'dispatch_resend_documentation' | 'check_gpu_spot_inventory' | 'reconcile_tenant_credits' | 'auto_rebalance_swarm' | 'dispatch_compute_cluster' | 'triage_compute_intent';
   parameters: Record<string, any>;
   resultStatus: 'EXECUTING' | 'SUCCESS' | 'ERROR';
   summary: string;

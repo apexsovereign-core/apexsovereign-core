@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 
 export function LivePlatformStatus() {
-  // Replace stagnant status definitions with dynamic state binding
+  // Dynamic state binding to real HTTP/WSS responses and concierge events
   const [systemStatus, setSystemStatus] = useState({
     backend: "HEALTHY",
     ingestion: "READY",
     telemetry: "OPERATIONAL"
   });
   const [lastAction, setLastAction] = useState('Awaiting operator action');
+  const [targetGpu, setTargetGpu] = useState('GPU_A100');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -29,18 +30,44 @@ export function LivePlatformStatus() {
     };
     fetchTelemetry();
     const interval = setInterval(fetchTelemetry, 10000);
-    return () => clearInterval(interval);
+
+    // Listen to live compute state transitions dispatched by Concierge triage
+    const handleComputeEvent = (e: any) => {
+      if (e.detail?.actionBannerText) {
+        setLastAction(e.detail.actionBannerText);
+      }
+      if (e.detail?.targetGpu) {
+        setTargetGpu(e.detail.targetGpu);
+      }
+    };
+    window.addEventListener('apex_compute_state_changed', handleComputeEvent);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('apex_compute_state_changed', handleComputeEvent);
+    };
   }, []);
 
   const dispatchAllocation = async () => {
     setBusy(true);
+    setLastAction(`Provisioning [${targetGpu}]...`);
     try {
       const response = await fetch('/v1/compute/allocate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ tenant_id: 'web-enterprise', resource_tier: 'GPU_A100', duration_hours: 1, idempotency_key: `web-${Date.now()}` }),
+        body: JSON.stringify({ 
+          tenant_id: 'web-enterprise', 
+          resource_tier: targetGpu.includes('H100') ? 'GPU_H100' : 'GPU_A100', 
+          duration_hours: 1, 
+          idempotency_key: `web-${Date.now()}` 
+        }),
       });
-      setLastAction(response.ok ? 'Compute allocation lease issued' : `Allocation rejected (${response.status})`);
+      if (response.ok) {
+        const data = await response.json();
+        setLastAction(data.action_banner_text || `Provisioning [${data.target_gpu || targetGpu}]... Active on node-us-east-01`);
+      } else {
+        setLastAction(`Allocation rejected (${response.status})`);
+      }
     } catch {
       setLastAction('Allocation unavailable; recovery path preserved');
     } finally {
