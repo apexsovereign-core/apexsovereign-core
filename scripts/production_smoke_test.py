@@ -323,6 +323,104 @@ class ReleaseSmokeTestSuite:
             validator_fn=validate_wire,
         )
 
+        # ----------------------------------------------------------------------
+        # Test 10: V21 Computational Mesh Arbitrage Rates (/api/v21/arbitrage/rates)
+        # ----------------------------------------------------------------------
+        def validate_arbitrage(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+            status_val = str(data.get("status", "")).lower()
+            if status_val not in ("active", "active_arbitrage", "operational"):
+                return False, f"Unexpected arbitrage status: {data.get('status')}"
+            rates = data.get("rates", [])
+            if len(rates) < 3:
+                return False, f"Expected at least 3 GPU rate tiers, got {len(rates)}"
+            first_gpu = rates[0].get("gpu") or rates[0].get("compute_tier")
+            if not first_gpu:
+                return False, "Rate tier missing GPU accelerator identifier"
+            return True, None
+
+        self.run_check(
+            name="10. V21 Spot Arbitrage Rates (/api/v21/arbitrage/rates)",
+            method="GET",
+            path="/api/v21/arbitrage/rates",
+            expected_status=200,
+            validator_fn=validate_arbitrage,
+        )
+
+        # ----------------------------------------------------------------------
+        # Test 11: V21 Distributed Mesh Nodes Telemetry (/api/v21/mesh/nodes)
+        # ----------------------------------------------------------------------
+        def validate_nodes(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+            nodes = data.get("nodes", [])
+            if len(nodes) < 3:
+                return False, f"Expected at least 3 global cluster nodes, found {len(nodes)}"
+            regions = {n.get("region") for n in nodes if n.get("region")}
+            if not any("us" in r for r in regions):
+                return False, "Missing us-east cluster node in mesh"
+            return True, None
+
+        self.run_check(
+            name="11. V21 Distributed Bare-Metal Nodes (/api/v21/mesh/nodes)",
+            method="GET",
+            path="/api/v21/mesh/nodes",
+            expected_status=200,
+            validator_fn=validate_nodes,
+        )
+
+        # ----------------------------------------------------------------------
+        # Test 12: V21 Zero-Copy Asynchronous Orchestration (/api/v21/orchestrate)
+        # ----------------------------------------------------------------------
+        def validate_orchestrate(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+            status_val = str(data.get("status", "")).upper()
+            if status_val != "ORCHESTRATED":
+                return False, f"Expected ORCHESTRATED, got {data.get('status')}"
+            exec_tok = data.get("execution_token", "")
+            if not exec_tok.startswith("exec_"):
+                return False, f"Invalid cryptographic execution token: {exec_tok}"
+            return True, None
+
+        self.run_check(
+            name="12. V21 Zero-Copy Orchestration (/api/v21/orchestrate)",
+            method="POST",
+            path="/api/v21/orchestrate",
+            expected_status=200,
+            payload={
+                "tenant_id": TARGET_TENANT,
+                "workload_id": f"wkld_smoke_{int(time.time())}",
+                "compute_tier": "NVIDIA H100 80GB SXM5",
+            },
+            validator_fn=validate_orchestrate,
+        )
+
+        # ----------------------------------------------------------------------
+        # Test 13: PayPal Webhook Gateway & COO Pipeline (/api/webhooks/paypal)
+        # ----------------------------------------------------------------------
+        def validate_webhook(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+            status_val = str(data.get("status", "")).upper()
+            if "PROCESSED" not in status_val and "VERIFIED" not in status_val:
+                return False, f"Unexpected webhook status: {data.get('status')}"
+            if data.get("workflow") != "apex-coo-gateway":
+                return False, f"Expected workflow 'apex-coo-gateway', got {data.get('workflow')}"
+            cu = float(data.get("compute_units_allocated", 0.0))
+            if cu != 25000.0:
+                return False, f"Compute unit allocation mismatch: expected 25000.0 for $250.00, got {cu}"
+            return True, None
+
+        self.run_check(
+            name="13. PayPal Webhook Gateway & COO Dispatch (/api/webhooks/paypal)",
+            method="POST",
+            path="/api/webhooks/paypal",
+            expected_status=200,
+            payload={
+                "event_type": "PAYMENT.CAPTURE.COMPLETED",
+                "resource": {
+                    "id": f"ORD-SMOKE-{int(time.time())}",
+                    "custom_id": TARGET_TENANT,
+                    "amount": {"value": "250.00", "currency_code": "USD"},
+                },
+            },
+            validator_fn=validate_webhook,
+        )
+
         # Print Final Scorecard
         logger.info("================================================================================")
         logger.info("RELEASE SMOKE TEST SCORECARD: %d / %d TESTS PASSED", self.passed_tests, self.total_tests)
