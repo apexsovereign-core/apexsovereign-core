@@ -1468,48 +1468,68 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 9. Static File Serving from /dist with SPA Fallback
+  // 9. Static File Serving from /dist with fallback to /public and SPA Fallback
   if (method === 'GET' || method === 'HEAD') {
     let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
     if (safePath === '/' || safePath === '') {
       safePath = '/index.html';
     }
 
-    let filePath = path.join(DIST_DIR, safePath);
+    const filePath = path.join(DIST_DIR, safePath);
+    const publicPath = path.join(__dirname, 'public', safePath);
+
+    const serveFile = (targetFile: string, stats: fs.Stats) => {
+      const ext = path.extname(targetFile).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Content-Length': stats.size,
+        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400',
+      });
+      if (method === 'HEAD') {
+        res.end();
+        return;
+      }
+      fs.createReadStream(targetFile).pipe(res);
+    };
 
     fs.stat(filePath, (err, stats) => {
       if (!err && stats.isFile()) {
-        const ext = path.extname(filePath).toLowerCase();
-        const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-        res.writeHead(200, {
-          'Content-Type': contentType,
-          'Content-Length': stats.size,
-          'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable',
-        });
-        if (method === 'HEAD') {
-          res.end();
-          return;
-        }
-        const stream = fs.createReadStream(filePath);
-        stream.pipe(res);
+        serveFile(filePath, stats);
       } else {
-        // SPA Fallback: Serve dist/index.html
-        const indexPath = path.join(DIST_DIR, 'index.html');
-        fs.stat(indexPath, (indexErr, indexStats) => {
-          if (!indexErr && indexStats.isFile()) {
-            res.writeHead(200, {
-              'Content-Type': 'text/html; charset=UTF-8',
-              'Content-Length': indexStats.size,
-              'Cache-Control': 'no-cache',
-            });
-            if (method === 'HEAD') {
-              res.end();
+        // Fallback to checking root /public directory directly
+        fs.stat(publicPath, (pubErr, pubStats) => {
+          if (!pubErr && pubStats.isFile()) {
+            serveFile(publicPath, pubStats);
+          } else {
+            // NEVER return index.html fallback for static media, icons, manifests, scripts, or styles
+            const ext = path.extname(safePath).toLowerCase();
+            const isAssetRequest = ['.ico', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.webmanifest', '.json', '.xml', '.txt', '.js', '.css', '.woff', '.woff2'].includes(ext);
+            if (isAssetRequest) {
+              res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
+              res.end(`404 Asset Not Found: ${safePath}`);
               return;
             }
-            fs.createReadStream(indexPath).pipe(res);
-          } else {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('404 Not Found - ApexSovereign');
+
+            // SPA Fallback: Serve dist/index.html ONLY for genuine SPA client-side routes
+            const indexPath = path.join(DIST_DIR, 'index.html');
+            fs.stat(indexPath, (indexErr, indexStats) => {
+              if (!indexErr && indexStats.isFile()) {
+                res.writeHead(200, {
+                  'Content-Type': 'text/html; charset=UTF-8',
+                  'Content-Length': indexStats.size,
+                  'Cache-Control': 'no-cache',
+                });
+                if (method === 'HEAD') {
+                  res.end();
+                  return;
+                }
+                fs.createReadStream(indexPath).pipe(res);
+              } else {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.end('404 Not Found - ApexSovereign');
+              }
+            });
           }
         });
       }
