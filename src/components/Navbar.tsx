@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CustomerUser } from '../types';
 import { SovereignHexDiamond } from './SovereignHexDiamond';
+import { NavbarLogo } from './NavbarLogo';
 import { 
   ShieldCheck, 
   Terminal, 
@@ -78,26 +79,16 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header id="apex-header" className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Official Sovereign Hex-Diamond Logo & Brand Identity */}
+          {/* Official Sovereign Metallic Arrowhead Emblem & Brand Identity */}
           <div className="flex items-center gap-3">
-            <button
+            <NavbarLogo 
+              size={36}
               onClick={() => setActiveTab('executive')}
-              className="flex items-center gap-3 text-left focus:outline-none group cursor-pointer"
-            >
-              <SovereignHexDiamond size={38} glow animated />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white tracking-tight text-base group-hover:text-cyan-300 transition-colors flex items-center">
-                    <span>ApexSovereign</span>
-                    <span className="text-cyan-400">.ai</span>
-                  </span>
-                  <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                    Live
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 hidden sm:block">The Sovereign Global Work OS</p>
-              </div>
-            </button>
+              badgeText="Live"
+              badgeVariant="live"
+              showSubtitle
+              subtitle="The Sovereign Global Work OS"
+            />
           </div>
 
           {/* Navigation Controls */}

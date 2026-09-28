@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import { exec } from 'child_process';
 import dotenv from 'dotenv';
@@ -383,6 +384,41 @@ function apexSovereignApiPlugin(): Plugin {
         }
 
         const url = req.url ? req.url.split('?')[0] : '';
+
+        // Dedicated Static Favicon & Web Manifest Middleware Guard
+        if (
+          url.endsWith('.ico') ||
+          url.endsWith('.svg') ||
+          url.endsWith('.png') ||
+          url.endsWith('.webmanifest') ||
+          url === '/site.webmanifest' ||
+          url === '/manifest.json'
+        ) {
+          const publicFilePath = path.join(__dirname, 'public', url.replace(/^\//, ''));
+          if (fs.existsSync(publicFilePath)) {
+            const ext = path.extname(publicFilePath).toLowerCase();
+            const mimeMap: Record<string, string> = {
+              '.ico': 'image/x-icon',
+              '.svg': 'image/svg+xml',
+              '.png': 'image/png',
+              '.webmanifest': 'application/manifest+json',
+              '.json': 'application/json',
+            };
+            const contentType = mimeMap[ext] || 'application/octet-stream';
+            const fileBuf = fs.readFileSync(publicFilePath);
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Length', fileBuf.length);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            res.statusCode = 200;
+            res.end(fileBuf);
+            return;
+          } else {
+            res.statusCode = 404;
+            res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
+            res.end(`404 Asset Not Found: ${url}`);
+            return;
+          }
+        }
 
         // 0. Rigorous Zero-Trust RBAC & Vault Perimeter Middleware
         if (url === '/api/webhooks/paypal' || url === '/webhooks/paypal') {
