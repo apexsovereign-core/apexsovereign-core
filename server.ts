@@ -1100,7 +1100,7 @@ const server = http.createServer((req, res) => {
   // -------------------------------------------------------------------------
   // TARGET 1 & 2: Platform Governance Health Matrix & Audit Reports
   // -------------------------------------------------------------------------
-  if (pathname === '/v1/platform/health-matrix' && method === 'GET') {
+  if ((pathname === '/v1/platform/health-matrix' || pathname === '/api/v1/platform/health-matrix') && method === 'GET') {
     const matrix = generatePlatformHealthMatrix();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -1123,7 +1123,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (pathname === '/v1/platform/audit-report' && method === 'GET') {
+  if ((pathname === '/v1/platform/audit-report' || pathname === '/api/v1/platform/audit-report') && method === 'GET') {
     const report = generatePlatformAuditReport();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({

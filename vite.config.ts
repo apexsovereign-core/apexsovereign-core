@@ -371,6 +371,17 @@ function apexSovereignApiPlugin(): Plugin {
       }
 
       server.middlewares.use(async (req, res, next) => {
+        // Universal CORS headers for iframe embedding and cross-origin API calls
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Tenant-Id, X-Apex-Signature, X-Apex-Nonce, X-Apex-Timestamp, X-Admin-Access-Token');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
         const url = req.url ? req.url.split('?')[0] : '';
 
         // 0. Rigorous Zero-Trust RBAC & Vault Perimeter Middleware
@@ -483,7 +494,7 @@ function apexSovereignApiPlugin(): Plugin {
         }
 
         // 1. Health check endpoint (Health Probe Exemption)
-        if (url === '/health' || url === '/api/health' || url === '/v1/platform/health-matrix') {
+        if (url === '/health' || url === '/api/health') {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           res.end(JSON.stringify({
@@ -1332,7 +1343,7 @@ function apexSovereignApiPlugin(): Plugin {
         }
 
         // 1.6 Global Health Matrix & Platform Governance Endpoints
-        if (url === '/v1/platform/health-matrix' && req.method === 'GET') {
+        if ((url === '/v1/platform/health-matrix' || url === '/api/v1/platform/health-matrix') && req.method === 'GET') {
           const nowIso = new Date().toISOString();
           const subsystems = {
             telemetry_stream: {
@@ -1450,7 +1461,7 @@ function apexSovereignApiPlugin(): Plugin {
           return;
         }
 
-        if (url === '/v1/platform/audit-report' && req.method === 'GET') {
+        if ((url === '/v1/platform/audit-report' || url === '/api/v1/platform/audit-report') && req.method === 'GET') {
           const nowIso = new Date().toISOString();
           const masterSig = crypto.createHash('sha256').update(`GOVERNANCE_AUDIT:${Date.now()}:SOC2_TYPE_II`).digest('hex');
 
