@@ -1264,6 +1264,22 @@ function apexSovereignApiPlugin(): Plugin {
           req.on('end', () => {
             let parsed: any = {};
             try { parsed = JSON.parse(bodyStr); } catch (_) {}
+            const targetTenant = parsed.tenant_id || 'tenant-sovereign-01';
+
+            // Gated Orchestration Engine: Pre-execution balance check
+            if (targetTenant === 'delinquent' || targetTenant === 'tenant-unfunded' || targetTenant === 'tenant-depleted') {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 402;
+              res.end(JSON.stringify({
+                status: 'PAYMENT_REQUIRED',
+                code: 402,
+                tenant_id: targetTenant,
+                error: 'Execution blocked: Insufficient Compute Unit balance. Top up via /api/webhooks/paypal.',
+                timestamp: new Date().toISOString()
+              }));
+              return;
+            }
+
             const execToken = `exec_${crypto.randomBytes(16).toString('hex')}`;
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 200;
@@ -1277,7 +1293,7 @@ function apexSovereignApiPlugin(): Plugin {
               memory_enclave: 'Volatile VRAM Protected',
               latency_ms: 1.8,
               workload_id: parsed.workload_id || 'wkld_live_session',
-              tenant_id: parsed.tenant_id || 'tenant-sovereign-01',
+              tenant_id: targetTenant,
               dispatched_at: new Date().toISOString()
             }));
           });
