@@ -1,0 +1,88 @@
+# .github/workflows/load-test.yml
+name: ApexSovereign Enterprise Concurrency & Settlement CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run nightly synthetic load benchmarks at 02:00 UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  concurrency-and-sovereignty-audit:
+    name: High-Throughput Settlement & Geofence Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11 Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev postgresql-client
+          pip install -r requirements.txt
+          pip install pytest httpx psycopg2-binary k6
+
+      - name: Apply Supabase Migrations
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d postgres -f migrations/20260928_institutional_futures.sql
+
+      - name: Start ApexSovereign Background Application Engine
+        env:
+          PORT: 3000
+          SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          APEX_SETTLEMENT_HMAC_SECRET: sovereign_settlement_master_key_2026
+        run: |
+          npm run build || true
+          nohup tsx server.ts > server_test.log 2>&1 &
+          sleep 4
+          curl --retry 5 --retry-delay 1 http://127.0.0.1:3000/health
+
+      - name: Execute Tier 2: Institutional Futures Escrow Concurrency Suite
+        run: |
+          python3 tests/test_futures_escrow_concurrency.py
+
+      - name: Execute Tier 3: Jurisdictional Geofence Boundary Matrix
+        run: |
+          pytest tests/test_geofence_matrix.py -v
+
+      - name: Execute Tier 1: 5,000 Concurrent Agentic Micro-Billing Stress Test
+        run: |
+          python3 tests/concurrent_micro_debit_stress.py
+
+      - name: Output Server Audit Logs on Failure
+        if: failure()
+        run: |
+          cat server_test.log
