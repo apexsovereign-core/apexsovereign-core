@@ -1,23 +1,63 @@
 # tests/concurrent_micro_debit_stress.py
 """
 ApexSovereign.ai - Concurrency & Double-Spending Verification Suite
-Spawns 5,000 asynchronous concurrent debit attempts across overlapping tenant IDs
-to stress-test Row-Level Locking (SELECT ... FOR UPDATE) and verify zero ledger corruption.
+Spawns 5,000 asynchronous concurrent debit attempts using standardized 2048-token
+payloads ($0.02048 / 2.048 CU) to stress-test Row-Level Locking (SELECT ... FOR UPDATE).
+Enforces zero hardcoded secrets and includes deterministic healthcheck polling loops.
 """
 
+import os
+import sys
 import asyncio
 import time
 import hmac
 import hashlib
 import uuid
-import sys
+import logging
 from typing import List, Dict, Any
 import httpx
 
-TARGET_URL = "http://127.0.0.1:3000/v1/settlement/micro-debit"
-HMAC_SECRET = b"sovereign_settlement_master_key_2026"
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [STRESS_HARNESS] %(message)s")
+logger = logging.getLogger("stress_harness")
+
+# ---------------------------------------------------------------------------
+# Strict Dynamic Environment Retrieval (Zero Hardcoded Secrets / Localhost)
+# ---------------------------------------------------------------------------
+TARGET_URL = os.getenv("TARGET_URL")
+if not TARGET_URL:
+    logger.critical("FATAL: Environment variable 'TARGET_URL' is missing. Terminating harness.")
+    sys.exit(1)
+
+APEX_SETTLEMENT_HMAC_SECRET = os.getenv("APEX_SETTLEMENT_HMAC_SECRET")
+if not APEX_SETTLEMENT_HMAC_SECRET:
+    logger.critical("FATAL: Environment variable 'APEX_SETTLEMENT_HMAC_SECRET' is missing. Terminating harness.")
+    sys.exit(1)
+
+HMAC_SECRET = APEX_SETTLEMENT_HMAC_SECRET.encode("utf-8")
 TOTAL_REQUESTS = 5000
 CONCURRENCY_LIMIT = 500
+HEALTHCHECK_TIMEOUT_SECONDS = 30
+
+
+async def poll_target_health(client: httpx.AsyncClient):
+    """Deterministic healthcheck polling loop before load dispatch."""
+    base_endpoint = TARGET_URL.split("/v1/")[0]
+    health_url = f"{base_endpoint}/health"
+    logger.info(f"Polling deterministic healthcheck at {health_url}...")
+
+    start_time = time.time()
+    while time.time() - start_time < HEALTHCHECK_TIMEOUT_SECONDS:
+        try:
+            resp = await client.get(health_url, timeout=2.0)
+            if resp.status_code == 200:
+                logger.info(f"Target node health verified: HTTP 200 in {round((time.time() - start_time) * 1000, 2)}ms")
+                return True
+        except Exception:
+            pass
+        await asyncio.sleep(0.5)
+
+    logger.critical(f"FATAL: Target node at {health_url} failed to respond within {HEALTHCHECK_TIMEOUT_SECONDS}s.")
+    sys.exit(1)
 
 
 async def fire_debit(client: httpx.AsyncClient, semaphore: asyncio.Semaphore, idx: int, tenant_id: str) -> Dict[str, Any]:
@@ -29,10 +69,11 @@ async def fire_debit(client: httpx.AsyncClient, semaphore: asyncio.Semaphore, id
         raw_check = f"{tenant_id}:{workload_id}:{idemp_key}:{ts}".encode("utf-8")
         signature = hmac.new(HMAC_SECRET, raw_check, hashlib.sha256).hexdigest()
 
+        # Standardized 2048 tokens = 2.048 Compute Units ($0.02048 at $1.00 = 100 CU)
         payload = {
             "tenant_id": tenant_id,
             "workload_id": workload_id,
-            "token_count": 5000,
+            "token_count": 2048,
             "cu_rate_multiplier": 1.0,
             "idempotency_key": idemp_key,
             "nonce": idx,
@@ -67,19 +108,21 @@ async def fire_debit(client: httpx.AsyncClient, semaphore: asyncio.Semaphore, id
 
 
 async def run_stress_test():
-    print(f"================================================================================")
-    print(f"APEXSOVEREIGN.AI - 5,000 CONCURRENT SETTLEMENT STRESS BENCHMARK")
-    print(f"Target: {TARGET_URL} | Concurrency Cap: {CONCURRENCY_LIMIT}")
-    print(f"================================================================================")
+    logger.info("================================================================================")
+    logger.info("APEXSOVEREIGN.AI - 5,000 CONCURRENT SETTLEMENT STRESS BENCHMARK")
+    logger.info(f"Target: {TARGET_URL} | Concurrency Cap: {CONCURRENCY_LIMIT}")
+    logger.info("Payload: Standardized 2048 tokens (2.048 CU / $0.02048)")
+    logger.info("================================================================================")
 
     semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
     limits = httpx.Limits(max_keepalive_connections=500, max_connections=1000)
 
-    # Distribute over 10 active tenants to simulate heavy lock contention
-    tenants = [f"tenant-sovereign-{i:02d}" for i in range(1, 11)]
-
-    start_wall = time.perf_counter()
     async with httpx.AsyncClient(limits=limits) as client:
+        await poll_target_health(client)
+
+        tenants = [f"tenant-sovereign-{i:02d}" for i in range(1, 11)]
+
+        start_wall = time.perf_counter()
         tasks = [
             fire_debit(client, semaphore, i, tenants[i % len(tenants)])
             for i in range(TOTAL_REQUESTS)
@@ -105,26 +148,26 @@ async def run_stress_test():
     p95 = latencies[int(len(latencies) * 0.95)]
     p99 = latencies[int(len(latencies) * 0.99)]
 
-    print(f"\n[BENCHMARK RESULTS]")
-    print(f"Total Requests Dispatched : {TOTAL_REQUESTS}")
-    print(f"Total Wall Clock Duration : {total_wall_sec:.2f} s")
-    print(f"Sustained Throughput      : {throughput_rps:.2f} req/s")
-    print(f"Latency P50               : {p50:.2f} ms")
-    print(f"Latency P95               : {p95:.2f} ms")
-    print(f"Latency P99 (SLA < 18ms)  : {p99:.2f} ms")
-    print(f"HTTP Status Breakdown     : {status_counts}")
-    print(f"Anomalous Failures        : {errors}")
+    logger.info(f"[BENCHMARK SUMMARY]")
+    logger.info(f"Total Requests Dispatched : {TOTAL_REQUESTS}")
+    logger.info(f"Total Wall Clock Duration : {total_wall_sec:.2f} s")
+    logger.info(f"Sustained Throughput      : {throughput_rps:.2f} req/s")
+    logger.info(f"Latency P50               : {p50:.2f} ms")
+    logger.info(f"Latency P95               : {p95:.2f} ms")
+    logger.info(f"Latency P99 (SLA < 18ms)  : {p99:.2f} ms")
+    logger.info(f"Status Breakdown          : {status_counts}")
 
     if p99 > 18.0:
-        print(f"[FAIL] P99 latency ({p99:.2f} ms) breached strict 18.00 ms SLA threshold.")
+        logger.error(f"[FAIL] P99 latency ({p99:.2f} ms) breached strict 18.00 ms SLA threshold.")
+        sys.exit(1)
     else:
-        print(f"[PASS] P99 latency ({p99:.2f} ms) compliant with sub-18ms SLA.")
+        logger.info(f"[PASS] P99 latency ({p99:.2f} ms) strictly compliant with sub-18ms SLA.")
 
     if errors > 0:
-        print(f"[FAIL] {errors} transactions encountered unexpected errors or race conditions.")
+        logger.error(f"[FAIL] {errors} transactions encountered unexpected errors.")
         sys.exit(1)
 
-    print(f"[PASS] Atomic double-entry integrity confirmed. Zero race collisions detected.")
+    logger.info("[PASS] Atomic double-entry integrity confirmed. Zero race collisions detected.")
 
 
 if __name__ == "__main__":

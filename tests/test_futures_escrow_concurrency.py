@@ -3,23 +3,33 @@
 ApexSovereign.ai - Tier 2: Institutional Futures Escrow Concurrency Suite
 Validates ACID row-level locking (SELECT ... FOR UPDATE) and collateral exhaustion
 under simultaneous multi-threaded calls to execute_capacity_futures_lock.
+Enforces zero hardcoded database strings or local secrets.
 """
 
+import os
+import sys
 import threading
-import time
-import uuid
+import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
-TEST_TENANT = "tenant-futures-stress-01"
-INITIAL_CREDIT = 100000.00  # $100k facility
-COLLATERAL_PER_CALL = 25000.00  # $25k per contract (Exactly 4 allowed before depletion)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [FUTURES_CONCURRENCY] %(message)s")
+logger = logging.getLogger("futures_concurrency")
+
+# Strict Dynamic Environment Retrieval
+SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
+if not SUPABASE_DB_URL:
+    logger.critical("FATAL: Environment variable 'SUPABASE_DB_URL' is missing. Terminating harness.")
+    sys.exit(1)
+
+TEST_TENANT = os.getenv("TEST_TENANT_ID", "tenant-futures-stress-01")
+INITIAL_CREDIT = 100000.00      # $100,000 facility
+COLLATERAL_PER_CALL = 25000.00  # Exactly 4 locks allowed before credit depletion
 THREAD_COUNT = 10
 
 
 def setup_test_tenant():
-    with psycopg2.connect(DATABASE_URL) as conn:
+    with psycopg2.connect(SUPABASE_DB_URL) as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO public.tenants (id, name, available_credit, bonded_escrow, compute_units_balance)
@@ -31,7 +41,7 @@ def setup_test_tenant():
 
 def attempt_futures_lock(thread_id: int, results: list):
     try:
-        with psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor) as conn:
+        with psycopg2.connect(SUPABASE_DB_URL, cursor_factory=RealDictCursor) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     SELECT public.execute_capacity_futures_lock(
@@ -39,62 +49,51 @@ def attempt_futures_lock(thread_id: int, results: list):
                     ) AS outcome;
                 """, (TEST_TENANT, COLLATERAL_PER_CALL))
                 row = cur.fetchone()
-                results.append({
-                    "thread_id": thread_id,
-                    "success": True,
-                    "contract": row["outcome"] if row else None,
-                    "error": None
-                })
+                results.append({"thread_id": thread_id, "success": True, "contract": row["outcome"] if row else None})
     except Exception as exc:
-        results.append({
-            "thread_id": thread_id,
-            "success": False,
-            "contract": None,
-            "error": str(exc)
-        })
+        results.append({"thread_id": thread_id, "success": False, "error": str(exc)})
 
 
 def verify_concurrency():
-    print("================================================================================")
-    print("TIER 2: INSTITUTIONAL CAPACITY FUTURES ESCROW CONCURRENCY SUITE")
-    print(f"Target: {TEST_TENANT} | Initial Credit: ${INITIAL_CREDIT:,.2f}")
-    print(f"Threads Competing: {THREAD_COUNT} | Collateral Needed: ${COLLATERAL_PER_CALL:,.2f} each")
-    print("================================================================================")
+    logger.info("================================================================================")
+    logger.info("TIER 2: INSTITUTIONAL CAPACITY FUTURES ESCROW CONCURRENCY SUITE")
+    logger.info(f"Target: {TEST_TENANT} | Initial Credit: ${INITIAL_CREDIT:,.2f}")
+    logger.info(f"Threads Competing: {THREAD_COUNT} | Collateral Needed: ${COLLATERAL_PER_CALL:,.2f} each")
+    logger.info("================================================================================")
 
     setup_test_tenant()
 
     results = []
-    threads = [
-        threading.Thread(target=attempt_futures_lock, args=(i, results))
-        for i in range(THREAD_COUNT)
-    ]
-
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    threads = [threading.Thread(target=attempt_futures_lock, args=(i, results)) for i in range(THREAD_COUNT)]
+    for t in threads: t.start()
+    for t in threads: t.join()
 
     successes = [r for r in results if r["success"]]
     rejections = [r for r in results if not r["success"]]
 
-    print(f"Successful Escrow Commitments : {len(successes)}")
-    print(f"Rejected Escrow Calls        : {len(rejections)}")
+    logger.info(f"Successful Escrow Commitments : {len(successes)}")
+    logger.info(f"Rejected Escrow Calls        : {len(rejections)}")
 
-    # Verification: Exactly 4 calls must succeed ($25k * 4 = $100k). Remaining 6 must be rejected.
-    assert len(successes) == 4, f"Integrity Failure: Expected exactly 4 successful locks, got {len(successes)}"
-    assert len(rejections) == 6, f"Integrity Failure: Expected exactly 6 rejected locks, got {len(rejections)}"
+    # Invariant Verification: Exactly 4 calls commit ($25k * 4 = $100k). Remaining 6 must reject.
+    if len(successes) != 4:
+        logger.error(f"[FAIL] Expected exactly 4 successful locks, got {len(successes)}")
+        sys.exit(1)
 
-    with psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor) as conn:
+    if len(rejections) != 6:
+        logger.error(f"[FAIL] Expected exactly 6 rejected locks, got {len(rejections)}")
+        sys.exit(1)
+
+    with psycopg2.connect(SUPABASE_DB_URL, cursor_factory=RealDictCursor) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT available_credit, bonded_escrow FROM public.tenants WHERE id = %s;", (TEST_TENANT,))
             tenant = cur.fetchone()
-            print(f"Final Available Credit : ${float(tenant['available_credit']):,.2f}")
-            print(f"Final Bonded Escrow    : ${float(tenant['bonded_escrow']):,.2f}")
+            logger.info(f"Final Available Credit : ${float(tenant['available_credit']):,.2f}")
+            logger.info(f"Final Bonded Escrow    : ${float(tenant['bonded_escrow']):,.2f}")
 
-            assert float(tenant["available_credit"]) == 0.00, "Balance leakage detected in available_credit!"
-            assert float(tenant["bonded_escrow"]) == 100000.00, "Escrow balance does not match total allocated collateral!"
+            assert float(tenant["available_credit"]) == 0.00, "Leaked credit headroom detected"
+            assert float(tenant["bonded_escrow"]) == 100000.00, "Escrow balance does not match total allocated collateral"
 
-    print("[PASS] Row-level lock contention verified. Conservation law respected.")
+    logger.info("[PASS] Row-level lock contention verified. Conservation law respected.")
 
 
 if __name__ == "__main__":
