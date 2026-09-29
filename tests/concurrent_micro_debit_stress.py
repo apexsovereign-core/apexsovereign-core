@@ -66,15 +66,18 @@ async def fire_debit(client: httpx.AsyncClient, semaphore: asyncio.Semaphore, id
         workload_id = f"wl-burst-{idx}"
         idemp_key = f"idemp_stress_{idx}_{uuid.uuid4().hex[:8]}"
 
-        raw_check = f"{tenant_id}:{workload_id}:{idemp_key}:{ts}".encode("utf-8")
-        signature = hmac.new(HMAC_SECRET, raw_check, hashlib.sha256).hexdigest()
-
         # Standardized 2048 tokens = 2.048 Compute Units ($0.02048 at $1.00 = 100 CU)
+        token_count = 2048
+        cu_rate_multiplier = 1.0
+
+        canonical_message = f"{tenant_id}:{workload_id}:{token_count}:{cu_rate_multiplier}:{idemp_key}:{idx}:{ts}"
+        signature = hmac.new(HMAC_SECRET, canonical_message.encode("utf-8"), hashlib.sha256).hexdigest()
+
         payload = {
             "tenant_id": tenant_id,
             "workload_id": workload_id,
-            "token_count": 2048,
-            "cu_rate_multiplier": 1.0,
+            "token_count": token_count,
+            "cu_rate_multiplier": cu_rate_multiplier,
             "idempotency_key": idemp_key,
             "nonce": idx,
             "timestamp_epoch_ms": ts,
