@@ -37,8 +37,25 @@ DEFAULT_HEADERS = {
 
 FILES_TO_SYNC: List[str] = [
     "crates/aethelmesh/src/ebpf_sentinel.rs",
+    "crates/aethelmesh-core/Cargo.toml",
+    "crates/aethelmesh-core/src/state.rs",
+    "crates/aethelmesh-core/src/arbitrage.rs",
+    "crates/aethelmesh-core/src/main.rs",
+    "aethelmesh-core/Cargo.toml",
+    "aethelmesh-core/src/main.rs",
+    "aethelmesh-core/src/router.rs",
     "services/aurapharm/basal_load_sweeper.py",
+    "services/aurapharm/requirements.txt",
+    "services/settlement/main.py",
+    "services/governance/circuit_breaker.py",
+    "services/gateway-express/package.json",
+    "services/gateway-express/src/index.ts",
+    "services/provisioning-fastapi/requirements.txt",
+    "services/provisioning-fastapi/main.py",
+    "supabase/migrations/20260930_initial_schema.sql",
     "supabase/migrations/20260930_insolvency_protection_rpc.sql",
+    "supabase/migrations/20260930_phase3_atomic_settlement.sql",
+    "workflows/n8n/apexsovereign_provisioning_workflow.json",
     ".github/workflows/production_sentinels_ci.yml"
 ]
 
