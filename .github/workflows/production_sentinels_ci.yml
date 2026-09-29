@@ -53,7 +53,7 @@ jobs:
           flake8 scripts/github_sync.py --max-line-length=130 --ignore=E402,W503,F401
 
   validate-supabase-sql-integrity:
-    name: PostgreSQL 16 Migration & RLS Syntax Audit
+    name: Ephemeral PostgreSQL 16 & Insolvency Lock Audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

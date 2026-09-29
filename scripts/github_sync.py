@@ -2,17 +2,18 @@
 # scripts/github_sync.py
 """
 ApexSovereign Holdings - Direct GitHub REST API Synchronization Engine
-Pushes production code deliverables and configurations directly to ApexSovereign/enterprise-core
-using authenticated GitHub REST API (PUT /repos/{owner}/{repo}/contents/{path}).
+Pushes production code deliverables directly to ApexSovereign/enterprise-core
+using standard libraries (urllib.request, json, base64) with SHA-verified commits.
 """
 
 import os
 import sys
-import base64
 import json
+import base64
 import logging
-from typing import Dict, Any, List
-import requests
+import urllib.request
+import urllib.error
+from typing import Dict, Any, List, Optional
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [GITHUB_SYNC] %(message)s")
 logger = logging.getLogger("github_sync")
@@ -27,7 +28,7 @@ TARGET_REPO = os.getenv("GITHUB_REPO", "enterprise-core")
 TARGET_BRANCH = os.getenv("GITHUB_BRANCH", "main")
 API_BASE_URL = f"https://api.github.com/repos/{TARGET_OWNER}/{TARGET_REPO}/contents"
 
-HEADERS = {
+DEFAULT_HEADERS = {
     "Authorization": f"Bearer {GITHUB_TOKEN}",
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -42,21 +43,28 @@ FILES_TO_SYNC: List[str] = [
 ]
 
 
-def get_existing_file_sha(file_path: str) -> str | None:
+def get_existing_file_sha(file_path: str) -> Optional[str]:
     url = f"{API_BASE_URL}/{file_path}?ref={TARGET_BRANCH}"
-    response = requests.get(url, headers=HEADERS, timeout=10)
-    if response.status_code == 200:
-        return response.json().get("sha")
-    elif response.status_code == 404:
-        return None
-    else:
-        logger.error(f"Failed to query existing file metadata for '{file_path}': {response.status_code} {response.text}")
-        return None
+    req = urllib.request.Request(url, headers=DEFAULT_HEADERS, method="GET")
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode("utf-8"))
+                return data.get("sha")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        logger.error(f"HTTP error querying existing file '{file_path}': {e.code} - {e.reason}")
+    except Exception as exc:
+        logger.error(f"Unexpected error querying file metadata for '{file_path}': {exc}")
+
+    return None
 
 
-def commit_file_to_github(file_path: str, commit_message: str):
+def commit_file_to_github(file_path: str, commit_message: str) -> bool:
     if not os.path.exists(file_path):
-        logger.error(f"Local file '{file_path}' does not exist. Skipping.")
+        logger.error(f"Local file '{file_path}' does not exist on disk. Skipping.")
         return False
 
     with open(file_path, "rb") as f:
@@ -73,20 +81,31 @@ def commit_file_to_github(file_path: str, commit_message: str):
     if existing_sha:
         payload["sha"] = existing_sha
 
+    data_bytes = json.dumps(payload).encode("utf-8")
     url = f"{API_BASE_URL}/{file_path}"
-    response = requests.put(url, headers=HEADERS, json=payload, timeout=15)
+    req = urllib.request.Request(url, data=data_bytes, headers={**DEFAULT_HEADERS, "Content-Type": "application/json"}, method="PUT")
 
-    if response.status_code in [200, 201]:
-        logger.info(f"SUCCESS: Pushed '{file_path}' to {TARGET_OWNER}/{TARGET_REPO}@{TARGET_BRANCH} (HTTP {response.status_code}).")
-        return True
-    else:
-        logger.error(f"FAILURE: Could not push '{file_path}': HTTP {response.status_code} - {response.text}")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            if response.status in [200, 201]:
+                logger.info(f"SUCCESS: Pushed '{file_path}' to {TARGET_OWNER}/{TARGET_REPO}@{TARGET_BRANCH} (HTTP {response.status}).")
+                return True
+            else:
+                logger.warning(f"Unexpected response status {response.status} for '{file_path}'.")
+                return False
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8") if e.fp else ""
+        logger.error(f"FAILURE: HTTP {e.code} pushing '{file_path}': {e.reason} - {err_body}")
+        return False
+    except Exception as exc:
+        logger.error(f"FAILURE: Unexpected error pushing '{file_path}': {exc}")
         return False
 
 
 def run_synchronization():
     logger.info("================================================================================")
-    logger.info(f"APEXSOVEREIGN HOLDINGS - GITHUB API SYNC TO {TARGET_OWNER}/{TARGET_REPO}@{TARGET_BRANCH}")
+    logger.info(f"APEXSOVEREIGN HOLDINGS - GITHUB REST API SYNCHRONIZATION")
+    logger.info(f"Target: {TARGET_OWNER}/{TARGET_REPO} | Branch: {TARGET_BRANCH}")
     logger.info("================================================================================")
 
     success_count = 0
@@ -95,7 +114,7 @@ def run_synchronization():
         if commit_file_to_github(relative_path, msg):
             success_count += 1
 
-    logger.info(f"Sync complete. {success_count}/{len(FILES_TO_SYNC)} files pushed to production.")
+    logger.info(f"Synchronization completed. {success_count}/{len(FILES_TO_SYNC)} files successfully pushed.")
     if success_count != len(FILES_TO_SYNC):
         sys.exit(1)
 
