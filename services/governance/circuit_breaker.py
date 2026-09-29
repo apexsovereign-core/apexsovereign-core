@@ -7,9 +7,15 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import httpx
 
-logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] [SOVEREIGN_GOVERNANCE] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, 
+    format="[%(asctime)s] [%(levelname)s] [SOVEREIGN_GOVERNANCE] %(message)s"
+)
 
-app = FastAPI(title="ApexSovereign Holdings Governance & Circuit Breaker Engine", version="0.5.0")
+app = FastAPI(
+    title="ApexSovereign Holdings Governance & Circuit Breaker Engine", 
+    version="0.5.0"
+)
 
 # Operational State Store
 CIRCUIT_STATES: Dict[str, Any] = {
@@ -19,10 +25,12 @@ CIRCUIT_STATES: Dict[str, Any] = {
     "Global_Override": {"status": "ARMED", "emergency_lock": False}
 }
 
+
 class EmergencyTripRequest(BaseModel):
     entity_name: str
     reason: str
     operator_signature: str
+
 
 class GovernanceStatusResponse(BaseModel):
     timestamp: float
@@ -30,10 +38,18 @@ class GovernanceStatusResponse(BaseModel):
     entities: Dict[str, Any]
     active_circuit_trips: int
 
+
 @app.get("/api/v1/governance/telemetry", response_model=GovernanceStatusResponse)
 async def get_governance_telemetry():
-    active_trips = sum(1 for v in CIRCUIT_STATES.values() if isinstance(v, dict) and v.get("circuit_tripped", False))
-    overall_status = "CRITICAL_ISOLATION" if active_trips > 0 or CIRCUIT_STATES["Global_Override"]["emergency_lock"] else "NOMINAL"
+    active_trips = sum(
+        1 for v in CIRCUIT_STATES.values() 
+        if isinstance(v, dict) and v.get("circuit_tripped", False)
+    )
+    overall_status = (
+        "CRITICAL_ISOLATION" 
+        if active_trips > 0 or CIRCUIT_STATES["Global_Override"]["emergency_lock"] 
+        else "NOMINAL"
+    )
     
     return GovernanceStatusResponse(
         timestamp=time.time(),
@@ -41,6 +57,7 @@ async def get_governance_telemetry():
         entities=CIRCUIT_STATES,
         active_circuit_trips=active_trips
     )
+
 
 @app.post("/api/v1/governance/trip-circuit")
 async def manual_circuit_trip(payload: EmergencyTripRequest):
@@ -66,6 +83,7 @@ async def manual_circuit_trip(payload: EmergencyTripRequest):
         "timestamp": time.time()
     }
 
+
 @app.post("/api/v1/governance/reset-circuits")
 async def reset_governance_circuits(operator_token: str):
     if operator_token != os.getenv("SOVEREIGN_OPERATOR_TOKEN", "APEX_MASTER_SECRET_2026"):
@@ -82,13 +100,12 @@ async def reset_governance_circuits(operator_token: str):
     logging.info("ALL CIRCUIT BREAKERS MANUALLY RESET TO NOMINAL STATE.")
     return {"status": "ALL_SYSTEMS_RESET", "timestamp": time.time()}
 
+
 async def autonomous_governance_watchdog():
     logging.info("Starting Autonomous Governance Watchdog Loop (Interval: 5s)...")
     async with httpx.AsyncClient(timeout=3.0) as client:
         while True:
             try:
-                # Real-time health monitoring across all entities
-                # In production, poll health endpoints of Rust Mesh, AuraPharm FastAPI, and Settlement Engine
                 if CIRCUIT_STATES["Global_Override"]["emergency_lock"]:
                     logging.warning("System in Global Emergency Lock. Standby mode active.")
                 
@@ -97,9 +114,11 @@ async def autonomous_governance_watchdog():
                 logging.error(f"Watchdog polling error: {err}")
                 await asyncio.sleep(5)
 
+
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(autonomous_governance_watchdog())
+
 
 @app.get("/health")
 async def health_check():
