@@ -1,0 +1,19 @@
+[package]
+name = "aethelmesh-core"
+version = "0.3.0"
+edition = "2021"
+authors = ["ApexSovereign Holdings Architecture Team"]
+
+[dependencies]
+axum = { version = "0.7", features = ["json", "macros"] }
+tokio = { version = "1.38", features = ["full", "parking_lot"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tower = { version = "0.4", features = ["util"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "timeout"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+prometheus = { version = "0.13", features = ["process"] }
+once_cell = "1.19"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+chrono = { version = "0.4", features = ["serde"] }
