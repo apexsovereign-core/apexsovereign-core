@@ -34,18 +34,21 @@ export default function () {
   const workloadId = `wl-stress-${vuId}-${iterId}`;
   const idempotencyKey = `idemp_k6_${vuId}_${iterId}_${timestamp}`;
 
+  const tokenCount = 2048;
+  const cuRateMultiplier = 1.0;
+
   const payload = JSON.stringify({
     tenant_id: tenantId,
     workload_id: workloadId,
-    token_count: 2048,
-    cu_rate_multiplier: 1.0,
+    token_count: tokenCount,
+    cu_rate_multiplier: cuRateMultiplier,
     idempotency_key: idempotencyKey,
     nonce: iterId,
     timestamp_epoch_ms: timestamp,
   });
 
-  const rawCheck = `${tenantId}:${workloadId}:${idempotencyKey}:${timestamp}`;
-  const signature = crypto.hmac('sha256', HMAC_SECRET, rawCheck, 'hex');
+  const canonicalMessage = `${tenantId}:${workloadId}:${tokenCount}:${cuRateMultiplier}:${idempotencyKey}:${iterId}:${timestamp}`;
+  const signature = crypto.hmac('sha256', HMAC_SECRET, canonicalMessage, 'hex');
 
   const params = {
     headers: {

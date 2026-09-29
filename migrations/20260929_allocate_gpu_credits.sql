@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.settlement_audit_log (
 
 CREATE INDEX IF NOT EXISTS idx_audit_tenant ON public.settlement_audit_log(tenant_id);
 
--- 2. Atomic Credit Allocation Function: $1.00 USD = 100 Compute Units (CU)
+-- 2. Atomic Credit Allocation Function: $1.00 USD = 100.000000 Compute Units (CU)
 CREATE OR REPLACE FUNCTION public.allocate_gpu_credits(
     p_tenant_id TEXT,
     p_usd_amount NUMERIC,
@@ -34,7 +34,7 @@ BEGIN
         RAISE EXCEPTION 'INVALID_AMOUNT: USD amount must be greater than zero, received: %', p_usd_amount;
     END IF;
 
-    -- Calculate CU: $1.00 = 100.000000 CU ($0.01 = 1 CU)
+    -- Calculate CU: $1.00 = 100.000000 CU ($0.01 = 1 CU) with 6-decimal precision
     v_cu_to_allocate := ROUND(p_usd_amount * 100.000000, 6);
 
     -- Row-Level Pessimistic Lock on Tenant
@@ -57,7 +57,7 @@ BEGIN
         updated_at = timezone('utc', now())
     WHERE id = p_tenant_id;
 
-    -- Double-Entry Ledger Append
+    -- Double-Entry Ledger Append (Negative deduction denotes credit allocation deposit)
     INSERT INTO public.ledger_entries (
         tenant_id,
         workload_id,
@@ -70,7 +70,7 @@ BEGIN
         p_tenant_id,
         'SYSTEM_PAYMENT_PROVISION',
         'credit_alloc_' || p_reference_id,
-        -v_cu_to_allocate, -- Negative deduction denotes credit deposit
+        -v_cu_to_allocate,
         v_prev_balance,
         v_new_balance,
         'CREDIT_ALLOCATED'
@@ -89,7 +89,7 @@ BEGIN
 END;
 $$;
 
--- 3. Row-Level Security (RLS) Hardening
+-- 3. Row-Level Security (RLS) Hardening Across All Tables
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ledger_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.capacity_futures_contracts ENABLE ROW LEVEL SECURITY;
@@ -107,7 +107,17 @@ CREATE POLICY ledger_isolation_policy ON public.ledger_entries
     FOR SELECT
     USING (tenant_id = current_setting('request.jwt.claims', true)::json->>'tenant_id');
 
--- Service Role Full Access Bypass
+DROP POLICY IF EXISTS futures_isolation_policy ON public.capacity_futures_contracts;
+CREATE POLICY futures_isolation_policy ON public.capacity_futures_contracts
+    FOR SELECT
+    USING (tenant_id = current_setting('request.jwt.claims', true)::json->>'tenant_id');
+
+DROP POLICY IF EXISTS audit_isolation_policy ON public.settlement_audit_log;
+CREATE POLICY audit_isolation_policy ON public.settlement_audit_log
+    FOR SELECT
+    USING (tenant_id = current_setting('request.jwt.claims', true)::json->>'tenant_id');
+
+-- Service Role Full Administrative Access
 DROP POLICY IF EXISTS service_role_all_tenants ON public.tenants;
 CREATE POLICY service_role_all_tenants ON public.tenants
     FOR ALL
@@ -117,6 +127,20 @@ CREATE POLICY service_role_all_tenants ON public.tenants
 
 DROP POLICY IF EXISTS service_role_all_ledger ON public.ledger_entries;
 CREATE POLICY service_role_all_ledger ON public.ledger_entries
+    FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS service_role_all_futures ON public.capacity_futures_contracts;
+CREATE POLICY service_role_all_futures ON public.capacity_futures_contracts
+    FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS service_role_all_audit ON public.settlement_audit_log;
+CREATE POLICY service_role_all_audit ON public.settlement_audit_log
     FOR ALL
     TO service_role
     USING (true)
