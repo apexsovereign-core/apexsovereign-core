@@ -5,14 +5,26 @@ Automated test matrix verifying cross-border routing rules (GDPR_EU, BSI_DE, FED
 ensuring unauthorized ingress/egress is deterministically dropped with HTTP 451.
 """
 
+import os
+import sys
+import logging
 import pytest
 import httpx
 
-BASE_URL = "http://127.0.0.1:3000/v1/compliance/geofence/validate-route"
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [GEOFENCE_TEST] %(message)s")
+logger = logging.getLogger("geofence_test")
+
+BASE_TARGET = os.getenv("TARGET_URL")
+if not BASE_TARGET:
+    logger.critical("FATAL: Environment variable 'TARGET_URL' is missing. Terminating test.")
+    sys.exit(1)
+
+# Derive compliance route endpoint from base target URL
+BASE_URL = f"{BASE_TARGET.split('/v1/')[0]}/v1/compliance/geofence/validate-route"
 
 # Test matrix: (jurisdiction, target_node, contains_pii, expected_status, expected_error)
 GEOFENCE_MATRIX = [
-    # Compliant paths
+    # Compliant In-Jurisdiction Paths (HTTP 200)
     ("GLOBAL", "node-us-east-01", False, 200, None),
     ("GLOBAL", "node-eu-central-01", False, 200, None),
     ("GDPR_EU", "node-eu-central-01", True, 200, None),
@@ -20,14 +32,14 @@ GEOFENCE_MATRIX = [
     ("FEDRAMP_US", "node-us-gov-east-01", True, 200, None),
     ("BSI_DE", "node-eu-central-01", True, 200, None),
 
-    # Non-compliant cross-border breach paths (Must return HTTP 451)
+    # Non-Compliant Cross-Border Breaches (Mandatory HTTP 451 Drop)
     ("GDPR_EU", "node-us-east-01", True, 451, "SOVEREIGNTY_BREACH_DETECTED"),
     ("GDPR_EU", "node-us-central-02", False, 451, "SOVEREIGNTY_BREACH_DETECTED"),
     ("FEDRAMP_US", "node-eu-central-01", True, 451, "SOVEREIGNTY_BREACH_DETECTED"),
     ("BSI_DE", "node-eu-west-01", False, 451, "SOVEREIGNTY_BREACH_DETECTED"),
     ("BSI_DE", "node-us-east-01", True, 451, "SOVEREIGNTY_BREACH_DETECTED"),
 
-    # Invalid regime declarations (PII declared without explicit sovereign boundary)
+    # Invalid Regimes (PII without defined sovereign boundary -> HTTP 400)
     ("GLOBAL", "node-us-east-01", True, 400, None),
 ]
 
@@ -46,10 +58,8 @@ def test_geofence_boundary_enforcement(jurisdiction, target_node, contains_pii, 
     with httpx.Client(timeout=5.0) as client:
         resp = client.post(BASE_URL, json=payload)
         assert resp.status_code == expected_status, (
-            f"Boundary Failure: Expected HTTP {expected_status} for {jurisdiction} -> {target_node}, "
-            f"received HTTP {resp.status_code}: {resp.text}"
+            f"Boundary Violation Check Failed: {jurisdiction} -> {target_node} returned HTTP {resp.status_code}: {resp.text}"
         )
-
         if expected_error:
             data = resp.json()
             assert data["detail"]["error"] == expected_error, (

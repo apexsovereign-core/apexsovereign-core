@@ -7,12 +7,12 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    # Run nightly synthetic load benchmarks at 02:00 UTC
+    # Nightly synthetic 5k-RPS load benchmarks at 02:00 UTC
     - cron: '0 2 * * *'
 
 jobs:
   concurrency-and-sovereignty-audit:
-    name: High-Throughput Settlement & Geofence Verification
+    name: High-Throughput Settlement, PgBouncer & Geofence Verification
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -31,6 +31,16 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
@@ -41,7 +51,7 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Setup Node.js Environment
+      - name: Setup Node.js 20 Environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -49,36 +59,46 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpq-dev postgresql-client
+          sudo apt-get install -y libpq-dev postgresql-client pgbouncer
           pip install -r requirements.txt
-          pip install pytest httpx psycopg2-binary k6
+          pip install pytest httpx psycopg2-binary redis k6
 
       - name: Apply Supabase Migrations
         env:
           PGPASSWORD: postgres
         run: |
           psql -h localhost -U postgres -d postgres -f migrations/20260928_institutional_futures.sql
+          psql -h localhost -U postgres -d postgres -f migrations/20260929_allocate_gpu_credits.sql
 
-      - name: Start ApexSovereign Background Application Engine
+      - name: Start Background Application Engine
         env:
           PORT: 3000
           SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
           APEX_SETTLEMENT_HMAC_SECRET: sovereign_settlement_master_key_2026
+          REDIS_URL: redis://localhost:6379/0
         run: |
           npm run build || true
           nohup tsx server.ts > server_test.log 2>&1 &
           sleep 4
           curl --retry 5 --retry-delay 1 http://127.0.0.1:3000/health
 
-      - name: Execute Tier 2: Institutional Futures Escrow Concurrency Suite
+      - name: Run Tier 2: Institutional Futures Escrow Concurrency Suite
+        env:
+          SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          TEST_TENANT_ID: tenant-futures-stress-01
         run: |
           python3 tests/test_futures_escrow_concurrency.py
 
-      - name: Execute Tier 3: Jurisdictional Geofence Boundary Matrix
+      - name: Run Tier 3: Jurisdictional Geofence Boundary Matrix
+        env:
+          TARGET_URL: http://127.0.0.1:3000/v1/settlement/micro-debit
         run: |
           pytest tests/test_geofence_matrix.py -v
 
-      - name: Execute Tier 1: 5,000 Concurrent Agentic Micro-Billing Stress Test
+      - name: Run Tier 1: 5,000 Concurrent Agentic Micro-Billing Stress Test
+        env:
+          TARGET_URL: http://127.0.0.1:3000/v1/settlement/micro-debit
+          APEX_SETTLEMENT_HMAC_SECRET: sovereign_settlement_master_key_2026
         run: |
           python3 tests/concurrent_micro_debit_stress.py
 
