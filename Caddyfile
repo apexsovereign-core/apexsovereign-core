@@ -1,0 +1,65 @@
+# ==============================================================================
+# APEXSOVEREIGN.AI — HIGH-PERFORMANCE EDGE PROXY & ACME TLS CADDYFILE
+# Automatic Zero-Config TLS (Let's Encrypt / ZeroSSL)
+# ==============================================================================
+
+{
+    email ops@apexsovereign.ai
+    admin off
+    servers {
+        protocol {
+            experimental_http3
+        }
+    }
+}
+
+# AethelMesh Sub-18ms Ingress API
+api.apexsovereign.ai {
+    encode gzip zstd
+
+    # Security Headers
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Proxy to AethelMesh Axum Engine
+    reverse_proxy aethelmesh:8080 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 100
+        }
+    }
+}
+
+# AethelPay Atomic Settlement & Webhook Gateway
+pay.apexsovereign.ai {
+    encode gzip zstd
+
+    # Security Headers
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+
+    # Proxy to AethelPay Express Gateway
+    reverse_proxy aethelpay:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 50
+        }
+    }
+}
