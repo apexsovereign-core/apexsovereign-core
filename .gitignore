@@ -7,6 +7,7 @@ target/
 *.log
 .env*
 !.env.example
+!.env.production.template
 __pycache__/
 *.pyc
 *.pyo

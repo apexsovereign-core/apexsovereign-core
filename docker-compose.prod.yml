@@ -1,0 +1,230 @@
+# ==============================================================================
+# APEXSOVEREIGN.AI — HIGH-VELOCITY PRODUCTION ORCHESTRATION MANIFEST
+# Enforces Network Isolation, Dynamic Resource Ceilings, and Health Probes
+# ==============================================================================
+version: "3.9"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. AethelMesh: Sub-18ms Rust/Axum Compute & Energy Routing Engine
+  # ----------------------------------------------------------------------------
+  aethelmesh:
+    build:
+      context: .
+      dockerfile: Dockerfile.axum
+    container_name: apexsovereign-aethelmesh
+    restart: unless-stopped
+    ports:
+      - "${PORT_AETHELMESH:-8080}:8080"
+    env_file:
+      - .env.production
+    environment:
+      - PORT=8080
+      - RUST_LOG=info,aethelmesh_core=debug
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+          memory: 1024M
+        reservations:
+          cpus: "0.50"
+          memory: 256M
+    networks:
+      - sovereign-edge
+      - sovereign-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ----------------------------------------------------------------------------
+  # 2. AethelPay: Node.js 20 Settlement & Webhook Gateway ($1.00 USD = 100 CU)
+  # ----------------------------------------------------------------------------
+  aethelpay:
+    build:
+      context: .
+      dockerfile: Dockerfile.express
+    container_name: apexsovereign-aethelpay
+    restart: unless-stopped
+    ports:
+      - "${PORT_AETHELPAY:-3000}:3000"
+    env_file:
+      - .env.production
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    networks:
+      - sovereign-edge
+      - sovereign-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ----------------------------------------------------------------------------
+  # 3. AuraPharm Sweeper: Python 3.11 Basal Load Sweeper & ED25519 Tokenizer
+  # ----------------------------------------------------------------------------
+  aurapharm-sweeper:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: apexsovereign-aurapharm
+    restart: unless-stopped
+    command: ["uvicorn", "services.aurapharm.basal_load_sweeper:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports:
+      - "${PORT_AURAPHARM:-8001}:8001"
+    env_file:
+      - .env.production
+    environment:
+      - PORT=8001
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    networks:
+      - sovereign-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 4. Governance Sentinel: Global Circuit Breaker & Telemetry Interceptor
+  # ----------------------------------------------------------------------------
+  governance-sentinel:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: apexsovereign-governance
+    restart: unless-stopped
+    command: ["uvicorn", "services.governance.circuit_breaker:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "${PORT_GOVERNANCE:-8000}:8000"
+    env_file:
+      - .env.production
+    environment:
+      - PORT=8000
+    depends_on:
+      aethelmesh:
+        condition: service_healthy
+      aethelpay:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          cpus: "0.20"
+          memory: 128M
+    networks:
+      - sovereign-edge
+      - sovereign-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/v1/governance/telemetry"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 5. Redis: Atomic Idempotency Buffer & Real-Time Event Stream
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: apexsovereign-redis
+    restart: unless-stopped
+    command: >
+      sh -c 'redis-server
+      --requirepass "$$REDIS_PASSWORD"
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy noeviction
+      --protected-mode yes'
+    env_file:
+      - .env.production
+    volumes:
+      - redis-data:/data
+    networks:
+      - sovereign-internal
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 768M
+        reservations:
+          cpus: "0.20"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+# ------------------------------------------------------------------------------
+# ISOLATED NETWORKS & PERSISTENT STORAGE VOLUMES
+# ------------------------------------------------------------------------------
+networks:
+  sovereign-edge:
+    driver: bridge
+    labels:
+      com.apexsovereign.network.tier: "edge-ingress"
+  sovereign-internal:
+    driver: bridge
+    internal: true
+    labels:
+      com.apexsovereign.network.tier: "internal-isolated"
+
+volumes:
+  redis-data:
+    driver: local
