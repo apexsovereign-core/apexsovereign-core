@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.4
 # ==============================================================================
-# APEXSOVEREIGN.AI — PYTHON 3.11 BACKGROUND WORKER DOCKERFILE
+# APEXSOVEREIGN.AI — PYTHON 3.11 WORKER RUNTIME DOCKERFILE
 # Multi-Stage Build for AuraPharm Basal Sweeper & Governance Sentinels
-# Hardened Non-Root Security (appuser:10001)
+# Isolated Virtualenv Context & Hardened Non-Root Security (appuser:10001)
 # ==============================================================================
 
-# Stage 1: Build virtualenv & wheels
+# Stage 1: Build virtualenv & pre-compile wheels
 FROM python:3.11-slim-bookworm AS builder
 
 WORKDIR /build
@@ -23,7 +23,7 @@ COPY services/aurapharm/requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# Stage 2: Hardened Production Runtime
+# Stage 2: Hardened Minimal Production Runtime
 FROM python:3.11-slim-bookworm AS runtime
 
 LABEL maintainer="ApexSovereign Holdings DevOps <infra@apexsovereign.ai>"
@@ -39,10 +39,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && groupadd -g 10001 appgroup \
     && useradd -u 10001 -g appgroup -s /sbin/nologin -M appuser
 
-# Copy virtualenv from builder
+# Extract isolated virtualenv from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy service codebases
+# Copy services tree
 COPY --chown=appuser:appgroup services/ /app/services/
 
 ENV PATH="/opt/venv/bin:$PATH" \
@@ -54,8 +54,7 @@ USER 10001:10001
 
 EXPOSE 8000 8001
 
-# Healthcheck targeting Uvicorn status endpoint
-HEALTHCHECK --interval=20s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=4s --start-period=5s --retries=3 \
     CMD curl -f http://127.0.0.1:${PORT:-8001}/health || exit 1
 
 CMD ["uvicorn", "services.aurapharm.basal_load_sweeper:app", "--host", "0.0.0.0", "--port", "8001"]
