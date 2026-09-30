@@ -1,21 +1,21 @@
 # syntax=docker/dockerfile:1.4
 # ==============================================================================
 # APEXSOVEREIGN.AI — AETHELPAY EXPRESS SETTLEMENT GATEWAY DOCKERFILE
-# Multi-Stage Node.js 20 Alpine Production Build
-# Hardened Non-Root Security (UID 1000 node)
+# Node.js 20-alpine Multi-Stage Hardened Production Build
+# Non-Root Execution (UID 1000 node) with dumb-init Process Handling
 # ==============================================================================
 
-# Stage 1: Dependency Resolver
+# Stage 1: Dependency Pruning & Resolution
 FROM node:20-alpine AS dependencies
 
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
 
-COPY services/aethelpay/package.json ./
-RUN npm ci --omit=dev --ignore-scripts || npm install --omit=dev --no-audit --no-fund
+COPY services/aethelpay/package.json services/aethelpay/package-lock.json* ./
+RUN npm ci --only=production --ignore-scripts || npm install --only=production --no-audit --no-fund
 
-# Stage 2: Production Minimal Runtime
+# Stage 2: Production Hardened Runtime
 FROM node:20-alpine AS runtime
 
 LABEL maintainer="ApexSovereign Holdings DevOps <infra@apexsovereign.ai>"
@@ -23,24 +23,24 @@ LABEL service="aethelpay-express"
 
 WORKDIR /app
 
-# Install security patches & curl/wget
+# Install dumb-init for kernel signal handling and curl for telemetry probes
 RUN apk update && apk upgrade && apk add --no-cache dumb-init curl tzdata \
     && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production \
     PORT=3000
 
-# Copy node_modules from dependencies stage
+# Copy verified node_modules and application code
 COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node services/aethelpay/ ./
 
-# Enforce least privilege non-root user
+# Enforce non-root execution
 USER node
 
 EXPOSE 3000
 
-# Express gateway healthcheck
-HEALTHCHECK --interval=15s --timeout=4s --start-period=5s --retries=3 \
+# Webhook ingress healthcheck
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://127.0.0.1:3000/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--"]
