@@ -1,87 +1,83 @@
-mod arbitrage;
-mod state;
-
-use arbitrage::compute_optimal_arbitrage_route;
-use state::MeshState;
-use axum::{
-    routing::{get, post},
-    Router,
-};
-use once_cell::sync::Lazy;
-use prometheus::{register_counter, register_histogram, Counter, Histogram};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
+
+use axum::{
+    error_handling::HandleErrorLayer,
+    http::StatusCode,
+    routing::{get, post},
+    BoxError, Router,
+};
+use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-static HTTP_REQUESTS_TOTAL: Lazy<Counter> = Lazy::new(|| {
-    register_counter!("aethelmesh_http_requests_total", "Total incoming HTTP requests").unwrap()
-});
+mod energy_bridge;
+mod router;
 
-static ROUTE_LATENCY_HISTOGRAM: Lazy<Histogram> = Lazy::new(|| {
-    register_histogram!(
-        "aethelmesh_route_latency_ms",
-        "Arbitrage routing latency in milliseconds"
-    )
-    .unwrap()
-});
+use energy_bridge::EnergyMonitor;
+use router::{evaluate_mesh_route, AppState};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let state = Arc::new(MeshState::default());
+    let energy_monitor = Arc::new(EnergyMonitor::new());
+    let state = Arc::new(AppState::new(energy_monitor.clone()));
+
+    // Background task to poll real-time grid energy pricing every 10 seconds
+    let monitor_clone = energy_monitor.clone();
+    tokio::spawn(async move {
+        monitor_clone.run_polling_loop(Duration::from_secs(10)).await;
+    });
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
 
+    // Rate limiting: 500 requests per 1-second burst window with buffer
+    let rate_limit_layer = ServiceBuilder::new()
+        .layer(HandleErrorLayer::new(|err: BoxError| async move {
+            (
+                StatusCode::TOO_MANY_REQUESTS,
+                format!("RATE_LIMIT_EXCEEDED: Execution throttle active ({err})"),
+            )
+        }))
+        .buffer(1024)
+        .rate_limit(500, Duration::from_secs(1));
+
     let app = Router::new()
         .route("/healthz", get(health_check))
-        .route("/metrics", get(metrics_scraper))
-        .route("/api/v1/arbitrage/route", post(compute_optimal_arbitrage_route))
+        .route("/api/v1/mesh/route", post(evaluate_mesh_route))
+        .route("/api/v1/mesh/energy", get(energy_bridge::get_energy_telemetry))
         .layer(TraceLayer::new_for_http())
+        .layer(rate_limit_layer)
         .layer(cors)
         .with_state(state);
 
-    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string()).parse::<u16>().unwrap();
+    let port: u16 = std::env::var("PORT")
+        .unwrap_or_else(|_| "8080".to_string())
+        .parse()
+        .unwrap_or(8080);
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    tracing::info!("[AETHELMESH_CORE] High-speed GPU arbitrage mesh running on {}", addr);
+    tracing::info!("[AETHELMESH_CORE] High-speed sovereign router listening on {addr}");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.expect("Failed to bind TCP listener");
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .expect("Server encountered fatal error");
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
 
 async fn health_check() -> axum::Json<serde_json::Value> {
-    HTTP_REQUESTS_TOTAL.inc();
     axum::Json(serde_json::json!({
         "status": "HEALTHY",
-        "mesh_version": "v0.3.0",
-        "latency_sla": "<18ms",
-        "arbitrage_spread": "32%-40%"
+        "engine": "AethelMesh Axum Execution Core v0.3.0",
+        "target_latency": "<18ms",
+        "pricing_reserve_floor": 1.85
     }))
-}
-
-async fn metrics_scraper() -> String {
-    use prometheus::Encoder;
-    let encoder = prometheus::TextEncoder::new();
-    let metric_families = prometheus::gather();
-    let mut buffer = Vec::new();
-    encoder.encode(&metric_families, &mut buffer).unwrap();
-    String::from_utf8(buffer).unwrap()
-}
-
-async fn shutdown_signal() {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("Failed to install CTRL+C signal handler");
-    tracing::warn!("[AETHELMESH_CORE] Shutdown signal caught. Evacuating connections...");
 }
