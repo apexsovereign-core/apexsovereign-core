@@ -1,0 +1,62 @@
+# syntax=docker/dockerfile:1.4
+# ==============================================================================
+# APEXSOVEREIGN.AI — AETHELMESH RUST/AXUM CORE DOCKERFILE
+# Multi-Stage, Minimal Footprint, Non-Root Hardened Production Build
+# Target Architecture: linux/amd64, linux/arm64
+# ==============================================================================
+
+# Stage 1: Build & Dependency Pre-Compilation
+FROM rust:1.80-slim-bookworm AS builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cache dependency layer with dummy source
+COPY aethelmesh-core/Cargo.toml ./
+RUN mkdir src && \
+    echo "fn main() { println!(\"dummy\"); }" > src/main.rs && \
+    cargo build --release && \
+    rm -rf src
+
+# Copy real source code and build production binary
+COPY aethelmesh-core/src ./src
+RUN touch src/main.rs && \
+    cargo build --release --locked --bin aethelmesh-core && \
+    strip /build/target/release/aethelmesh-core
+
+# Stage 2: Minimal Distroless/Debian Production Runtime
+FROM debian:bookworm-slim AS runtime
+
+# Security: Install minimal runtime libraries & curl for healthcheck probe
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -g 10001 appgroup \
+    && useradd -u 10001 -g appgroup -s /sbin/nologin -M appuser
+
+# Copy stripped binary from builder stage
+COPY --from=builder --chown=appuser:appgroup /build/target/release/aethelmesh-core /usr/local/bin/aethelmesh-core
+
+# Enforce non-root execution
+USER 10001:10001
+
+# Environment configurations
+ENV PORT=8080 \
+    RUST_LOG=info,aethelmesh_core=debug \
+    RUST_BACKTRACE=1
+
+EXPOSE 8080
+
+# Sub-18ms telemetry healthcheck probe
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://127.0.0.1:8080/health || exit 1
+
+ENTRYPOINT ["/usr/local/bin/aethelmesh-core"]
