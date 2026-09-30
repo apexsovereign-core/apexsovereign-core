@@ -9,11 +9,14 @@ axum = { version = "0.7", features = ["json", "macros"] }
 tokio = { version = "1.38", features = ["full", "parking_lot"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tower = { version = "0.4", features = ["util"] }
-tower-http = { version = "0.5", features = ["cors", "trace", "timeout"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tower = { version = "0.4", features = ["util", "limit"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "timeout", "limit"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-prometheus = { version = "0.13", features = ["process"] }
-once_cell = "1.19"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+redis = { version = "0.25", features = ["tokio-comp", "connection-manager"] }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.8", features = ["v4", "serde"] }
+rand = "0.8"
