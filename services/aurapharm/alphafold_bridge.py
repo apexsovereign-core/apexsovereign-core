@@ -2,18 +2,16 @@
 # ==============================================================================
 # APEXSOVEREIGN HOLDINGS — AURAPHARM.AI BIOPHARMA IP ENGINE
 # Path: services/aurapharm/alphafold_bridge.py
-# Automated Molecular Candidate Pipeline (Gemini / AlphaFold3 Ingestion)
-# Asymmetric ED25519 Cryptographic Tokenization of Molecular Discovery Proofs
+# Automated Molecular Synthesis Ingestion & Asymmetric ED25519 Tokenization
 # ==============================================================================
 
 import os
-import sys
 import time
 import json
 import base64
 import hashlib
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 import asyncpg
@@ -33,7 +31,7 @@ app = FastAPI(
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Asymmetric Key Pair Initialization (Loaded from env or generated for isolated execution)
+# Load or generate asymmetric ED25519 key pair
 RAW_PRIV_B64 = os.getenv("AURAPHARM_ED25519_PRIVATE_KEY_B64")
 if RAW_PRIV_B64:
     try:
@@ -56,14 +54,12 @@ public_pem = public_key.public_bytes(
     format=serialization.PublicFormat.SubjectPublicKeyInfo
 )
 
-
 class CandidateSubmissionRequest(BaseModel):
     target_protein_id: str
     amino_acid_sequence: str
     target_affinity_nm: float
     simulation_seed: int
     cluster_origin: str
-
 
 class MolecularDiscoveryProof(BaseModel):
     asset_id: str
@@ -74,7 +70,6 @@ class MolecularDiscoveryProof(BaseModel):
     timestamp: float
     status: str
 
-
 def sign_molecular_ip_payload(payload: Dict[str, Any]) -> str:
     """Mints an asymmetric ED25519-EdDSA JWS token certifying proprietary IP discovery."""
     return jwt.encode(
@@ -84,11 +79,10 @@ def sign_molecular_ip_payload(payload: Dict[str, Any]) -> str:
         headers={"typ": "JWT", "alg": "EdDSA", "entity": "AuraPharm.ai Holdings"}
     )
 
-
 async def persist_ip_proof_to_ledger(proof: Dict[str, Any]):
     """Persists immutable discovery proof into Supabase PostgreSQL audit log."""
     if not DATABASE_URL:
-        logging.warning("DATABASE_URL not configured. Proof logged in volatile memory.")
+        logging.info("DATABASE_URL not configured. Proof logged in volatile memory.")
         return
 
     try:
@@ -96,12 +90,12 @@ async def persist_ip_proof_to_ledger(proof: Dict[str, Any]):
             async with pool.acquire() as conn:
                 await conn.execute(
                     """
-                    INSERT INTO public.transactions (
+                    INSERT INTO public.ledger_entries (
                         reference_id,
                         debit_account_id,
                         credit_account_id,
                         amount_cu,
-                        transaction_type,
+                        entry_type,
                         metadata
                     ) VALUES (
                         $1,
@@ -119,7 +113,6 @@ async def persist_ip_proof_to_ledger(proof: Dict[str, Any]):
                 logging.info(f"IMMUTABLE PROOF COMMITTED TO LEDGER: {proof['asset_id']}")
     except Exception as exc:
         logging.error(f"Failed to persist discovery proof into ledger: {exc}")
-
 
 @app.post("/api/v1/molecular/submit", response_model=MolecularDiscoveryProof)
 async def submit_molecular_candidate(request: CandidateSubmissionRequest):
@@ -157,7 +150,6 @@ async def submit_molecular_candidate(request: CandidateSubmissionRequest):
     await persist_ip_proof_to_ledger(proof_data)
     return MolecularDiscoveryProof(**proof_data)
 
-
 @app.get("/health")
 async def health():
     return {
@@ -166,7 +158,6 @@ async def health():
         "cryptographic_algorithm": "ED25519-EdDSA",
         "alphafold3_pipeline": "ONLINE"
     }
-
 
 if __name__ == "__main__":
     import uvicorn
