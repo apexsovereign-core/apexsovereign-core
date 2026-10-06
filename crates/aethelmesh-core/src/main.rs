@@ -15,6 +15,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod energy_bridge;
 mod router;
+pub mod liquidity;
 
 use energy_bridge::EnergyMonitor;
 use router::{evaluate_mesh_route, AppState};
@@ -28,11 +29,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let energy_monitor = Arc::new(EnergyMonitor::new());
     let state = Arc::new(AppState::new(energy_monitor.clone()));
+    let liquidity_state = Arc::new(liquidity::LiquidityMeshState::default());
 
     // Background task to poll real-time grid energy pricing every 10 seconds
     let monitor_clone = energy_monitor.clone();
     tokio::spawn(async move {
         monitor_clone.run_polling_loop(Duration::from_secs(10)).await;
+    });
+
+    // Background task to poll secondary cluster idle liquidity every 15 seconds
+    let liquidity_probe_clone = liquidity_state.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(15));
+        loop {
+            interval.tick().await;
+            liquidity_probe_clone.run_cluster_health_probes().await;
+        }
     });
 
     let cors = CorsLayer::new()
@@ -51,10 +63,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .buffer(1024)
         .rate_limit(500, Duration::from_secs(1));
 
+    let liquidity_router = liquidity::create_liquidity_router(liquidity_state);
+
     let app = Router::new()
         .route("/healthz", get(health_check))
         .route("/api/v1/mesh/route", post(evaluate_mesh_route))
         .route("/api/v1/mesh/energy", get(energy_bridge::get_energy_telemetry))
+        .merge(liquidity_router)
         .layer(TraceLayer::new_for_http())
         .layer(rate_limit_layer)
         .layer(cors)

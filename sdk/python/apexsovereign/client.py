@@ -8,7 +8,10 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
-import httpx
+try:
+    import httpx
+except ImportError:
+    httpx = None
 
 logger = logging.getLogger("apexsovereign")
 
@@ -36,7 +39,7 @@ class ArbitrageRouteResponse:
     status: str
     selected_node_id: str
     target_region: str
-    spot_price_usd_hr: f64 = 0.0
+    spot_price_usd_hr: float = 0.0
     retail_benchmark_usd_hr: float = 0.0
     net_arbitrage_savings_pct: float = 0.0
     estimated_latency_ms: int = 0
@@ -108,7 +111,9 @@ class ApexSovereignClient:
             await self._client.aclose()
             self._client = None
 
-    def _get_client(self) -> httpx.AsyncClient:
+    def _get_client(self) -> Any:
+        if httpx is None:
+            raise ImportError("httpx is required to use ApexSovereignClient. Install via: pip install httpx")
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 headers=self._headers,
