@@ -1,5 +1,6 @@
 """
 ApexSovereign.ai Official Enterprise Python SDK
+Includes Headless Agentic Compute Hooks & Autonomous Budget Lock
 """
 
 from .client import (
@@ -12,7 +13,22 @@ from .client import (
     RateLimitError,
 )
 
+from .agent import (
+    AgentComputeConfig,
+    AgentComputeError,
+    AutonomousBudgetExceededError,
+    InvalidSubtokenError,
+    ClusterFailoverError,
+    AgentSubtoken,
+    AutonomousBudgetLock,
+    DynamicFailoverRouter,
+    ApexSovereignLLM,
+    ApexSovereignVectorRetriever,
+    ApexAutonomousAgent,
+)
+
 __all__ = [
+    # Enterprise Client
     "ApexSovereignClient",
     "ArbitrageRouteResponse",
     "MolecularProofResponse",
@@ -20,6 +36,18 @@ __all__ = [
     "ApexSovereignError",
     "InsufficientCreditError",
     "RateLimitError",
+    # Agentic Compute SDK
+    "AgentComputeConfig",
+    "AgentComputeError",
+    "AutonomousBudgetExceededError",
+    "InvalidSubtokenError",
+    "ClusterFailoverError",
+    "AgentSubtoken",
+    "AutonomousBudgetLock",
+    "DynamicFailoverRouter",
+    "ApexSovereignLLM",
+    "ApexSovereignVectorRetriever",
+    "ApexAutonomousAgent",
 ]
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
