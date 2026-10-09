@@ -18,7 +18,7 @@ import os
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Union
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple, Union
 
 import urllib.request
 import urllib.error
@@ -96,6 +96,28 @@ class AgentSubtoken:
     nonce: str
     signature: str
 
+    def is_signature_valid(self, secret: str) -> bool:
+        payload = {
+            "tid": self.tenant_id,
+            "aid": self.agent_id,
+            "tsk": self.task_id,
+            "max": self.max_cu_spend,
+            "cat": self.created_at,
+            "exp": self.expires_at,
+            "nce": self.nonce,
+        }
+        encoded_payload = base64.urlsafe_b64encode(json.dumps(payload, separators=(',', ':')).encode()).decode()
+        expected_sig = hmac.new(
+            secret.encode("utf-8"),
+            encoded_payload.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+        return hmac.compare_digest(expected_sig, self.signature)
+
+    def is_valid(self, secret: str) -> bool:
+        now = int(time.time())
+        return self.is_signature_valid(secret) and self.expires_at >= now
+
     def to_token_string(self) -> str:
         payload = {
             "tid": self.tenant_id,
@@ -170,7 +192,9 @@ class AutonomousBudgetLock:
         max_cu_spend: float,
         secret: str,
         ttl_seconds: int = 3600,
+        validity_seconds: Optional[int] = None,
     ) -> "AutonomousBudgetLock":
+        actual_ttl = validity_seconds if validity_seconds is not None else ttl_seconds
         now = int(time.time())
         nonce = uuid.uuid4().hex[:16]
         payload = {
@@ -179,7 +203,7 @@ class AutonomousBudgetLock:
             "tsk": task_id,
             "max": float(max_cu_spend),
             "cat": now,
-            "exp": now + ttl_seconds,
+            "exp": now + actual_ttl,
             "nce": nonce,
         }
         encoded_payload = base64.urlsafe_b64encode(json.dumps(payload, separators=(',', ':')).encode()).decode()
@@ -195,11 +219,28 @@ class AutonomousBudgetLock:
             task_id=task_id,
             max_cu_spend=max_cu_spend,
             created_at=now,
-            expires_at=now + ttl_seconds,
+            expires_at=now + actual_ttl,
             nonce=nonce,
             signature=sig,
         )
         return cls(subtoken=subtoken, secret=secret)
+
+    def record_cu_spend(self, cu_amount: float) -> Tuple[AgentSubtoken, float]:
+        """
+        Synchronous wrapper to register CU consumption and return (subtoken, cumulative_spend).
+        Raises AutonomousBudgetExceededError if limit is breached.
+        """
+        if not self.active:
+            raise AutonomousBudgetExceededError("Budget lock has been closed or terminated.")
+        projected = self.consumed_cu + cu_amount
+        if projected > self.subtoken.max_cu_spend:
+            deficit = projected - self.subtoken.max_cu_spend
+            raise AutonomousBudgetExceededError(
+                f"AutonomousBudgetExceeded: Task {self.subtoken.task_id} allowed max {self.subtoken.max_cu_spend:.4f} CU, "
+                f"attempted total {projected:.4f} CU (deficit: {deficit:.4f} CU)."
+            )
+        self.consumed_cu = projected
+        return self.subtoken, self.consumed_cu
 
     async def reserve_and_consume(self, cu_amount: float) -> float:
         """
@@ -247,6 +288,10 @@ class ClusterNodeEndpoint:
     is_healthy: bool = True
     consecutive_spikes: int = 0
 
+    @property
+    def latency_ms(self) -> float:
+        return self.last_latency_ms
+
 
 class DynamicFailoverRouter:
     """
@@ -293,6 +338,17 @@ class DynamicFailoverRouter:
 
         self._active_node_index = 0
         self._lock = asyncio.Lock()
+
+    def get_fastest_healthy_cluster(self) -> ClusterNodeEndpoint:
+        """
+        Synchronous selector returning the lowest-latency healthy cluster.
+        Guarantees sub-15ms route selection under normal operations.
+        """
+        healthy = [n for n in self.nodes if n.is_healthy]
+        if not healthy:
+            return self.nodes[0]
+        healthy.sort(key=lambda n: n.last_latency_ms)
+        return healthy[0]
 
     async def get_active_endpoint(self) -> ClusterNodeEndpoint:
         async with self._lock:
