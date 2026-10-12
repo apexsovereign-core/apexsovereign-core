@@ -33,6 +33,7 @@ import { TrustComplianceHub } from './components/TrustComplianceHub';
 import { TechnicalEvidencePanel } from './components/TechnicalEvidencePanel';
 import { GlobalSwarmMap } from './components/GlobalSwarmMap';
 import { CostIntelligenceOptimizer } from './components/CostIntelligenceOptimizer';
+import { SovereignDashboard } from './components/SovereignDashboard';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
 import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight } from 'lucide-react';
 
@@ -230,6 +231,17 @@ export default function App() {
             <MasterExecutiveConsole
               currentUser={currentUser}
               onNavigateTab={(tab) => setActiveTab(tab)}
+            />
+          </div>
+        )}
+
+        {/* Sovereign Executive Control Center & NVLink Telemetry Dashboard */}
+        {activeTab === 'controlcenter' && (
+          <div className="py-2">
+            <SovereignDashboard
+              currentUser={currentUser}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenCheckout={() => handleSelectTierForPurchase(SUBSCRIPTION_TIERS[1], 'monthly')}
             />
           </div>
         )}
