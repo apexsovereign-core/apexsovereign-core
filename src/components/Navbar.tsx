@@ -32,6 +32,7 @@ import {
 
 export type ActiveNavTab = 
   | 'executive'
+  | 'controlcenter'
   | 'solutions' 
   | 'pricing' 
   | 'crm'
@@ -107,6 +108,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Executive OS</span>
               <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-cyan-500/20 text-cyan-300 rounded border border-cyan-500/40">
                 MASTER
+              </span>
+            </button>
+
+            {/* Sovereign Control Center & NVLink Telemetry Dashboard */}
+            <button
+              id="tab-controlcenter"
+              onClick={() => setActiveTab('controlcenter')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'controlcenter'
+                  ? 'bg-cyan-950/80 text-cyan-300 shadow-sm border border-cyan-500/50 ring-1 ring-cyan-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Control Center</span>
+              <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-purple-500/20 text-purple-300 rounded border border-purple-500/40">
+                B200
               </span>
             </button>
 
