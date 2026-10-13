@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CustomerUser } from '../types';
 import { SovereignHexDiamond } from './SovereignHexDiamond';
 import { NavbarLogo } from './NavbarLogo';
+import { ApexLogo } from './ApexLogo';
 import { 
   ShieldCheck, 
   Terminal, 
@@ -54,7 +55,8 @@ export type ActiveNavTab =
   | 'security'
   | 'benchmarks'
   | 'developers'
-  | 'terminal';
+  | 'terminal'
+  | 'multimodal';
 
 interface NavbarProps {
   activeTab: ActiveNavTab;
@@ -82,16 +84,32 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header id="apex-header" className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Official Sovereign Metallic Arrowhead Emblem & Brand Identity */}
+          {/* Official Sovereign Diamond Cyan Logo & Brand Identity */}
           <div className="flex items-center gap-3">
-            <NavbarLogo 
-              size={36}
+            <button
               onClick={() => setActiveTab('executive')}
-              badgeText="Live"
-              badgeVariant="live"
-              showSubtitle
-              subtitle="The Sovereign Global Work OS"
-            />
+              className="flex items-center gap-3 text-left group focus:outline-none cursor-pointer"
+            >
+              <ApexLogo size={36} pulse />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-sm tracking-wider text-white group-hover:text-cyan-400 transition-colors">
+                    APEXSOVEREIGN.AI
+                  </span>
+                  <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 shadow-[0_0_8px_rgba(0,240,255,0.25)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    1.8 TB/s MESH ACTIVE
+                  </span>
+                  <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                    <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                    TEE SECURE
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-500 hidden sm:block">
+                  HYBRID B2B COMPUTE UTILITY &bull; DOUBLE-ENTRY SEALED
+                </div>
+              </div>
+            </button>
           </div>
 
           {/* Navigation Controls */}
@@ -144,6 +162,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Trading Terminal</span>
               <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/40">
                 LIVE
+              </span>
+            </button>
+
+            {/* Multi-Modal Sovereign Intelligence Studio */}
+            <button
+              id="tab-multimodal"
+              onClick={() => setActiveTab('multimodal')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'multimodal'
+                  ? 'bg-gradient-to-r from-cyan-950 to-slate-900 text-cyan-300 shadow-sm border border-cyan-500/50 ring-1 ring-cyan-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Multi-Modal Studio</span>
+              <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-cyan-500/20 text-cyan-300 rounded border border-cyan-500/40">
+                10 ENGINES
               </span>
             </button>
 

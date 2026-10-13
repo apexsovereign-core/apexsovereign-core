@@ -29,6 +29,11 @@ dotenvy = "0.15"
 async-trait = "0.1"
 parking_lot = "0.12"
 async-stream = "0.3"
+rand = "0.8"
+
+[lib]
+name = "sovereign_core"
+path = "src/lib.rs"
 
 [[bin]]
 name = "sovereign-core"
