@@ -27,10 +27,32 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
+/* High-contrast institutional dark mode borders */
+.border-apex-slate {
+  border-color: #1e293b;
+}
+
+.border-apex-emerald {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.border-apex-cyan {
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
 /* Zero-layout-shift metric transitions */
 .metric-numeric-transition {
   transition: color 0.15s ease-in-out, opacity 0.15s ease-in-out;
   contain: layout style;
+}
+
+/* Status indicator glowing styles */
+.badge-glow-emerald {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+}
+
+.badge-glow-cyan {
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
 }
 
 /* Command center animation curves */
@@ -50,24 +72,4 @@ body {
 #autonomous-agent-chat-window {
   max-height: 75vh;
   min-height: 0;
-}
-
-@keyframes subtleScaleDegraded {
-  0% {
-    transform: scale(1);
-  }
-  35% {
-    transform: scale(1.035);
-  }
-  75% {
-    transform: scale(0.99);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.animate-subtle-scale,
-.transition-health-degraded {
-  animation: subtleScaleDegraded 0.75s cubic-bezier(0.25, 1, 0.5, 1);
 }

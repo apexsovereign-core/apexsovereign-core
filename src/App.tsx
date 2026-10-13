@@ -34,8 +34,11 @@ import { TechnicalEvidencePanel } from './components/TechnicalEvidencePanel';
 import { GlobalSwarmMap } from './components/GlobalSwarmMap';
 import { CostIntelligenceOptimizer } from './components/CostIntelligenceOptimizer';
 import { SovereignDashboard } from './components/SovereignDashboard';
+import { FleetTicker } from './components/FleetTicker';
+import { DeveloperSandbox } from './components/DeveloperSandbox';
+import { InstitutionalConfigurator } from './components/InstitutionalConfigurator';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
-import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight, Zap, TrendingUp, Sliders } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveNavTab>(() => {
@@ -50,6 +53,7 @@ export default function App() {
     return 'executive';
   });
   const [selectedFileForCodeExplorer, setSelectedFileForCodeExplorer] = useState<string>('config_py');
+  const [tradingSubView, setTradingSubView] = useState<'all' | 'arbitrage' | 'sandbox' | 'nvlink'>('all');
 
   // Customer User Authentication & Session State
   const [currentUser, setCurrentUser] = useState<CustomerUser | null>(() => {
@@ -246,6 +250,85 @@ export default function App() {
           </div>
         )}
 
+        {/* ApexSovereign.ai Institutional Trading Terminal & Four-Tier Storefront */}
+        {activeTab === 'terminal' && (
+          <div className="py-4 space-y-6">
+            {/* Terminal Header & Mode Selector */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-5 shadow-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-xs uppercase tracking-widest text-emerald-400 font-mono font-semibold mb-1 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+                  SOVEREIGN COMPUTE ARBITRAGE DESK & TRADING TERMINAL
+                </div>
+                <h1 className="text-2xl font-black text-slate-100 tracking-tight flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-emerald-400" />
+                  Four-Tier Institutional Storefront
+                </h1>
+                <p className="text-xs text-slate-400 mt-1">
+                  Real-time GPU spot market arbitrage, sub-5ms fractional developer sandbox, and 1.8 TB/s NVLink cluster reservations.
+                </p>
+              </div>
+
+              {/* Sub-view Segmented Switcher */}
+              <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-lg border border-slate-800 font-mono text-xs">
+                <button
+                  onClick={() => setTradingSubView('all')}
+                  className={`px-3 py-1.5 rounded font-semibold transition-all ${
+                    tradingSubView === 'all'
+                      ? 'bg-emerald-600 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  ALL TIERS
+                </button>
+                <button
+                  onClick={() => setTradingSubView('arbitrage')}
+                  className={`px-3 py-1.5 rounded font-semibold transition-all ${
+                    tradingSubView === 'arbitrage'
+                      ? 'bg-emerald-600 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  ARBITRAGE DESK
+                </button>
+                <button
+                  onClick={() => setTradingSubView('sandbox')}
+                  className={`px-3 py-1.5 rounded font-semibold transition-all ${
+                    tradingSubView === 'sandbox'
+                      ? 'bg-emerald-600 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  DEVELOPER SANDBOX
+                </button>
+                <button
+                  onClick={() => setTradingSubView('nvlink')}
+                  className={`px-3 py-1.5 rounded font-semibold transition-all ${
+                    tradingSubView === 'nvlink'
+                      ? 'bg-emerald-600 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  NVLINK CONFIGURATOR
+                </button>
+              </div>
+            </div>
+
+            {/* Sub-view Conditional Renderers */}
+            {(tradingSubView === 'all' || tradingSubView === 'arbitrage') && (
+              <FleetTicker />
+            )}
+
+            {(tradingSubView === 'all' || tradingSubView === 'sandbox') && (
+              <DeveloperSandbox />
+            )}
+
+            {(tradingSubView === 'all' || tradingSubView === 'nvlink') && (
+              <InstitutionalConfigurator />
+            )}
+          </div>
+        )}
+
         {/* Customer Facing Views (Public Storefront & Portal) */}
         {activeTab === 'solutions' && (
           <SolutionsView
@@ -267,7 +350,8 @@ export default function App() {
 
         {/* Module 1: The Tier 2 Developer Onboarding & Sandbox Portal */}
         {activeTab === 'developers' && (
-          <div className="py-4">
+          <div className="py-4 space-y-6">
+            <DeveloperSandbox />
             <DeveloperPortal
               currentUser={currentUser}
               onOpenAuth={() => setIsAuthModalOpen(true)}
@@ -294,6 +378,8 @@ export default function App() {
         {/* Module 3: Global Compute Swarm & Multi-AZ Federation */}
         {activeTab === 'compute' && (
           <div className="py-4 space-y-6">
+            <FleetTicker />
+            <InstitutionalConfigurator />
             <GlobalSwarmMap />
             <MeshFederationConsole currentUser={currentUser} />
           </div>
