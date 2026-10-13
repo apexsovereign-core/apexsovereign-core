@@ -3,9 +3,14 @@
 // File: crates/multimodal/src/lib.rs
 // ============================================================================
 
+pub mod ebpf_audio;
 pub mod services;
 pub mod transcription;
 
+pub use ebpf_audio::{
+    EbpfAudioError, EbpfAudioTelemetry, Socket5Tuple, SovereignEbpfAudioManager,
+    ZeroCopyAudioStream,
+};
 pub use services::{
     AudioMusicSynth, BindingPose, GroundedSearchFact, GroundingSearchQuery, MolecularDockingRequest,
     MolecularDockingResult, MusicGenerationRequest, MusicGenerationResult, ScienceEngine,
