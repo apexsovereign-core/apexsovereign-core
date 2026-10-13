@@ -37,6 +37,7 @@ import { SovereignDashboard } from './components/SovereignDashboard';
 import { FleetTicker } from './components/FleetTicker';
 import { DeveloperSandbox } from './components/DeveloperSandbox';
 import { InstitutionalConfigurator } from './components/InstitutionalConfigurator';
+import { MultiModalSuite } from './components/MultiModalSuite';
 import { ApexLogo } from './components/ApexLogo';
 import { SovereignLoadingScreen } from './components/SovereignLoadingScreen';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
@@ -55,7 +56,7 @@ export default function App() {
     return 'executive';
   });
   const [selectedFileForCodeExplorer, setSelectedFileForCodeExplorer] = useState<string>('config_py');
-  const [tradingSubView, setTradingSubView] = useState<'all' | 'arbitrage' | 'sandbox' | 'nvlink'>('all');
+  const [tradingSubView, setTradingSubView] = useState<'all' | 'arbitrage' | 'sandbox' | 'nvlink' | 'multimodal'>('all');
 
   // Customer User Authentication & Session State
   const [currentUser, setCurrentUser] = useState<CustomerUser | null>(() => {
@@ -314,6 +315,16 @@ export default function App() {
                 >
                   NVLINK CONFIGURATOR
                 </button>
+                <button
+                  onClick={() => setTradingSubView('multimodal')}
+                  className={`px-3 py-1.5 rounded font-semibold transition-all ${
+                    tradingSubView === 'multimodal'
+                      ? 'bg-cyan-500 text-slate-950 shadow-md font-bold'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  MULTI-MODAL SUITE (10)
+                </button>
               </div>
             </div>
 
@@ -328,6 +339,10 @@ export default function App() {
 
             {(tradingSubView === 'all' || tradingSubView === 'nvlink') && (
               <InstitutionalConfigurator />
+            )}
+
+            {(tradingSubView === 'all' || tradingSubView === 'multimodal') && (
+              <MultiModalSuite />
             )}
           </div>
         )}
