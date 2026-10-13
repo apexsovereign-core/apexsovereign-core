@@ -7,7 +7,7 @@ description = "Sovereign Fleet Command & Four-Tier Production Operator Binary"
 
 [dependencies]
 tokio = { version = "1.38", features = ["full"] }
-axum = { version = "0.7", features = ["macros", "tokio"] }
+axum = { version = "0.7", features = ["macros", "tokio", "ws"] }
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors", "trace", "timeout"] }
 serde = { version = "1.0", features = ["derive"] }
