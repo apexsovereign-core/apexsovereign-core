@@ -27,7 +27,8 @@ import {
   Globe,
   BarChart2,
   Brain,
-  Activity
+  Activity,
+  Zap
 } from 'lucide-react';
 
 export type ActiveNavTab = 
@@ -52,7 +53,8 @@ export type ActiveNavTab =
   | 'compute'
   | 'security'
   | 'benchmarks'
-  | 'developers';
+  | 'developers'
+  | 'terminal';
 
 interface NavbarProps {
   activeTab: ActiveNavTab;
@@ -125,6 +127,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Control Center</span>
               <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-purple-500/20 text-purple-300 rounded border border-purple-500/40">
                 B200
+              </span>
+            </button>
+
+            {/* Sovereign Institutional Trading Terminal & Storefront */}
+            <button
+              id="tab-terminal"
+              onClick={() => setActiveTab('terminal')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'terminal'
+                  ? 'bg-gradient-to-r from-emerald-950 to-slate-900 text-emerald-300 shadow-sm border border-emerald-500/50 ring-1 ring-emerald-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Trading Terminal</span>
+              <span className="px-1 py-0.2 text-[8px] font-mono font-bold bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/40">
+                LIVE
               </span>
             </button>
 
