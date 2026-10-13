@@ -37,8 +37,10 @@ import { SovereignDashboard } from './components/SovereignDashboard';
 import { FleetTicker } from './components/FleetTicker';
 import { DeveloperSandbox } from './components/DeveloperSandbox';
 import { InstitutionalConfigurator } from './components/InstitutionalConfigurator';
+import { ApexLogo } from './components/ApexLogo';
+import { SovereignLoadingScreen } from './components/SovereignLoadingScreen';
 import { CustomerUser, SubscriptionTier, PaymentTransaction } from './types';
-import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight, Zap, TrendingUp, Sliders } from 'lucide-react';
+import { ShieldCheck, Server, Database, Lock, Cpu, Key, ShieldAlert, ArrowRight, Zap, TrendingUp, Sliders, Activity } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveNavTab>(() => {
@@ -87,6 +89,7 @@ export default function App() {
     unitsAwarded: number;
     newBalance: number;
   } | null>(null);
+  const [showBootScreen, setShowBootScreen] = useState(false);
 
   // Sync session changes to localStorage
   useEffect(() => {
@@ -596,20 +599,45 @@ export default function App() {
         }}
       />
 
-      {/* Enterprise Commercial Footer (Zero Internal Tool Leakage) */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-6 mt-auto">
+      {/* Enterprise Commercial Footer with Permanent Diamond Cyan Logo Lock */}
+      <footer className="border-t border-slate-900 bg-slate-950/90 py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Permanent Vector Emblem Lock */}
+            <div 
+              onClick={() => setActiveTab('executive')}
+              className="flex items-center gap-2 cursor-pointer group"
+              title="ApexSovereign.ai - Empire Core"
+            >
+              <ApexLogo size={22} glow variant="icon" />
+              <span className="font-extrabold text-white text-xs font-sans tracking-tight">
+                ApexSovereign<span className="text-[#00f0ff]">.ai</span>
+              </span>
+            </div>
+
+            <span className="text-slate-800">•</span>
+
             <span className="flex items-center gap-1.5 font-mono text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
               <span>All Systems Operational</span>
             </span>
-            <span className="text-slate-700">•</span>
+
+            <span className="text-slate-800">•</span>
+
+            {/* Diagnostic Bootloader Trigger */}
+            <button
+              onClick={() => setShowBootScreen(true)}
+              className="flex items-center gap-1 font-mono text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
+              title="Run Cryptographic Kernel Diagnostics"
+            >
+              <Activity className="w-3 h-3 text-[#00f0ff] animate-pulse" />
+              <span>Diagnostic Bootloader</span>
+            </button>
+
+            <span className="text-slate-800">•</span>
             <span>FastAPI 0.115</span>
-            <span className="text-slate-700">•</span>
+            <span className="text-slate-800">•</span>
             <span>Supabase PostgreSQL (RLS Enforced)</span>
-            <span className="text-slate-700">•</span>
-            <span>PayPal REST v2 Encrypted</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] font-mono">
@@ -676,6 +704,14 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Sovereign Command Loading & Diagnostic Splash Screen */}
+      {showBootScreen && (
+        <SovereignLoadingScreen
+          onComplete={() => setShowBootScreen(false)}
+          autoDismiss={false}
+        />
+      )}
     </div>
   );
 }
