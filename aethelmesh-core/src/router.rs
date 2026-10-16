@@ -71,3 +71,75 @@ pub async fn evaluate_gpu_route(
         action: "LOCK_AND_DISPATCH".to_string(),
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_h100_route_evaluation() {
+        let state = Arc::new(AppState::default());
+        let request = ComputeRouteRequest {
+            gpu_model: "H100".to_string(),
+            required_vram_gb: 80,
+            max_cost_per_hr: 2.00,
+            max_latency_ms: 20,
+        };
+
+        let response = evaluate_gpu_route(State(state), Json(request)).await;
+        assert!(response.is_ok());
+        let route = response.unwrap().0;
+        assert_eq!(route.selected_node_id, "node-no-hydro-04");
+        assert_eq!(route.spot_price_usd_hr, 1.45);
+        assert!(route.savings_percentage > 50.0);
+    }
+
+    #[tokio::test]
+    async fn test_b200_route_evaluation() {
+        let state = Arc::new(AppState::default());
+        let request = ComputeRouteRequest {
+            gpu_model: "B200".to_string(),
+            required_vram_gb: 192,
+            max_cost_per_hr: 3.50,
+            max_latency_ms: 15,
+        };
+
+        let response = evaluate_gpu_route(State(state), Json(request)).await;
+        assert!(response.is_ok());
+        let route = response.unwrap().0;
+        assert_eq!(route.selected_node_id, "node-is-bio-01");
+        assert_eq!(route.spot_price_usd_hr, 2.10);
+    }
+
+    #[tokio::test]
+    async fn test_cost_threshold_exceeded() {
+        let state = Arc::new(AppState::default());
+        let request = ComputeRouteRequest {
+            gpu_model: "B200".to_string(),
+            required_vram_gb: 192,
+            max_cost_per_hr: 1.00, // lower than base_price 2.10
+            max_latency_ms: 15,
+        };
+
+        let response = evaluate_gpu_route(State(state), Json(request)).await;
+        assert!(response.is_err());
+        let (status, _) = response.err().unwrap();
+        assert_eq!(status, StatusCode::PRECONDITION_FAILED);
+    }
+
+    #[tokio::test]
+    async fn test_invalid_vram() {
+        let state = Arc::new(AppState::default());
+        let request = ComputeRouteRequest {
+            gpu_model: "H100".to_string(),
+            required_vram_gb: 0,
+            max_cost_per_hr: 2.00,
+            max_latency_ms: 20,
+        };
+
+        let response = evaluate_gpu_route(State(state), Json(request)).await;
+        assert!(response.is_err());
+        let (status, _) = response.err().unwrap();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+    }
+}

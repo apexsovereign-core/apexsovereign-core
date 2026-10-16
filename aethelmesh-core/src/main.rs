@@ -8,7 +8,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod router;
-use router::{evaluate_gpu_route, AppState, ComputeRouteRequest};
+use router::{evaluate_gpu_route, AppState};
 
 #[tokio::main]
 async fn main() {
