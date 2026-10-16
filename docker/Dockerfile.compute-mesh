@@ -1,5 +1,5 @@
 # Multi-stage production container for ApexSovereign Compute Mesh Daemon
-FROM rust:1.80-bullseye as builder
+FROM rust:nightly as builder
 
 WORKDIR /usr/src/apexsovereign
 COPY Cargo.toml ./
