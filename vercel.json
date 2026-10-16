@@ -1,11 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "backend/settlement_api/main.py", "use": "@vercel/python" }
-  ],
+  "cleanUrls": true,
   "routes": [
-    { "src": "/api/(.*)", "dest": "backend/settlement_api/main.py" },
-    { "src": "/public/(.*)", "dest": "/public/$1" },
+    { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
