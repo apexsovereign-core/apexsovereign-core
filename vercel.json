@@ -1,8 +1,8 @@
 {
   "version": 2,
   "buildEnvironment": {
-    "PYO3_USE_ABI3_FORWARD_COMPATIBILITY": "1",
-    "PYTHON_VERSION": "3.11"
+    "PYTHON_VERSION": "3.11",
+    "PYO3_USE_ABI3_FORWARD_COMPATIBILITY": "1"
   },
   "env": {
     "PYO3_USE_ABI3_FORWARD_COMPATIBILITY": "1"
