@@ -193,7 +193,7 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           echo "Triggering automated rolling deployment on Render live cluster..."
-          curl -f -X POST "${RENDER_DEPLOY_HOOK_URL}" || echo "Trigger sent."
+          curl -sL -X POST "${RENDER_DEPLOY_HOOK_URL}" || echo "Trigger sent."
 
       - name: Dispatch Production SSH Execution (Optional Self-Hosted Ingress)
         if: env.PROD_SSH_HOST != ''
