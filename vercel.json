@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "buildEnvironment": {
-    "PYTHON_VERSION": "3.11",
-    "ENABLE_UV": "0",
-    "PYO3_USE_ABI3_FORWARD_COMPATIBILITY": "1"
-  },
+  "builds": [
+    { "src": "backend/settlement_api/main.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "backend/settlement_api/main.py" }
+  ],
   "env": {
-    "ENABLE_UV": "0",
-    "PYO3_USE_ABI3_FORWARD_COMPATIBILITY": "1"
+    "ENABLE_UV": "0"
   }
 }
