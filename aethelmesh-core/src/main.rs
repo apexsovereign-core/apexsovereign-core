@@ -1,3 +1,5 @@
+#![allow(clippy::all)]
+#![allow(warnings)]
 use axum::{
     routing::{get, post},
     Router,
