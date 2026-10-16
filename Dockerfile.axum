@@ -7,7 +7,7 @@
 # ==============================================================================
 
 # Stage 1: Cargo Build Environment
-FROM rust:1.80-slim-bookworm AS builder
+FROM rust:nightly AS builder
 
 WORKDIR /build
 
