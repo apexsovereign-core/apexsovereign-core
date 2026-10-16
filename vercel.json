@@ -5,6 +5,7 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "backend/settlement_api/main.py" },
-    { "src": "/(.*)", "dest": "/backend/settlement_api/static/$1" }
+    { "src": "/public/(.*)", "dest": "/public/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

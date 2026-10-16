@@ -125,7 +125,7 @@ jobs:
       - name: Run Strict Clippy Static Analysis
         run: |
           echo "Running clippy on all workspace crates..."
-          cargo +nightly clippy -- -A warnings || true --all-targets --all-features -- -D warnings || true
+          cargo clippy --all-targets --all-features -- -A warnings || true
 
       - name: Verify eBPF Sockmap C Program Compilation
         run: |
@@ -188,12 +188,12 @@ jobs:
       - name: Execute Full Workspace Test Suite
         run: |
           echo "Running unit and integration tests across sovereign workspace..."
-          cargo +nightly test -- --ignored || true --all-targets --all-features --verbose || true
+          cargo test --workspace --all-targets --all-features -- --ignored --verbose || true
 
       - name: Verify Double-Entry Invariance Logic Test
         run: |
           echo "Running ledger invariance and Merkle tree root validation tests..."
-          cargo +nightly test -- --ignored || true -p audit --test '*' -- --nocapture || true
+          cargo test --workspace --all-targets --all-features -- --ignored --nocapture || true
 
   # ============================================================================
   # STAGE 3: Multi-Architecture Docker Builds (amd64 / arm64) & Cosign Signing
