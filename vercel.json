@@ -2,6 +2,8 @@
   "version": 2,
   "cleanUrls": true,
   "routes": [
+    { "src": "/health", "dest": "https://apexsovereign-agency.onrender.com/health" },
+    { "src": "/v1/(.*)", "dest": "https://apexsovereign-agency.onrender.com/v1/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
