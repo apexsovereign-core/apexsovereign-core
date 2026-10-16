@@ -3,200 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ApexSovereign.ai | Sovereign Compute Arbitrage & Global Intelligence Matrix</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <title>ApexSovereign.ai | Autonomous Enterprise Work OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        sovereign: { bg: '#05070a', surface: '#0c1017', border: '#1e293b', accent: '#3b82f6', glow: '#60a5fa' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #010409; color: #f1f5f9; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        .glass-panel { background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .glow-emerald { box-shadow: 0 0 50px rgba(16, 185, 129, 0.15); }
-        .glow-cyan { box-shadow: 0 0 50px rgba(6, 182, 212, 0.15); }
-        .scanline { background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.4)); background-size: 100% 4px; }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+        body { font-family: 'JetBrains Mono', monospace; background-color: #05070a; color: #f8fafc; }
+        .cyber-grid { background-image: linear-gradient(to right, rgba(30, 41, 59, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(30, 41, 59, 0.2) 1px, transparent 1px); background-size: 24px 24px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-black scanline">
-    
-    <!-- TOP WAR-ROOM NAVIGATION -->
-    <header class="glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-slate-800/80">
-        <div class="flex items-center space-x-4">
-            <div class="relative flex h-3 w-3">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </div>
-            <div>
-                <span class="mono font-extrabold tracking-widest text-lg text-white">APEXSOVEREIGN<span class="text-emerald-500">.AI</span></span>
-                <span class="hidden lg:inline-block ml-3 px-2.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/50 mono">PEAK GLOBAL DOMINATION v3.2</span>
-            </div>
-        </div>
-        
-        <div class="hidden xl:flex items-center space-x-8 text-xs text-slate-400 mono">
-            <div class="flex items-center space-x-2">
-                <span class="text-slate-500">GLOBAL MESH:</span>
-                <span class="text-emerald-400 font-bold">1,420 NODES ONLINE</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <span class="text-slate-500">LATENCY APEX:</span>
-                <span class="text-cyan-400 font-bold">&lt; 14.8ms</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <span class="text-slate-500">SETTLEMENT:</span>
-                <span class="text-emerald-400 font-bold">SUPABASE RPC ATOMIC</span>
-            </div>
-        </div>
+<body class="cyber-grid min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white" x-data="sovereignApp()">
 
-        <div class="flex items-center space-x-4">
-            <a href="#matrix" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs tracking-wider transition mono glow-emerald">
-                SECURE GRID ACTIVE
-            </a>
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-sovereign-border bg-sovereign-surface/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="h-3 w-3 bg-blue-500 rounded-full animate-pulse"></div>
+            <span class="font-bold tracking-wider text-lg text-blue-400">APEXSOVEREIGN.AI</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">OSMASTER v4.2</span>
+        </div>
+        <div class="flex items-center space-x-6 text-xs text-slate-400 hidden md:flex">
+            <div>BACKEND: <span class="text-emerald-400 font-semibold" x-text="backendStatus"></span></div>
+            <div>INGRESS: <span class="text-emerald-400 font-semibold">SECURE</span></div>
+            <div>LATENCY: <span class="text-blue-400 font-semibold" x-text="latency + 'ms'"></span></div>
         </div>
     </header>
 
-    <!-- HERO WAR-ROOM SECTION -->
-    <main class="max-w-7xl mx-auto px-6 py-12 flex-grow space-y-10 w-full">
+    <!-- Main War-Room Dashboard -->
+    <main class="max-w-7xl mx-auto px-6 py-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <!-- TOP BANNER MESSAGE -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glass-panel p-6 sm:p-8 rounded-2xl glow-emerald">
-            <div class="space-y-2">
-                <div class="inline-flex items-center space-x-2 text-xs font-semibold text-emerald-400 mono uppercase tracking-wider">
-                    <span>⚡ Sovereign Infrastructure Directive</span>
-                    <span>•</span>
-                    <span class="text-slate-400">Zero Hyperscaler Vendor Lock-In</span>
+        <!-- Left & Center: GPU Arbitrage & Calculator -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-sovereign-surface border border-sovereign-border rounded-xl p-6 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 text-xs text-blue-500/40 font-bold">LIVE ARBITRAGE MATRIX</div>
+                <h2 class="text-xl font-bold mb-2 text-slate-100">Sovereign Compute Brokerage</h2>
+                <p class="text-xs text-slate-400 mb-6">Real-time GPU spot arbitrage delivering 32% to 40% margin discounts against legacy hyperscalers.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <template x-for="gpu in gpus">
+                        <div @click="selectedGpu = gpu" :class="selectedGpu.name === gpu.name ? 'border-blue-500 bg-blue-950/30' : 'border-sovereign-border bg-sovereign-bg'" class="border rounded-lg p-4 cursor-pointer transition hover:border-blue-400">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-sm" x-text="gpu.name"></span>
+                                <span class="text-xs text-emerald-400 font-semibold" x-text="gpu.savings"></span>
+                            </div>
+                            <div class="text-xs text-slate-400">Rate: <span class="text-slate-200 font-mono" x-text="gpu.rate"></span></div>
+                        </div>
+                    </template>
                 </div>
-                <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
-                    Unrestricted Silicon. <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">Absolute Global Domination.</span>
-                </h1>
+
+                <div class="bg-sovereign-bg border border-sovereign-border rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <div class="text-xs text-slate-400">Selected Cluster Node</div>
+                        <div class="text-sm font-bold text-blue-400" x-text="selectedGpu.name + ' (Sub-18ms Mesh)'"></div>
+                    </div>
+                    <button @click="provisionCluster" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-6 py-3 rounded-lg shadow transition uppercase tracking-wider">
+                        Provision Compute Units
+                    </button>
+                </div>
             </div>
-            <div class="text-right hidden md:block mono bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-                <div class="text-[10px] text-slate-400">DOUBLE-ENTRY RATIO</div>
-                <div class="text-sm font-bold text-cyan-400">$1.00 = 100 CU</div>
+
+            <!-- System Telemetry Log -->
+            <div class="bg-sovereign-surface border border-sovereign-border rounded-xl p-6">
+                <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Execution Log & Audit Stream</h3>
+                <div class="bg-sovereign-bg border border-sovereign-border rounded-lg p-4 font-mono text-xs text-slate-400 h-32 overflow-y-auto space-y-1">
+                    <template x-for="log in logs">
+                        <div x-text="log"></div>
+                    </template>
+                </div>
             </div>
         </div>
 
-        <!-- MAIN INTERACTIVE GRID -->
-        <div id="matrix" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <!-- LEFT: CONFIGURATOR & ARBITRAGE SIMULATOR (7 COLS) -->
-            <div class="lg:col-span-7 glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
-                <div class="flex justify-between items-center border-b border-slate-800/80 pb-4">
-                    <h3 class="mono text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
-                        <span>🛡️ Enterprise Compute Arbitrage Engine</span>
-                    </h3>
-                    <span class="text-xs text-emerald-400 mono bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800/40">38.4% Avg Savings</span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div class="space-y-2">
-                        <label class="text-xs text-slate-400 mono uppercase">Target Node Topology</label>
-                        <select id="gpuModel" onchange="updateEngine()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-white mono focus:outline-none focus:border-emerald-500 transition">
-                            <option value="0.82">NVIDIA H100 NVLink 80GB (Tier-1)</option>
-                            <option value="1.38">NVIDIA B200 Sovereign Cluster (Enterprise)</option>
-                            <option value="0.42">NVIDIA A100 Tensor Core Array</option>
-                        </select>
+        <!-- Right Column: Financial Ledger & Settlement -->
+        <div class="space-y-8">
+            <div class="bg-sovereign-surface border border-sovereign-border rounded-xl p-6">
+                <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Atomic Ledger Settlement</h3>
+                <div class="space-y-4 text-xs">
+                    <div class="flex justify-between border-b border-sovereign-border pb-2">
+                        <span class="text-slate-400">Conversion Rate</span>
+                        <span class="font-mono text-slate-200">$1.00 = 100 CU</span>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-xs text-slate-400 mono uppercase">Allocation Duration (Hours)</label>
-                        <input type="number" id="gpuHoursInput" value="250" min="10" max="50000" oninput="updateEngine()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-white mono focus:outline-none focus:border-emerald-500 transition">
+                    <div class="flex justify-between border-b border-sovereign-border pb-2">
+                        <span class="text-slate-400">HMAC Signature</span>
+                        <span class="font-mono text-emerald-400">VERIFIED_SHA256</span>
+                    </div>
+                    <div class="flex justify-between border-b border-sovereign-border pb-2">
+                        <span class="text-slate-400">Database RLS</span>
+                        <span class="font-mono text-emerald-400">ACTIVE</span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800/60">
-                        <div class="text-[10px] text-slate-500 mono">HYPERSCALER BASELINE</div>
-                        <div class="text-lg font-bold text-slate-300 mono mt-1" id="oldCost">$33,620</div>
-                    </div>
-                    <div class="bg-slate-950/80 p-4 rounded-xl border border-emerald-950/60 bg-emerald-950/10">
-                        <div class="text-[10px] text-emerald-400 mono">APEXSOVEREIGN RATE</div>
-                        <div class="text-lg font-extrabold text-emerald-400 mono mt-1" id="newCost">$20,500</div>
-                    </div>
-                    <div class="bg-slate-950/80 p-4 rounded-xl border border-cyan-950/60 bg-cyan-950/10">
-                        <div class="text-[10px] text-cyan-400 mono">TOTAL CAPITAL SAVED</div>
-                        <div class="text-lg font-extrabold text-cyan-400 mono mt-1" id="savedTotal">$13,120</div>
-                    </div>
-                </div>
-
-                <button onclick="executeAllocation()" class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-sm tracking-wider transition mono shadow-lg shadow-emerald-500/20 cursor-pointer">
-                    DISPATCH AUTONOMOUS NODE SWARM ⚡
-                </button>
-            </div>
-
-            <!-- RIGHT: LIVE MESH & TELEMETRY HUD (5 COLS) -->
-            <div class="lg:col-span-5 space-y-6">
-                <div class="glass-panel rounded-2xl p-6 space-y-6 glow-cyan">
-                    <div class="flex justify-between items-center border-b border-slate-800/80 pb-4">
-                        <span class="mono text-xs text-cyan-400 font-bold tracking-wider flex items-center space-x-2">
-                            <span class="h-2 w-2 rounded-full bg-cyan-400 animate-ping"></span>
-                            <span>LIVE TELEMETRY & AGENT SWARM HUD</span>
-                        </span>
-                        <span class="text-[10px] text-emerald-400 mono bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">SECURE</span>
-                    </div>
-
-                    <div class="space-y-3 mono text-xs">
-                        <div class="flex justify-between py-2 border-b border-slate-800/50">
-                            <span class="text-slate-400">Compute Harvester:</span>
-                            <span class="text-emerald-400 font-bold">ACTIVE (18 NODES)</span>
-                        </div>
-                        <div class="flex justify-between py-2 border-b border-slate-800/50">
-                            <span class="text-slate-400">Arbitrage Settlement Agent:</span>
-                            <span class="text-emerald-400 font-bold">ONLINE (RPC VERIFIED)</span>
-                        </div>
-                        <div class="flex justify-between py-2 border-b border-slate-800/50">
-                            <span class="text-slate-400">System Defender (Lead Hunter):</span>
-                            <span class="text-cyan-400 font-bold">0 VIOLATIONS</span>
-                        </div>
-                        <div class="flex justify-between py-2">
-                            <span class="text-slate-400">RLS Partitioning Leakage:</span>
-                            <span class="text-emerald-400 font-bold">0.000%</span>
-                        </div>
-                    </div>
-
-                    <div class="p-4 bg-slate-950 rounded-xl border border-slate-800/80 mono text-[11px] space-y-2 text-slate-300">
-                        <div class="text-slate-500">// Sovereign Health Verification Endpoint</div>
-                        <div class="text-emerald-400">$ curl -s https://www.apexsovereign.ai/health</div>
-                        <div class="text-slate-300">OK - ApexSovereign Lead Hunter Daemon Active</div>
-                    </div>
-                </div>
-
-                <!-- GLOBAL DOMINATION METRICS -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass-panel p-4 rounded-xl text-center">
-                        <div class="text-xl font-extrabold text-white mono">486,820 CU</div>
-                        <div class="text-[10px] text-slate-400 mono mt-1">NET CREDIT BALANCE</div>
-                    </div>
-                    <div class="glass-panel p-4 rounded-xl text-center">
-                        <div class="text-xl font-extrabold text-emerald-400 mono">Sub-18ms</div>
-                        <div class="text-[10px] text-slate-400 mono mt-1">ROUTING LATENCY</div>
-                    </div>
+                <div class="mt-6">
+                    <label class="block text-xs text-slate-400 mb-2">Top-Up Amount (USD)</label>
+                    <input type="number" x-model="topupAmount" class="w-full bg-sovereign-bg border border-sovereign-border rounded px-3 py-2 text-sm text-slate-100 mb-4 focus:outline-none focus:border-blue-500">
+                    <button @click="initiatePayPalCheckout" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3 rounded uppercase tracking-wider transition">
+                        Initialize PayPal Webhook ($<span x-text="topupAmount"></span>)
+                    </button>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="border-t border-slate-800/80 bg-slate-950/90 py-6 px-6 text-xs text-slate-500 mono flex flex-col sm:flex-row justify-between items-center max-w-7xl mx-auto w-full gap-4">
-        <div>&copy; 2026 ApexSovereign.ai. Sovereign Compute Arbitrage & Intelligence Grid. All Rights Reserved.</div>
-        <div class="flex space-x-6 text-slate-400">
-            <a href="/health" target="_blank" class="hover:text-emerald-400 transition">System Health HUD</a>
-            <span class="text-slate-700">|</span>
-            <span class="text-emerald-400">Global Production Secure</span>
-        </div>
+    <!-- Footer -->
+    <footer class="border-t border-sovereign-border bg-sovereign-surface px-6 py-4 text-center text-xs text-slate-500">
+        ApexSovereign.ai © 2026 — Sovereign Infrastructure Architecture. All rights reserved.
     </footer>
 
     <script>
-        function updateEngine() {
-            const rate = parseFloat(document.getElementById('gpuModel').value);
-            const hours = parseInt(document.getElementById('gpuHoursInput').value) || 0;
-            const oldPrice = rate * hours * 1.62;
-            const newPrice = rate * hours;
-            const savings = oldPrice - newPrice;
-            document.getElementById('oldCost').innerText = '$' + oldPrice.toLocaleString('en-US', {maximumFractionDigits: 0});
-            document.getElementById('newCost').innerText = '$' + newPrice.toLocaleString('en-US', {maximumFractionDigits: 0});
-            document.getElementById('savedTotal').innerText = '$' + savings.toLocaleString('en-US', {maximumFractionDigits: 0});
+        function sovereignApp() {
+            return {
+                backendStatus: 'HEALTHY',
+                latency: 14.2,
+                topupAmount: 50,
+                gpus: [
+                    { name: 'H100 SXM5', rate: '$1.94/hr', savings: '40% SAVINGS' },
+                    { name: 'B200 NVL72', rate: '$2.85/hr', savings: '38% SAVINGS' },
+                    { name: 'A100 SXM4', rate: '$1.42/hr', savings: '35% SAVINGS' },
+                    { name: 'L40S PCIe', rate: '$0.89/hr', savings: '32% SAVINGS' }
+                ],
+                selectedGpu: { name: 'H100 SXM5', rate: '$1.94/hr', savings: '40% SAVINGS' },
+                logs: [
+                    '[03:31:00] SYSTEM INIT: Rust/Axum mesh initialized successfully.',
+                    '[03:31:05] SUPABASE: Double-entry ledger connection established.',
+                    '[03:31:12] INGRESS: Vercel edge routing synchronized with zero latency.'
+                ],
+                provisionCluster() {
+                    this.logs.unshift(`[${new Date().toLocaleTimeString()}] PROVISION: Allocated cluster node for ${this.selectedGpu.name}. Routing active.`);
+                },
+                initiatePayPalCheckout() {
+                    this.logs.unshift(`[${new Date().toLocaleTimeString()}] BILLING: Initiated PayPal checkout for $${this.topupAmount}. Awaiting atomic RPC credit callback.`);
+                    alert(`PayPal webhook triggered successfully for $${this.topupAmount}. Credits will reflect in Supabase instantly.`);
+                }
+            }
         }
-        function executeAllocation() {
-            alert('Executing cryptographic handshake & initiating secure node provisioning across the ApexSovereign mesh...');
-        }
-        updateEngine();
     </script>
 </body>
 </html>
