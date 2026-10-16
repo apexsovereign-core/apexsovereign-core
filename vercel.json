@@ -4,6 +4,7 @@
     { "src": "backend/settlement_api/main.py", "use": "@vercel/python" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "backend/settlement_api/main.py" }
+    { "src": "/api/(.*)", "dest": "backend/settlement_api/main.py" },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
