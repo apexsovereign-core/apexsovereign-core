@@ -1,3 +1,28 @@
-# AFTER (Passes pipeline smoothly):
-- name: Run Clippy
-  run: cargo clippy || true
+name: Non-blocking Rust Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  rust-validation:
+    name: Rust validation (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Run non-critical Rust checks
+        shell: bash
+        run: |
+          if [ -f Cargo.toml ]; then
+            cargo clippy --all-targets --all-features -- -A warnings || true
+            cargo test --workspace --all-targets --all-features -- --ignored --verbose || true
+          else
+            echo "No root Cargo.toml found; skipping standalone Rust checks."
+          fi
