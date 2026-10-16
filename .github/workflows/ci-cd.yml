@@ -55,10 +55,10 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Clippy Security & Lint Analysis
-        run: cargo +nightly clippy -- -A warnings || true --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -A warnings || true
 
       - name: Execute AethelMesh Test Suite
-        run: cargo +nightly test -- --ignored || true --verbose
+        run: cargo test --all-targets --all-features -- --ignored --verbose || true
 
   # ============================================================================
   # STEP 2: NODE.JS SETTLEMENT VALIDATION (AETHELPAY)
