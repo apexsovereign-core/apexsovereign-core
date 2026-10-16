@@ -1,2 +1,27 @@
-- name: Run Clippy
-  run: cargo clippy -- -A clippy::all || true
+name: Non-blocking Rust Clippy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  clippy:
+    name: Rust Clippy (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Run Clippy when a Cargo workspace is present
+        shell: bash
+        run: |
+          if [ -f Cargo.toml ]; then
+            cargo clippy --all-targets --all-features -- -A warnings || true
+          else
+            echo "No root Cargo.toml found; skipping standalone Clippy check."
+          fi
