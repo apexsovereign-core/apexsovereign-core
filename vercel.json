@@ -5,8 +5,5 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "backend/settlement_api/main.py" }
-  ],
-  "env": {
-    "ENABLE_UV": "0"
-  }
+  ]
 }
