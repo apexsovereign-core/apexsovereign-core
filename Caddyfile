@@ -1,6 +1,6 @@
 # ==============================================================================
 # APEXSOVEREIGN.AI — HIGH-PERFORMANCE EDGE PROXY & ACME TLS CADDYFILE
-# Automatic Zero-Config TLS (Let's Encrypt / ZeroSSL)
+# Automatic Zero-Config TLS (Let's Encrypt / ZeroSSL) for Porkbun DNS
 # ==============================================================================
 
 {
@@ -9,6 +9,33 @@
     servers {
         protocol {
             experimental_http3
+        }
+    }
+}
+
+# Root Domain & WWW Forwarding (Porkbun DNS Target)
+apexsovereign.ai, www.apexsovereign.ai {
+    encode gzip zstd
+
+    # High-Security Enterprise Headers
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob: ws: wss:; frame-ancestors *;"
+    }
+
+    # Proxy to Render Production Service Port / Internal Ingress
+    reverse_proxy 127.0.0.1:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 100
         }
     }
 }
@@ -25,8 +52,8 @@ api.apexsovereign.ai {
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    # Proxy to AethelMesh Axum Engine
-    reverse_proxy aethelmesh:8080 {
+    # Proxy to FastAPI / Sentinel Service
+    reverse_proxy 127.0.0.1:8001 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
@@ -50,8 +77,8 @@ pay.apexsovereign.ai {
         X-Frame-Options "DENY"
     }
 
-    # Proxy to AethelPay Express Gateway
-    reverse_proxy aethelpay:3000 {
+    # Proxy to PayPal Settlement Ingress
+    reverse_proxy 127.0.0.1:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
