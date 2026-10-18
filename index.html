@@ -594,7 +594,7 @@
               <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
               INSTANT COMPUTE UNIT (CU) DEPOSIT PACKS
             </h3>
-            <p class="text-xs text-slate-400 font-mono mt-0.5">Automated settlement via PayPal Webhook capture (`/api/webhooks/paypal`) and Supabase double-entry write</p>
+            <p class="text-xs text-slate-400 font-mono mt-0.5">Automated settlement via PayPal Webhook capture (<code class="text-cyan-300">/v1/webhooks/paypal</code>) and Supabase double-entry write</p>
           </div>
           <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -767,7 +767,7 @@
             <div>
               <label class="block text-slate-400 mb-1" for="sandbox-target-url">TARGET WEBHOOK INGRESS ENDPOINT:</label>
               <select id="sandbox-target-url" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded px-3 py-2 text-xs focus:border-cyan-400 focus:outline-none">
-                <option value="/api/webhooks/paypal">/api/webhooks/paypal (PayPal Capture &amp; Settle)</option>
+                <option value="/v1/webhooks/paypal">/v1/webhooks/paypal (PayPal Capture &amp; Settle)</option>
                 <option value="/api/webhooks/n8n/coo-gateway">/api/webhooks/n8n/coo-gateway (n8n Autonomous Cluster Orchestrator)</option>
                 <option value="/v1/clusters/scale">/v1/clusters/scale (Render Axum Edge Direct)</option>
               </select>
@@ -1040,7 +1040,7 @@ AAAAEW1lc2gtYXV0b25vbW91cwECAw==
         <span>Production Host: <strong class="text-slate-300">Render (apexsovereign-mesh)</strong></span>
         <span>Edge Rewrites: <strong class="text-slate-300">Vercel Global</strong></span>
         <span>Atomic Ledger: <strong class="text-slate-300">Supabase Postgres</strong></span>
-        <span>PayPal Webhook: <strong class="text-emerald-400">/api/webhooks/paypal</strong></span>
+        <span>PayPal Webhook: <strong class="text-emerald-400">/v1/webhooks/paypal</strong></span>
       </div>
     </div>
   </footer>
@@ -1057,6 +1057,81 @@ AAAAEW1lc2gtYXV0b25vbW91cwECAw==
     // 1. STATE & CONSTANTS
     const API_BASE = ""; // Same-origin via Vercel rewrites -> Render backend upstream
     
+    // Resilient API Client with 4-second AbortController timeout & automatic fallback
+    async function api(path, opts = {}) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      try {
+        const url = `${API_BASE}${path}`;
+        const response = await fetch(url, {
+          ...opts,
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
+            ...(opts.headers || {})
+          }
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} (${response.statusText})`);
+        }
+        return await response.json();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.warn(`[ApexSovereign Ingress] ${path} fallback:`, err.message);
+        return null;
+      }
+    }
+
+    // Real backend probe and telemetry status badge manager
+    async function checkBackendHealth() {
+      const t0 = performance.now();
+      const data = await api("/health");
+      const rtt = Math.max(1.0, Math.round((performance.now() - t0) * 10) / 10);
+
+      const statusEl = document.getElementById("hud-backend-status");
+      const dotEl = document.getElementById("hud-backend-dot");
+      const latEl = document.getElementById("hud-latency");
+      const targetStatus = document.getElementById("live-target-status");
+
+      if (data && (data.status === "online" || data.status === "healthy" || data.status === "ok" || data.system)) {
+        APP_STATE.isBackendHealthy = true;
+        APP_STATE.realtimeLatency = rtt;
+
+        if (statusEl) {
+          statusEl.textContent = "LIVE";
+          statusEl.className = "font-semibold text-emerald-400";
+        }
+        if (dotEl) {
+          dotEl.className = "w-2 h-2 rounded-full bg-emerald-400 pulse-beacon";
+        }
+        if (latEl) latEl.textContent = `${rtt}ms`;
+        if (targetStatus) {
+          targetStatus.textContent = `${rtt}ms Live`;
+          targetStatus.className = "text-xs font-mono text-emerald-400";
+        }
+      } else {
+        APP_STATE.isBackendHealthy = false;
+
+        if (statusEl) {
+          statusEl.textContent = "SIMULATED";
+          statusEl.className = "font-semibold text-amber-400";
+        }
+        if (dotEl) {
+          dotEl.className = "w-2 h-2 rounded-full bg-amber-400";
+        }
+        // Fall back gracefully to local demo data with sub-18ms SLA simulation
+        const jitter = (Math.random() * 2.4) - 1.2;
+        APP_STATE.realtimeLatency = Math.max(11.2, Math.min(17.8, +(14.2 + jitter).toFixed(1)));
+        if (latEl) latEl.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms`;
+        if (targetStatus) {
+          targetStatus.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms Simulated`;
+          targetStatus.className = "text-xs font-mono text-amber-400";
+        }
+      }
+    }
+
     const APP_STATE = {
       activeTab: "terminal",
       cuBalance: 245800, // 245,800 CU = $2,458.00 (100 CU = $1.00 Integer-only arithmetic)
@@ -1685,16 +1760,27 @@ provisionCluster();`;
 
     // 17. INITIALIZATION & TELEMETRY LOOP
     function initTelemetryLoop() {
-      setInterval(() => {
-        // Natural jitter around 14ms (always sub 18ms SLA)
-        const jitter = (Math.random() * 2.8) - 1.4;
-        APP_STATE.realtimeLatency = Math.max(11.2, Math.min(17.8, 14.2 + jitter));
-        
-        const latEl = document.getElementById("hud-latency");
-        if (latEl) latEl.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms`;
+      // Immediate real health probe against /health
+      checkBackendHealth();
 
-        const targetStatus = document.getElementById("live-target-status");
-        if (targetStatus) targetStatus.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms Live`;
+      // Recurring 10-second backend health check to auto-recover when backend comes online
+      setInterval(checkBackendHealth, 10000);
+
+      // Micro-telemetry jitter loop when in simulated mode
+      setInterval(() => {
+        if (!APP_STATE.isBackendHealthy) {
+          const jitter = (Math.random() * 2.8) - 1.4;
+          APP_STATE.realtimeLatency = Math.max(11.2, Math.min(17.8, +(14.2 + jitter).toFixed(1)));
+          
+          const latEl = document.getElementById("hud-latency");
+          if (latEl) latEl.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms`;
+
+          const targetStatus = document.getElementById("live-target-status");
+          if (targetStatus) {
+            targetStatus.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms Simulated`;
+            targetStatus.className = "text-xs font-mono text-amber-400";
+          }
+        }
       }, 2400);
 
       // Spot matrix micro-adjustments

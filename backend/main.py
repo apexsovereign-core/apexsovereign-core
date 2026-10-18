@@ -73,14 +73,26 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"status": "error", "message": "Internal sovereign system error."}
     )
 
-# Healthcheck & Telemetry Endpoint
+# Healthcheck & Telemetry Endpoints
 @app.get("/health", tags=["Telemetry"])
+@app.get("/v1/health", tags=["Telemetry"])
 async def health_check():
     return {
         "status": "online",
         "system": "ApexSovereign Core Engine",
         "version": "1.0.0"
     }
+
+# PayPal Webhook Ingress
+try:
+    from backend.services.settlement import verify_and_settle
+except ImportError:
+    from services.settlement import verify_and_settle
+
+@app.post("/v1/webhooks/paypal", tags=["Webhooks"])
+async def paypal_webhook_ingress(request: Request):
+    sig = request.headers.get("x-paypal-signature", "")
+    return await verify_and_settle(request, sig)
 
 # Mount the Settlement Router
 app.include_router(settlement_router)

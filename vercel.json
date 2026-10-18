@@ -5,6 +5,7 @@
   "rewrites": [
     { "source": "/health", "destination": "https://apexsovereign-mesh.onrender.com/health" },
     { "source": "/v1/:path*", "destination": "https://apexsovereign-mesh.onrender.com/v1/:path*" },
+    { "source": "/api/:path*", "destination": "https://apexsovereign-mesh.onrender.com/v1/:path*" },
     { "source": "/((?!_vercel/|.*\\..*).*)", "destination": "/index.html" }
   ],
   "headers": [
