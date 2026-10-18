@@ -1,10 +1,19 @@
 {
   "version": 2,
-  "cleanUrls": true,
+  "env": {
+    "ENABLE_UV": "0"
+  },
+  "build": {
+    "env": {
+      "ENABLE_UV": "0"
+    }
+  },
+  "builds": [
+    { "src": "backend/settlement_api/main.py", "use": "@vercel/python" }
+  ],
   "routes": [
-    { "src": "/health", "dest": "https://apexsovereign-agency.onrender.com/health" },
-    { "src": "/v1/(.*)", "dest": "https://apexsovereign-agency.onrender.com/v1/$1" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/health", "dest": "backend/settlement_api/main.py" },
+    { "src": "/api/(.*)", "dest": "backend/settlement_api/main.py" },
+    { "src": "/(.*)", "dest": "/backend/settlement_api/static/$1" }
   ]
 }
