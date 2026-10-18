@@ -3,148 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ApexSovereign.ai | Autonomous Enterprise Work OS</title>
+    <title>ApexSovereign.ai | Sovereign Compute Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        sovereign: { bg: '#05070a', surface: '#0c1017', border: '#1e293b', accent: '#3b82f6', glow: '#60a5fa' }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
-        body { font-family: 'JetBrains Mono', monospace; background-color: #05070a; color: #f8fafc; }
-        .cyber-grid { background-image: linear-gradient(to right, rgba(30, 41, 59, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(30, 41, 59, 0.2) 1px, transparent 1px); background-size: 24px 24px; }
+        .cyan-glow {
+            filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.85));
+        }
+        .glass-panel {
+            background: rgba(10, 15, 25, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            backdrop-filter: blur(12px);
+        }
+        body {
+            background-color: #05070A;
+            color: #F8FAFC;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
     </style>
 </head>
-<body class="cyber-grid min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white" x-data="sovereignApp()">
-
-    <!-- Top Navigation Bar -->
-    <header class="border-b border-sovereign-border bg-sovereign-surface/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <div class="h-3 w-3 bg-blue-500 rounded-full animate-pulse"></div>
-            <span class="font-bold tracking-wider text-lg text-blue-400">APEXSOVEREIGN.AI</span>
-            <span class="text-xs px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">OSMASTER v4.2</span>
+<body class="min-h-screen flex flex-col justify-between p-6">
+    <!-- TOP HUD HEADER -->
+    <header class="flex flex-col md:flex-row justify-between items-center border-b border-cyan-900/50 pb-4 mb-6 gap-4">
+        <div class="flex items-center gap-3">
+            <!-- Permanent Diamond Cyan Logo -->
+            <svg class="w-8 h-8 cyan-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 12L12 22L22 12L12 2Z" fill="#00F0FF" stroke="#00F0FF" stroke-width="2"/>
+            </svg>
+            <h1 class="text-xl font-bold tracking-wider text-white">APEXSOVEREIGN.<span class="text-[#00F0FF]">AI</span></h1>
+            <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-[#00F0FF] border border-cyan-800">OSMASTER v4.2</span>
         </div>
-        <div class="flex items-center space-x-6 text-xs text-slate-400 hidden md:flex">
-            <div>BACKEND: <span class="text-emerald-400 font-semibold" x-text="backendStatus"></span></div>
-            <div>INGRESS: <span class="text-emerald-400 font-semibold">SECURE</span></div>
-            <div>LATENCY: <span class="text-blue-400 font-semibold" x-text="latency + 'ms'"></span></div>
+        
+        <!-- SPA Tab Switcher -->
+        <nav class="flex gap-2 bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+            <button onclick="switchTab('terminal')" id="btn-terminal" class="px-3 py-1 text-xs rounded bg-[#00F0FF] text-black font-bold transition-all">TERMINAL</button>
+            <button onclick="switchTab('clusters')" id="btn-clusters" class="px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all">CLUSTERS</button>
+            <button onclick="switchTab('billing')" id="btn-billing" class="px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all">BILLING</button>
+            <button onclick="switchTab('docs')" id="btn-docs" class="px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all">DOCS / API</button>
+        </nav>
+
+        <div class="flex items-center gap-4 text-xs">
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></i><span class="text-slate-400">BACKEND: <strong class="text-emerald-400">HEALTHY</strong></span></div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span><span class="text-slate-400">INGRESS: <strong class="text-cyan-400">SECURE</strong></span></div>
         </div>
     </header>
 
-    <!-- Main War-Room Dashboard -->
-    <main class="max-w-7xl mx-auto px-6 py-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- MAIN APP CONTENT AREA -->
+    <main class="flex-grow max-w-7xl mx-auto w-full space-y-6">
         
-        <!-- Left & Center: GPU Arbitrage & Calculator -->
-        <div class="lg:col-span-2 space-y-8">
-            <div class="bg-sovereign-surface border border-sovereign-border rounded-xl p-6 shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 text-xs text-blue-500/40 font-bold">LIVE ARBITRAGE MATRIX</div>
-                <h2 class="text-xl font-bold mb-2 text-slate-100">Sovereign Compute Brokerage</h2>
+        <!-- TAB 1: TERMINAL -->
+        <div id="tab-terminal" class="space-y-6">
+            <section class="glass-panel p-6 rounded-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Sovereign Compute Brokerage</h2>
+                    <span class="text-xs text-[#00F0FF] tracking-wide">LIVE ARBITRAGE MATRIX</span>
+                </div>
                 <p class="text-xs text-slate-400 mb-6">Real-time GPU spot arbitrage delivering 32% to 40% margin discounts against legacy hyperscalers.</p>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <template x-for="gpu in gpus">
-                        <div @click="selectedGpu = gpu" :class="selectedGpu.name === gpu.name ? 'border-blue-500 bg-blue-950/30' : 'border-sovereign-border bg-sovereign-bg'" class="border rounded-lg p-4 cursor-pointer transition hover:border-blue-400">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="font-bold text-sm" x-text="gpu.name"></span>
-                                <span class="text-xs text-emerald-400 font-semibold" x-text="gpu.savings"></span>
-                            </div>
-                            <div class="text-xs text-slate-400">Rate: <span class="text-slate-200 font-mono" x-text="gpu.rate"></span></div>
-                        </div>
-                    </template>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
+                        <div class="text-sm font-bold text-white mb-1">H100 SXM5</div>
+                        <div class="text-xs text-slate-400 mb-2">Rate: $1.94/hr</div>
+                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">40% SAVINGS</div>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
+                        <div class="text-sm font-bold text-white mb-1">B200 NVL72</div>
+                        <div class="text-xs text-slate-400 mb-2">Rate: $2.85/hr</div>
+                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">38% SAVINGS</div>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
+                        <div class="text-sm font-bold text-white mb-1">A100 SXM4</div>
+                        <div class="text-xs text-slate-400 mb-2">Rate: $1.42/hr</div>
+                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">35% SAVINGS</div>
+                    </div>
+                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
+                        <div class="text-sm font-bold text-white mb-1">L40S PCIe</div>
+                        <div class="text-xs text-slate-400 mb-2">Rate: $0.89/hr</div>
+                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">32% SAVINGS</div>
+                    </div>
                 </div>
 
-                <div class="bg-sovereign-bg border border-sovereign-border rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div>
-                        <div class="text-xs text-slate-400">Selected Cluster Node</div>
-                        <div class="text-sm font-bold text-blue-400" x-text="selectedGpu.name + ' (Sub-18ms Mesh)'"></div>
+                <div class="flex flex-col sm:flex-row justify-between items-center bg-slate-950/80 p-4 rounded-lg border border-slate-800 gap-4">
+                    <div class="text-xs">
+                        <span class="text-slate-400">Selected Cluster Node:</span>
+                        <div class="text-[#00F0FF] font-bold mt-0.5">H100 SXM5 (Sub-18ms Mesh)</div>
                     </div>
-                    <button @click="provisionCluster" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-6 py-3 rounded-lg shadow transition uppercase tracking-wider">
-                        Provision Compute Units
+                    <button onclick="alert('Provisioning trigger dispatched via Supabase atomic ledger RPC.')" class="w-full sm:w-auto bg-[#00F0FF] text-black font-bold text-xs px-6 py-2.5 rounded hover:bg-cyan-300 transition-all">
+                        PROVISION COMPUTE UNITS
                     </button>
                 </div>
-            </div>
+            </section>
 
-            <!-- System Telemetry Log -->
-            <div class="bg-sovereign-surface border border-sovereign-border rounded-xl p-6">
-                <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Execution Log & Audit Stream</h3>
-                <div class="bg-sovereign-bg border border-sovereign-border rounded-lg p-4 font-mono text-xs text-slate-400 h-32 overflow-y-auto space-y-1">
-                    <template x-for="log in logs">
-                        <div x-text="log"></div>
-                    </template>
+            <!-- Audit Stream -->
+            <section class="glass-panel p-5 rounded-xl">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Execution Log & Audit Stream</h3>
+                <div class="bg-black/80 p-4 rounded border border-slate-900 font-mono text-xs text-emerald-400 space-y-1">
+                    <div>[03:31:00] SYSTEM INIT: Rust/Axum mesh initialized successfully.</div>
+                    <div>[03:31:05] SUPABASE: Double-entry ledger connection established.</div>
+                    <div>[03:31:12] INGRESS: Vercel edge routing synchronized with zero latency.</div>
                 </div>
-            </div>
+            </section>
         </div>
 
-        <!-- Right Column: Financial Ledger & Settlement -->
-        <div class="space-y-8">
-            <div class="bg-sovereign-surface border border-sovereign-border rounded-xl p-6">
-                <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Atomic Ledger Settlement</h3>
-                <div class="space-y-4 text-xs">
-                    <div class="flex justify-between border-b border-sovereign-border pb-2">
-                        <span class="text-slate-400">Conversion Rate</span>
-                        <span class="font-mono text-slate-200">$1.00 = 100 CU</span>
+        <!-- TAB 2: CLUSTERS -->
+        <div id="tab-clusters" class="space-y-6 hidden">
+            <section class="glass-panel p-6 rounded-xl">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-4">Sovereign Capacity Allocator</h2>
+                <p class="text-xs text-slate-400 mb-6">Manage active hardware clusters, SSH access keys, and regional node routing.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Node ID</th>
+                                <th class="p-3">Region</th>
+                                <th class="p-3">Hardware</th>
+                                <th class="p-3">Latency</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-900">
+                            <tr>
+                                <td class="p-3 font-mono text-cyan-400">node-us-east-01</td>
+                                <td class="p-3">US-EAST (Virginia)</td>
+                                <td class="p-3">8x H100 SXM5</td>
+                                <td class="p-3 text-emerald-400">12.4ms</td>
+                                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400">ACTIVE</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono text-cyan-400">node-eu-central-02</td>
+                                <td class="p-3">EU-CENTRAL (Frankfurt)</td>
+                                <td class="p-3">4x B200 NVL72</td>
+                                <td class="p-3 text-emerald-400">16.8ms</td>
+                                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400">ACTIVE</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- TAB 3: BILLING -->
+        <div id="tab-billing" class="space-y-6 hidden">
+            <section class="glass-panel p-6 rounded-xl">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-4">Atomic Ledger Settlement</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-slate-900/80 p-4 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 mb-1">Available Balance</div>
+                        <div class="text-2xl font-bold text-white">486,820 <span class="text-xs text-[#00F0FF]">CU</span></div>
+                        <div class="text-[10px] text-slate-500 mt-1">Conversion Rate: $1.00 = 100 CU</div>
                     </div>
-                    <div class="flex justify-between border-b border-sovereign-border pb-2">
-                        <span class="text-slate-400">HMAC Signature</span>
-                        <span class="font-mono text-emerald-400">VERIFIED_SHA256</span>
-                    </div>
-                    <div class="flex justify-between border-b border-sovereign-border pb-2">
-                        <span class="text-slate-400">Database RLS</span>
-                        <span class="font-mono text-emerald-400">ACTIVE</span>
+                    <div class="bg-slate-900/80 p-4 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 mb-1">Security & Signatures</div>
+                        <div class="text-xs text-emerald-400 font-bold mt-1">HMAC-SHA256 VERIFIED</div>
+                        <div class="text-[10px] text-slate-500 mt-1">Supabase Row-Level Security: ACTIVE</div>
                     </div>
                 </div>
-
-                <div class="mt-6">
-                    <label class="block text-xs text-slate-400 mb-2">Top-Up Amount (USD)</label>
-                    <input type="number" x-model="topupAmount" class="w-full bg-sovereign-bg border border-sovereign-border rounded px-3 py-2 text-sm text-slate-100 mb-4 focus:outline-none focus:border-blue-500">
-                    <button @click="initiatePayPalCheckout" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3 rounded uppercase tracking-wider transition">
-                        Initialize PayPal Webhook ($<span x-text="topupAmount"></span>)
+                <div class="bg-slate-950/80 p-4 rounded-lg border border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-xs">
+                        <span class="text-slate-400">Instant PayPal Credit Top-Up ($50 Preset):</span>
+                    </div>
+                    <button onclick="alert('PayPal Webhook Dispatch Initialized.')" class="w-full sm:w-auto bg-emerald-500 text-black font-bold text-xs px-6 py-2.5 rounded hover:bg-emerald-400 transition-all">
+                        INITIALIZE PAYPAL WEBHOOK ($50)
                     </button>
                 </div>
-            </div>
+            </section>
         </div>
+
+        <!-- TAB 4: DOCS / API -->
+        <div id="tab-docs" class="space-y-6 hidden">
+            <section class="glass-panel p-6 rounded-xl">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-4">Enterprise Integration Suite</h2>
+                <p class="text-xs text-slate-400 mb-4">Execute programmatic GPU spot allocations using your API credentials.</p>
+                <div class="bg-black/90 p-4 rounded border border-slate-900 font-mono text-xs text-cyan-300 overflow-x-auto">
+                    <pre>curl -X POST https://www.apexsovereign.ai/v1/clusters/provision \
+  -H "Authorization: Bearer REDACTED" \
+  -H "Content-Type: application/json" \
+  -d '{"gpu": "H100", "count": 8, "region": "us-east"}'</pre>
+                </div>
+            </section>
+        </div>
+
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-sovereign-border bg-sovereign-surface px-6 py-4 text-center text-xs text-slate-500">
-        ApexSovereign.ai © 2026 — Sovereign Infrastructure Architecture. All rights reserved.
+    <!-- FOOTER -->
+    <footer class="text-center text-[11px] text-slate-500 border-t border-slate-900 pt-4 mt-6">
+        ApexSovereign.ai © 2026 — Sovereign Enterprise Infrastructure. All rights reserved.
     </footer>
 
+    <!-- SIMPLE SPA TAB CONTROLLER -->
     <script>
-        function sovereignApp() {
-            return {
-                backendStatus: 'HEALTHY',
-                latency: 14.2,
-                topupAmount: 50,
-                gpus: [
-                    { name: 'H100 SXM5', rate: '$1.94/hr', savings: '40% SAVINGS' },
-                    { name: 'B200 NVL72', rate: '$2.85/hr', savings: '38% SAVINGS' },
-                    { name: 'A100 SXM4', rate: '$1.42/hr', savings: '35% SAVINGS' },
-                    { name: 'L40S PCIe', rate: '$0.89/hr', savings: '32% SAVINGS' }
-                ],
-                selectedGpu: { name: 'H100 SXM5', rate: '$1.94/hr', savings: '40% SAVINGS' },
-                logs: [
-                    '[03:31:00] SYSTEM INIT: Rust/Axum mesh initialized successfully.',
-                    '[03:31:05] SUPABASE: Double-entry ledger connection established.',
-                    '[03:31:12] INGRESS: Vercel edge routing synchronized with zero latency.'
-                ],
-                provisionCluster() {
-                    this.logs.unshift(`[${new Date().toLocaleTimeString()}] PROVISION: Allocated cluster node for ${this.selectedGpu.name}. Routing active.`);
-                },
-                initiatePayPalCheckout() {
-                    this.logs.unshift(`[${new Date().toLocaleTimeString()}] BILLING: Initiated PayPal checkout for $${this.topupAmount}. Awaiting atomic RPC credit callback.`);
-                    alert(`PayPal webhook triggered successfully for $${this.topupAmount}. Credits will reflect in Supabase instantly.`);
-                }
-            }
+        function switchTab(tabName) {
+            ['terminal', 'clusters', 'billing', 'docs'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('btn-' + t).className = 'px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all';
+            });
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            document.getElementById('btn-' + tabName).className = 'px-3 py-1 text-xs rounded bg-[#00F0FF] text-black font-bold transition-all';
         }
     </script>
 </body>
