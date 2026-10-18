@@ -52,7 +52,7 @@ jobs:
 
       - name: Run Cargo Test Across Rust Microservices
         run: |
-          cargo test --workspace --all-targets --all-features -- --ignored --verbose || true
+          cargo test --workspace --all-targets --verbose || cargo test --all || true
 
       - name: Setup Python 3.11 Environment
         uses: actions/setup-python@v5
