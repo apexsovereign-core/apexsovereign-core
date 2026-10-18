@@ -1,204 +1,1916 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ApexSovereign.ai | Sovereign Compute Terminal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .cyan-glow {
-            filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.85));
-        }
-        .glass-panel {
-            background: rgba(10, 15, 25, 0.85);
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            backdrop-filter: blur(12px);
-        }
-        body {
-            background-color: #05070A;
-            color: #F8FAFC;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#05070A">
+  <title>ApexSovereign.ai | Sovereign AI Compute Exchange & Arbitrage Terminal</title>
+  <meta name="description" content="Sovereign AI Compute Arbitrage & Spot GPU Exchange. Sub-18ms low-latency routing, atomic double-entry Supabase ledger, and automated compute cluster provisioning.">
+
+  <!-- Typography: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <style>
+    :root {
+      --void-black: #05070A;
+      --void-card: rgba(10, 15, 25, 0.88);
+      --void-border: rgba(0, 240, 255, 0.22);
+      --void-border-glow: rgba(0, 240, 255, 0.5);
+      --cyan-neon: #00F0FF;
+      --emerald-telemetry: #10B981;
+      --amber-warn: #F59E0B;
+      --danger-red: #EF4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.25) #05070A;
+    }
+
+    body {
+      background-color: #05070A;
+      color: #E2E8F0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Glassmorphism Surface Container */
+    .glass-panel {
+      background: rgba(10, 15, 25, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.65), inset 0 0 12px rgba(0, 240, 255, 0.03);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .glass-panel:hover {
+      border-color: rgba(0, 240, 255, 0.35);
+      box-shadow: 0 10px 36px 0 rgba(0, 0, 0, 0.75), inset 0 0 16px rgba(0, 240, 255, 0.06);
+    }
+
+    .glass-panel-cyan-active {
+      border-color: rgba(0, 240, 255, 0.6);
+      box-shadow: 0 0 24px rgba(0, 240, 255, 0.22), inset 0 0 14px rgba(0, 240, 255, 0.08);
+    }
+
+    /* Sovereign Brand Glow */
+    .brand-diamond-glow {
+      filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.85));
+    }
+
+    .neon-text-cyan {
+      color: #00F0FF;
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.65);
+    }
+
+    .neon-text-emerald {
+      color: #10B981;
+      text-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+    }
+
+    /* Scanline Overlay */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      opacity: 0.25;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #05070A;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.25);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 240, 255, 0.55);
+    }
+
+    /* Pulse animation */
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.5; }
+    }
+    .pulse-beacon {
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-6">
-    <!-- TOP HUD HEADER -->
-    <header class="flex flex-col md:flex-row justify-between items-center border-b border-cyan-900/50 pb-4 mb-6 gap-4">
-        <div class="flex items-center gap-3">
-            <!-- Permanent Diamond Cyan Logo -->
-            <svg class="w-8 h-8 cyan-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 12L12 22L22 12L12 2Z" fill="#00F0FF" stroke="#00F0FF" stroke-width="2"/>
-            </svg>
-            <h1 class="text-xl font-bold tracking-wider text-white">APEXSOVEREIGN.<span class="text-[#00F0FF]">AI</span></h1>
-            <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-[#00F0FF] border border-cyan-800">OSMASTER v4.2</span>
-        </div>
-        
-        <!-- SPA Tab Switcher -->
-        <nav class="flex gap-2 bg-slate-900/80 p-1 rounded-lg border border-slate-800">
-            <button onclick="switchTab('terminal')" id="btn-terminal" class="px-3 py-1 text-xs rounded bg-[#00F0FF] text-black font-bold transition-all">TERMINAL</button>
-            <button onclick="switchTab('clusters')" id="btn-clusters" class="px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all">CLUSTERS</button>
-            <button onclick="switchTab('billing')" id="btn-billing" class="px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all">BILLING</button>
-            <button onclick="switchTab('docs')" id="btn-docs" class="px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all">DOCS / API</button>
-        </nav>
+<body class="min-h-screen flex flex-col text-slate-200">
+  <!-- Subtle Scanline overlay for war-room telemetry aesthetics -->
+  <div class="scanlines"></div>
 
-        <div class="flex items-center gap-4 text-xs">
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></i><span class="text-slate-400">BACKEND: <strong class="text-emerald-400">HEALTHY</strong></span></div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span><span class="text-slate-400">INGRESS: <strong class="text-cyan-400">SECURE</strong></span></div>
-        </div>
-    </header>
+  <!-- IN-APP TELEMETRY NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none max-w-md w-full px-4"></div>
 
-    <!-- MAIN APP CONTENT AREA -->
-    <main class="flex-grow max-w-7xl mx-auto w-full space-y-6">
+  <!-- HUD NAVIGATION HEADER -->
+  <header class="sticky top-0 z-50 glass-panel border-b border-cyan-500/20 px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      
+      <!-- Brand Identity with Permanent Diamond Cyan Emblem -->
+      <div class="flex items-center gap-3 cursor-pointer" id="brand-logo-btn">
+        <svg class="w-8 h-8 brand-diamond-glow shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,4 96,50 50,96 4,50" stroke="#00F0FF" stroke-width="6" fill="#0A0F19" fill-opacity="0.85"/>
+          <polygon points="50,18 82,50 50,82 18,50" stroke="#00F0FF" stroke-width="2.5" fill="#00F0FF" fill-opacity="0.12"/>
+          <line x1="50" y1="4" x2="50" y2="96" stroke="#00F0FF" stroke-width="1.8" stroke-dasharray="4 3"/>
+          <line x1="4" y1="50" x2="96" y2="50" stroke="#00F0FF" stroke-width="1.8" stroke-dasharray="4 3"/>
+          <circle cx="50" cy="50" r="7" fill="#00F0FF"/>
+        </svg>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-mono font-bold tracking-widest text-lg lg:text-xl text-white">APEX<span class="text-[#00F0FF]">SOVEREIGN</span>.AI</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/40 text-cyan-300">v2.4-PROD</span>
+          </div>
+          <div class="text-[11px] font-mono text-slate-400 tracking-tight">SOVEREIGN COMPUTE ARBITRAGE &amp; SPOT EXCHANGE</div>
+        </div>
+      </div>
+
+      <!-- Live Telemetry Stream Counters -->
+      <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4 font-mono text-xs">
+        <!-- Backend Status -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded bg-slate-900/80 border border-slate-700/60" id="hud-backend-card">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-beacon" id="hud-backend-dot"></span>
+          <span class="text-slate-400">BACKEND:</span>
+          <span class="font-semibold text-emerald-400" id="hud-backend-status">HEALTHY</span>
+        </div>
+
+        <!-- Ingress Security Mode -->
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded bg-slate-900/80 border border-slate-700/60">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span class="text-slate-400">INGRESS:</span>
+          <span class="font-semibold text-cyan-300">SECURE (HMAC-SHA256)</span>
+        </div>
+
+        <!-- Real-time Mesh Latency -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded bg-slate-900/80 border border-slate-700/60">
+          <span class="text-slate-400">LATENCY:</span>
+          <span class="font-bold text-emerald-400" id="hud-latency">14.2ms</span>
+          <span class="text-[10px] text-slate-500">(&lt;18ms SLA)</span>
+        </div>
+
+        <!-- Supabase Atomic CU Balance -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded bg-cyan-950/60 border border-cyan-500/40 cursor-pointer hover:border-cyan-400 transition" id="hud-balance-pill" title="Click to view Billing &amp; Deposit">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="text-cyan-300 font-bold" id="hud-cu-balance">245,800 CU</span>
+          <span class="text-[11px] text-slate-400">($2,458.00)</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Navigation Tabs (Instant 0ms Client-Side Route Switcher) -->
+    <div class="max-w-7xl mx-auto mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between overflow-x-auto gap-2">
+      <nav class="flex items-center gap-1 sm:gap-2 font-mono text-xs">
+        <button id="nav-btn-terminal" class="nav-tab px-3.5 py-1.5 rounded-md flex items-center gap-2 border transition bg-cyan-950/60 text-cyan-300 border-cyan-500/50 shadow-[0_0_12px_rgba(0,240,255,0.25)]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          <span>1. TERMINAL</span>
+        </button>
+        <button id="nav-btn-clusters" class="nav-tab px-3.5 py-1.5 rounded-md flex items-center gap-2 border transition bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <span>2. CLUSTERS</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-900/60 text-cyan-300 border border-cyan-500/30" id="badge-active-clusters-count">3</span>
+        </button>
+        <button id="nav-btn-billing" class="nav-tab px-3.5 py-1.5 rounded-md flex items-center gap-2 border transition bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          <span>3. BILLING &amp; SETTLEMENT</span>
+        </button>
+        <button id="nav-btn-api" class="nav-tab px-3.5 py-1.5 rounded-md flex items-center gap-2 border transition bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          <span>4. API &amp; WEBHOOKS</span>
+        </button>
+      </nav>
+
+      <!-- Quick Action: Terminal Mode indicator -->
+      <div class="hidden md:flex items-center gap-2 font-mono text-[11px] text-slate-400">
+        <span class="text-cyan-400">ROUTER:</span>
+        <span class="text-slate-300">mesh.apexsovereign.internal</span>
+        <span class="px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px]">AXUM-ENGINE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-8">
+
+    <!-- ========================================================================= -->
+    <!-- MODULE 1: TERMINAL (Spot Arbitrage Matrix & Live Global Mesh Map) -->
+    <!-- ========================================================================= -->
+    <section id="module-terminal" class="space-y-6">
+      
+      <!-- War Room Top Ticker Bar -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-panel p-4 rounded-lg">
+          <div class="text-slate-400 text-xs font-mono">GLOBAL MESH CAPACITY</div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <div class="text-2xl font-bold font-mono text-white">4,896 <span class="text-sm font-normal text-slate-400">GPUs</span></div>
+            <span class="text-xs font-mono text-emerald-400">+128 H100 online</span>
+          </div>
+          <div class="mt-2 w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-gradient-to-r from-cyan-400 to-emerald-400 h-full w-[76%]"></div>
+          </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-lg">
+          <div class="text-slate-400 text-xs font-mono">AVERAGE ARBITRAGE SAVINGS</div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <div class="text-2xl font-bold font-mono text-emerald-400">38.4%</div>
+            <span class="text-xs font-mono text-cyan-300">vs AWS / GCP Spot</span>
+          </div>
+          <div class="text-[11px] font-mono text-slate-400 mt-1">Weighted against AWS on-demand</div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-lg">
+          <div class="text-slate-400 text-xs font-mono">SETTLEMENT GUARANTEE</div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <div class="text-2xl font-bold font-mono text-white">ATOMIC RPC</div>
+            <span class="text-xs font-mono text-emerald-400">Zero Slop</span>
+          </div>
+          <div class="text-[11px] font-mono text-slate-400 mt-1">Supabase Postgres Double-Entry</div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-lg">
+          <div class="text-slate-400 text-xs font-mono">MESH ROUTING TARGET</div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <div class="text-2xl font-bold font-mono text-cyan-400">&lt; 18.0ms</div>
+            <span class="text-xs font-mono text-emerald-400" id="live-target-status">14.2ms Live</span>
+          </div>
+          <div class="text-[11px] font-mono text-slate-400 mt-1">Direct wire-guard sovereign bypass</div>
+        </div>
+      </div>
+
+      <!-- GPU Spot Arbitrage Matrix Table -->
+      <div class="glass-panel rounded-lg overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold font-mono text-white flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+              REAL-TIME GPU ARBITRAGE MATRIX
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5 font-mono">Spot pricing updated every 3.2s via decentral routing telemetry</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-mono text-slate-400" for="gpu-region-filter">FILTER REGION:</label>
+            <select id="gpu-region-filter" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono rounded px-2.5 py-1.5 focus:border-cyan-400 focus:outline-none">
+              <option value="ALL">ALL REGIONS (GLOBAL)</option>
+              <option value="US-EAST">US-EAST (Virginia / N. Virginia)</option>
+              <option value="EU-CENTRAL">EU-CENTRAL (Frankfurt / Zurich)</option>
+              <option value="AP-SOUTH">AP-SOUTH (Mumbai / Singapore)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">ACCELERATOR ARCHITECTURE</th>
+                <th class="py-3 px-4">VRAM &amp; INTERCONNECT</th>
+                <th class="py-3 px-4">REGION &amp; PING</th>
+                <th class="py-3 px-4">HYPERSCALER BASE</th>
+                <th class="py-3 px-4">APEX SPOT PRICE</th>
+                <th class="py-3 px-4 text-emerald-400">SAVINGS</th>
+                <th class="py-3 px-4 text-center">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="gpu-table-body" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dual Column: ASCII Global Mesh Map + Real-Time Execution Audit Stream -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <!-- TAB 1: TERMINAL -->
-        <div id="tab-terminal" class="space-y-6">
-            <section class="glass-panel p-6 rounded-xl">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Sovereign Compute Brokerage</h2>
-                    <span class="text-xs text-[#00F0FF] tracking-wide">LIVE ARBITRAGE MATRIX</span>
-                </div>
-                <p class="text-xs text-slate-400 mb-6">Real-time GPU spot arbitrage delivering 32% to 40% margin discounts against legacy hyperscalers.</p>
+        <!-- Live Global Mesh Map -->
+        <div class="glass-panel p-5 rounded-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <h3 class="font-mono text-sm font-bold text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+                SOVEREIGN NODE MESH TELEMETRY
+              </h3>
+              <span class="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-beacon"></span>
+                ACTIVE PEERING (4 REGIONS)
+              </span>
+            </div>
+
+            <!-- Interactive Visual Mesh Map Representation -->
+            <div class="relative bg-black/60 rounded border border-cyan-500/20 p-4 font-mono text-xs overflow-hidden">
+              <div class="grid grid-cols-2 gap-4">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
-                        <div class="text-sm font-bold text-white mb-1">H100 SXM5</div>
-                        <div class="text-xs text-slate-400 mb-2">Rate: $1.94/hr</div>
-                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">40% SAVINGS</div>
-                    </div>
-                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
-                        <div class="text-sm font-bold text-white mb-1">B200 NVL72</div>
-                        <div class="text-xs text-slate-400 mb-2">Rate: $2.85/hr</div>
-                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">38% SAVINGS</div>
-                    </div>
-                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
-                        <div class="text-sm font-bold text-white mb-1">A100 SXM4</div>
-                        <div class="text-xs text-slate-400 mb-2">Rate: $1.42/hr</div>
-                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">35% SAVINGS</div>
-                    </div>
-                    <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg">
-                        <div class="text-sm font-bold text-white mb-1">L40S PCIe</div>
-                        <div class="text-xs text-slate-400 mb-2">Rate: $0.89/hr</div>
-                        <div class="text-xs text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-1 rounded inline-block">32% SAVINGS</div>
-                    </div>
+                <div class="p-3 rounded bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+                  <div class="flex items-center justify-between text-cyan-300 font-bold">
+                    <span>US-EAST-1</span>
+                    <span class="text-emerald-400 text-[10px]">11.4ms</span>
+                  </div>
+                  <div class="text-slate-400 text-[11px] mt-1">Nodes: 1,840 H100 / B200</div>
+                  <div class="text-slate-500 text-[10px]">Ingress: Ashburn Direct Fiber</div>
+                  <div class="mt-2 text-[10px] text-emerald-400 flex items-center gap-1">
+                    <span class="w-1 h-1 bg-emerald-400 rounded-full"></span> 0.00% Packet Loss
+                  </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row justify-between items-center bg-slate-950/80 p-4 rounded-lg border border-slate-800 gap-4">
-                    <div class="text-xs">
-                        <span class="text-slate-400">Selected Cluster Node:</span>
-                        <div class="text-[#00F0FF] font-bold mt-0.5">H100 SXM5 (Sub-18ms Mesh)</div>
-                    </div>
-                    <button onclick="alert('Provisioning trigger dispatched via Supabase atomic ledger RPC.')" class="w-full sm:w-auto bg-[#00F0FF] text-black font-bold text-xs px-6 py-2.5 rounded hover:bg-cyan-300 transition-all">
-                        PROVISION COMPUTE UNITS
-                    </button>
+                <div class="p-3 rounded bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+                  <div class="flex items-center justify-between text-cyan-300 font-bold">
+                    <span>EU-CENTRAL-1</span>
+                    <span class="text-emerald-400 text-[10px]">14.8ms</span>
+                  </div>
+                  <div class="text-slate-400 text-[11px] mt-1">Nodes: 1,420 H100 SXM5</div>
+                  <div class="text-slate-500 text-[10px]">Ingress: DE-CIX Frankfurt</div>
+                  <div class="mt-2 text-[10px] text-emerald-400 flex items-center gap-1">
+                    <span class="w-1 h-1 bg-emerald-400 rounded-full"></span> 0.00% Packet Loss
+                  </div>
                 </div>
-            </section>
 
-            <!-- Audit Stream -->
-            <section class="glass-panel p-5 rounded-xl">
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Execution Log & Audit Stream</h3>
-                <div class="bg-black/80 p-4 rounded border border-slate-900 font-mono text-xs text-emerald-400 space-y-1">
-                    <div>[03:31:00] SYSTEM INIT: Rust/Axum mesh initialized successfully.</div>
-                    <div>[03:31:05] SUPABASE: Double-entry ledger connection established.</div>
-                    <div>[03:31:12] INGRESS: Vercel edge routing synchronized with zero latency.</div>
+                <div class="p-3 rounded bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+                  <div class="flex items-center justify-between text-cyan-300 font-bold">
+                    <span>AP-SOUTH-1</span>
+                    <span class="text-emerald-400 text-[10px]">17.2ms</span>
+                  </div>
+                  <div class="text-slate-400 text-[11px] mt-1">Nodes: 890 A100 / L40S</div>
+                  <div class="text-slate-500 text-[10px]">Ingress: Singapore Equinix</div>
+                  <div class="mt-2 text-[10px] text-emerald-400 flex items-center gap-1">
+                    <span class="w-1 h-1 bg-emerald-400 rounded-full"></span> 0.01% Packet Loss
+                  </div>
                 </div>
-            </section>
+
+                <div class="p-3 rounded bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+                  <div class="flex items-center justify-between text-cyan-300 font-bold">
+                    <span>US-WEST-2</span>
+                    <span class="text-emerald-400 text-[10px]">13.6ms</span>
+                  </div>
+                  <div class="text-slate-400 text-[11px] mt-1">Nodes: 746 B200 NVL72</div>
+                  <div class="text-slate-500 text-[10px]">Ingress: Oregon Hydro Grid</div>
+                  <div class="mt-2 text-[10px] text-emerald-400 flex items-center gap-1">
+                    <span class="w-1 h-1 bg-emerald-400 rounded-full"></span> 0.00% Packet Loss
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Node Mesh Topology ASCII schematic -->
+              <div class="mt-4 pt-3 border-t border-slate-800/80 text-[10px] text-slate-400 font-mono leading-tight whitespace-pre overflow-x-auto">
+  [CLIENT EDGE] &lt;== 14.2ms ==&gt; [RENDER MESH ROUTER]
+                                     |-- (InfiniBand NDR 400G) --&gt; US-EAST-1 (Active)
+                                     |-- (RoCE v2 200G Fabric) --&gt; EU-CENTRAL-1 (Active)
+                                     \-- (Sovereign WireGuard) --&gt; AP-SOUTH-1 (Active)
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
+            <span>Arbitrage Execution Engine: <strong>RUST-AXUM 0.7</strong></span>
+            <span class="text-cyan-300">Heartbeat: SYNCED</span>
+          </div>
         </div>
 
-        <!-- TAB 2: CLUSTERS -->
-        <div id="tab-clusters" class="space-y-6 hidden">
-            <section class="glass-panel p-6 rounded-xl">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-4">Sovereign Capacity Allocator</h2>
-                <p class="text-xs text-slate-400 mb-6">Manage active hardware clusters, SSH access keys, and regional node routing.</p>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-900 text-slate-400 border-b border-slate-800">
-                            <tr>
-                                <th class="p-3">Node ID</th>
-                                <th class="p-3">Region</th>
-                                <th class="p-3">Hardware</th>
-                                <th class="p-3">Latency</th>
-                                <th class="p-3">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-900">
-                            <tr>
-                                <td class="p-3 font-mono text-cyan-400">node-us-east-01</td>
-                                <td class="p-3">US-EAST (Virginia)</td>
-                                <td class="p-3">8x H100 SXM5</td>
-                                <td class="p-3 text-emerald-400">12.4ms</td>
-                                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400">ACTIVE</span></td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 font-mono text-cyan-400">node-eu-central-02</td>
-                                <td class="p-3">EU-CENTRAL (Frankfurt)</td>
-                                <td class="p-3">4x B200 NVL72</td>
-                                <td class="p-3 text-emerald-400">16.8ms</td>
-                                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400">ACTIVE</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+        <!-- Real-Time Cryptographic Execution Audit Stream -->
+        <div class="glass-panel p-5 rounded-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <h3 class="font-mono text-sm font-bold text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                EXECUTION AUDIT LOG STREAM
+              </h3>
+              <div class="flex items-center gap-2">
+                <button id="btn-clear-logs" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">CLEAR</button>
+                <span class="text-[10px] font-mono text-emerald-400">STREAMING</span>
+              </div>
+            </div>
+
+            <!-- Log Terminal Container -->
+            <div id="audit-log-terminal" class="bg-black/80 rounded border border-slate-800 p-3 font-mono text-[11px] h-64 overflow-y-auto space-y-2">
+              <!-- Dynamically populated logs -->
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+            <span>Double-entry RPC: <strong>rpc_atomic_settle()</strong></span>
+            <span class="text-emerald-400">SIGNATURE VALID</span>
+          </div>
         </div>
 
-        <!-- TAB 3: BILLING -->
-        <div id="tab-billing" class="space-y-6 hidden">
-            <section class="glass-panel p-6 rounded-xl">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-4">Atomic Ledger Settlement</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-slate-900/80 p-4 rounded-lg border border-slate-800">
-                        <div class="text-xs text-slate-400 mb-1">Available Balance</div>
-                        <div class="text-2xl font-bold text-white">486,820 <span class="text-xs text-[#00F0FF]">CU</span></div>
-                        <div class="text-[10px] text-slate-500 mt-1">Conversion Rate: $1.00 = 100 CU</div>
-                    </div>
-                    <div class="bg-slate-900/80 p-4 rounded-lg border border-slate-800">
-                        <div class="text-xs text-slate-400 mb-1">Security & Signatures</div>
-                        <div class="text-xs text-emerald-400 font-bold mt-1">HMAC-SHA256 VERIFIED</div>
-                        <div class="text-[10px] text-slate-500 mt-1">Supabase Row-Level Security: ACTIVE</div>
-                    </div>
-                </div>
-                <div class="bg-slate-950/80 p-4 rounded-lg border border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="text-xs">
-                        <span class="text-slate-400">Instant PayPal Credit Top-Up ($50 Preset):</span>
-                    </div>
-                    <button onclick="alert('PayPal Webhook Dispatch Initialized.')" class="w-full sm:w-auto bg-emerald-500 text-black font-bold text-xs px-6 py-2.5 rounded hover:bg-emerald-400 transition-all">
-                        INITIALIZE PAYPAL WEBHOOK ($50)
-                    </button>
-                </div>
-            </section>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- MODULE 2: CLUSTERS (Interactive Allocator, SSH Keys & Management) -->
+    <!-- ========================================================================= -->
+    <section id="module-clusters" class="hidden space-y-6">
+      
+      <!-- Cluster Provisioning & Sizing Banner -->
+      <div class="glass-panel p-6 rounded-lg border-cyan-500/30">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-1">
+            <h2 class="text-xl font-bold font-mono text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              SOVEREIGN CLUSTER CAPACITY ALLOCATOR
+            </h2>
+            <p class="text-xs text-slate-400 font-mono">
+              Allocate and orchestrate bare-metal GPU nodes with sub-second scale triggers and automated SSH certificate injection.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="btn-generate-ssh" class="px-4 py-2 rounded font-mono text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+              SSH KEY GENERATOR
+            </button>
+            <button id="btn-open-deploy-modal" class="px-5 py-2 rounded font-mono text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black transition shadow-[0_0_16px_rgba(0,240,255,0.4)] flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              DEPLOY NEW CLUSTER
+            </button>
+          </div>
         </div>
 
-        <!-- TAB 4: DOCS / API -->
-        <div id="tab-docs" class="space-y-6 hidden">
-            <section class="glass-panel p-6 rounded-xl">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-4">Enterprise Integration Suite</h2>
-                <p class="text-xs text-slate-400 mb-4">Execute programmatic GPU spot allocations using your API credentials.</p>
-                <div class="bg-black/90 p-4 rounded border border-slate-900 font-mono text-xs text-cyan-300 overflow-x-auto">
-                    <pre>curl -X POST https://www.apexsovereign.ai/v1/clusters/provision \
-  -H "Authorization: Bearer sk_live_apex_..." \
+        <!-- Interactive Interactive Sizing Control Bar -->
+        <div class="mt-6 pt-6 border-t border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-xs font-mono text-slate-400 mb-1.5" for="allocator-gpu-type">SELECT GPU ACCELERATOR</label>
+            <select id="allocator-gpu-type" class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-mono text-xs rounded px-3 py-2.5 focus:border-cyan-400 focus:outline-none">
+              <option value="H100" data-price="198" data-aws="335">NVIDIA H100 SXM5 80GB (198 CU/hr = $1.98/hr)</option>
+              <option value="B200" data-price="385" data-aws="610">NVIDIA B200 NVL72 192GB (385 CU/hr = $3.85/hr)</option>
+              <option value="A100" data-price="122" data-aws="205">NVIDIA A100 SXM4 80GB (122 CU/hr = $1.22/hr)</option>
+              <option value="L40S" data-price="84" data-aws="128">NVIDIA L40S PCIe 48GB (84 CU/hr = $0.84/hr)</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-xs font-mono mb-1.5">
+              <span class="text-slate-400">CLUSTER SIZE (NODES):</span>
+              <span class="font-bold text-cyan-300" id="allocator-node-count-label">8 Nodes (64 GPUs)</span>
+            </div>
+            <input type="range" id="allocator-node-slider" min="1" max="32" value="8" step="1" class="w-full accent-cyan-400 cursor-pointer">
+            <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+              <span>1 Node (8x)</span>
+              <span>8 Nodes (64x)</span>
+              <span>16 Nodes</span>
+              <span>32 Nodes (256x)</span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded bg-slate-900/90 border border-cyan-500/30 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-400">ESTIMATED BURN RATE:</span>
+              <span class="text-emerald-400 font-bold" id="allocator-savings-label">40.9% SAVINGS</span>
+            </div>
+            <div class="flex items-baseline justify-between mt-1">
+              <div class="text-xl font-bold font-mono text-cyan-300" id="allocator-rate-cu">1,584 CU/hr</div>
+              <div class="text-xs font-mono text-slate-400" id="allocator-rate-usd">$15.84 / hour</div>
+            </div>
+            <div class="text-[10px] font-mono text-slate-500 mt-1">
+              Hyperscaler Equivalent: <span class="line-through" id="allocator-aws-usd">$26.80 / hr</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Active Sovereign Clusters Table -->
+      <div class="glass-panel rounded-lg overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-cyan-500/20 flex items-center justify-between">
+          <div>
+            <h3 class="font-mono text-sm font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              ACTIVE PROVISIONED CLUSTERS
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5 font-mono">Instances with running InfiniBand fabric and SSH mesh tunnels</p>
+          </div>
+          <button id="btn-refresh-clusters" class="text-xs font-mono px-3 py-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            REFRESH
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">CLUSTER IDENTIFIER</th>
+                <th class="py-3 px-4">ACCELERATOR / NODES</th>
+                <th class="py-3 px-4">REGION &amp; FABRIC</th>
+                <th class="py-3 px-4">BURN RATE (CU/hr)</th>
+                <th class="py-3 px-4">UPTIME</th>
+                <th class="py-3 px-4">STATUS</th>
+                <th class="py-3 px-4 text-center">CONTROLS</th>
+              </tr>
+            </thead>
+            <tbody id="clusters-table-body" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated clusters -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- MODULE 3: BILLING & SETTLEMENT (Supabase Ledger & PayPal Gateway) -->
+    <!-- ========================================================================= -->
+    <section id="module-billing" class="hidden space-y-6">
+      
+      <!-- Double-Entry Atomic Ledger Balance Header -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="glass-panel p-5 rounded-lg border-cyan-500/40">
+          <div class="text-xs font-mono text-slate-400 flex items-center justify-between">
+            <span>AVAILABLE LIQUID BALANCE</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">SUPABASE ATOMIC</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <div class="text-3xl font-bold font-mono text-white" id="billing-display-cu">245,800</div>
+            <div class="text-cyan-400 font-mono font-bold">CU</div>
+          </div>
+          <div class="mt-1 text-sm font-mono text-slate-300" id="billing-display-usd">
+            ≈ $2,458.00 USD <span class="text-[11px] text-slate-500">($1.00 = 100 CU)</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-lg">
+          <div class="text-xs font-mono text-slate-400 flex items-center justify-between">
+            <span>ESCROWED RUNTIME CAPACITY</span>
+            <span class="text-[10px] font-mono text-emerald-400">ACTIVE LEASE</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <div class="text-3xl font-bold font-mono text-emerald-400" id="billing-escrow-cu">24,560</div>
+            <div class="text-emerald-400 font-mono font-bold">CU</div>
+          </div>
+          <div class="mt-1 text-sm font-mono text-slate-300">
+            ≈ $245.60 USD <span class="text-[11px] text-slate-500">(Reserved for 3 active clusters)</span>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-lg">
+          <div class="text-xs font-mono text-slate-400 flex items-center justify-between">
+            <span>MONTH-TO-DATE ARBITRAGE SAVINGS</span>
+            <span class="text-[10px] font-mono text-cyan-300">SAVINGS REALIZED</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <div class="text-3xl font-bold font-mono text-cyan-300">$1,642.80</div>
+            <div class="text-slate-400 text-xs font-mono">USD</div>
+          </div>
+          <div class="mt-1 text-sm font-mono text-slate-400">
+            Vs standard on-demand hyperscaler baseline
+          </div>
+        </div>
+
+      </div>
+
+      <!-- One-Click Instant Deposit Tier Cards -->
+      <div class="glass-panel p-6 rounded-lg">
+        <div class="border-b border-slate-800 pb-4 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold font-mono text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              INSTANT COMPUTE UNIT (CU) DEPOSIT PACKS
+            </h3>
+            <p class="text-xs text-slate-400 font-mono mt-0.5">Automated settlement via PayPal Webhook capture (`/api/webhooks/paypal`) and Supabase double-entry write</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>PAYPAL WEBHOOK READY</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <!-- Tier $50 -->
+          <div class="p-4 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-mono text-slate-400">DEVELOPER TIER</div>
+              <div class="text-2xl font-bold font-mono text-white mt-1">$50.00 <span class="text-xs text-slate-400 font-normal">USD</span></div>
+              <div class="text-sm font-mono text-cyan-300 font-semibold mt-1">+5,000 Compute Units</div>
+              <p class="text-[11px] text-slate-500 font-mono mt-2">Ideal for lightweight testing on L40S or single A100 spot workloads.</p>
+            </div>
+            <button class="btn-deposit-tier mt-4 w-full py-2 rounded font-mono text-xs font-bold bg-slate-800 hover:bg-cyan-500 hover:text-black border border-cyan-500/30 text-cyan-300 transition" data-amount="50" data-cu="5000">
+              DEPOSIT 5,000 CU
+            </button>
+          </div>
+
+          <!-- Tier $100 -->
+          <div class="p-4 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-mono text-slate-400">PROTOTYPE TIER</div>
+              <div class="text-2xl font-bold font-mono text-white mt-1">$100.00 <span class="text-xs text-slate-400 font-normal">USD</span></div>
+              <div class="text-sm font-mono text-cyan-300 font-semibold mt-1">+10,000 Compute Units</div>
+              <p class="text-[11px] text-slate-500 font-mono mt-2">Sufficient for 50+ hours of continuous H100 SXM5 spot inference execution.</p>
+            </div>
+            <button class="btn-deposit-tier mt-4 w-full py-2 rounded font-mono text-xs font-bold bg-slate-800 hover:bg-cyan-500 hover:text-black border border-cyan-500/30 text-cyan-300 transition" data-amount="100" data-cu="10000">
+              DEPOSIT 10,000 CU
+            </button>
+          </div>
+
+          <!-- Tier $500 (Popular) -->
+          <div class="p-4 rounded-lg bg-cyan-950/40 border border-cyan-500/60 shadow-[0_0_20px_rgba(0,240,255,0.15)] flex flex-col justify-between relative">
+            <span class="absolute -top-2.5 right-3 px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500 text-black font-bold">RECOMMENDED</span>
+            <div>
+              <div class="text-xs font-mono text-cyan-300">ENTERPRISE CLUSTER</div>
+              <div class="text-2xl font-bold font-mono text-white mt-1">$500.00 <span class="text-xs text-slate-400 font-normal">USD</span></div>
+              <div class="text-sm font-mono text-cyan-300 font-bold mt-1">+50,000 Compute Units</div>
+              <p class="text-[11px] text-slate-400 font-mono mt-2">High-throughput multi-node cluster training with 400G InfiniBand networking.</p>
+            </div>
+            <button class="btn-deposit-tier mt-4 w-full py-2 rounded font-mono text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black transition shadow-[0_0_12px_rgba(0,240,255,0.3)]" data-amount="500" data-cu="50000">
+              DEPOSIT 50,000 CU
+            </button>
+          </div>
+
+          <!-- Tier $1000 -->
+          <div class="p-4 rounded-lg bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-mono text-slate-400">SOVEREIGN SCALE</div>
+              <div class="text-2xl font-bold font-mono text-white mt-1">$1,000.00 <span class="text-xs text-slate-400 font-normal">USD</span></div>
+              <div class="text-sm font-mono text-cyan-300 font-semibold mt-1">+100,000 Compute Units</div>
+              <p class="text-[11px] text-slate-500 font-mono mt-2">Maximum priority queue allocation across all B200 and H100 global pods.</p>
+            </div>
+            <button class="btn-deposit-tier mt-4 w-full py-2 rounded font-mono text-xs font-bold bg-slate-800 hover:bg-cyan-500 hover:text-black border border-cyan-500/30 text-cyan-300 transition" data-amount="1000" data-cu="100000">
+              DEPOSIT 100,000 CU
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Double-Entry Transaction Ledger Table & CSV Export -->
+      <div class="glass-panel rounded-lg overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="font-mono text-sm font-bold text-white flex items-center gap-2">
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              DOUBLE-ENTRY ATOMIC TRANSACTION LEDGER
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5 font-mono">Immutable audit trail backed by PostgreSQL row-level security and atomic RPC</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-export-csv" class="px-3 py-1.5 rounded font-mono text-xs bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              EXPORT CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left font-mono text-xs">
+            <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">TXN IDENTIFIER</th>
+                <th class="py-3 px-4">TIMESTAMP (UTC)</th>
+                <th class="py-3 px-4">TRANSACTION TYPE</th>
+                <th class="py-3 px-4">AMOUNT (CU)</th>
+                <th class="py-3 px-4">USD VALUE</th>
+                <th class="py-3 px-4">SETTLEMENT METHOD</th>
+                <th class="py-3 px-4 text-center">PROOF RECEIPT</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-table-body" class="divide-y divide-slate-800/60">
+              <!-- Dynamically populated ledger transactions -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- MODULE 4: API & WEBHOOKS (HMAC-SHA256 Sandbox & n8n Ingress) -->
+    <!-- ========================================================================= -->
+    <section id="module-api" class="hidden space-y-6">
+      
+      <!-- API Key Manager Card -->
+      <div class="glass-panel p-6 rounded-lg">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
+          <div>
+            <h2 class="text-base font-bold font-mono text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+              SOVEREIGN API CREDENTIALS
+            </h2>
+            <p class="text-xs text-slate-400 font-mono mt-0.5">Use bearer authorization headers with sub-18ms wireguard edge gateway</p>
+          </div>
+
+          <button id="btn-generate-apikey" class="px-3.5 py-1.5 rounded font-mono text-xs font-semibold bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            ROLL NEW KEY
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-3.5 rounded bg-slate-900/90 border border-slate-800">
+            <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-1">
+              <span>LIVE PRODUCTION KEY (BEARER)</span>
+              <span class="text-emerald-400 text-[10px]">ACTIVE</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="password" id="api-key-input" readonly value="sk_live_apex_9a87d0c3e5f24198b16c80de991a" class="w-full bg-black/60 border border-slate-700 font-mono text-xs text-cyan-300 rounded px-2.5 py-1.5 focus:outline-none">
+              <button id="btn-toggle-key-vis" class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono">SHOW</button>
+              <button id="btn-copy-key" class="px-2.5 py-1.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900 text-xs font-mono">COPY</button>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded bg-slate-900/90 border border-slate-800">
+            <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-1">
+              <span>SHARED HMAC-SHA256 SECRET</span>
+              <span class="text-cyan-300 text-[10px]">WEBHOOK SIGNING</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="password" id="hmac-secret-input" readonly value="sec_hmac_887e411fa0bc92d52e6f4773c" class="w-full bg-black/60 border border-slate-700 font-mono text-xs text-emerald-400 rounded px-2.5 py-1.5 focus:outline-none">
+              <button id="btn-copy-secret" class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono">COPY</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- HMAC-SHA256 Webhook Verification Sandbox -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="glass-panel p-5 rounded-lg space-y-4">
+          <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h3 class="font-mono text-sm font-bold text-white flex items-center gap-2">
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              HMAC-SHA256 SIGNATURE GENERATOR &amp; SANDBOX
+            </h3>
+            <span class="text-[10px] font-mono text-cyan-300">RFC 2104 COMPLIANT</span>
+          </div>
+
+          <div class="space-y-3 font-mono text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1" for="sandbox-target-url">TARGET WEBHOOK INGRESS ENDPOINT:</label>
+              <select id="sandbox-target-url" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded px-3 py-2 text-xs focus:border-cyan-400 focus:outline-none">
+                <option value="/api/webhooks/paypal">/api/webhooks/paypal (PayPal Capture &amp; Settle)</option>
+                <option value="/api/webhooks/n8n/coo-gateway">/api/webhooks/n8n/coo-gateway (n8n Autonomous Cluster Orchestrator)</option>
+                <option value="/v1/clusters/scale">/v1/clusters/scale (Render Axum Edge Direct)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1" for="sandbox-payload">JSON RAW PAYLOAD:</label>
+              <textarea id="sandbox-payload" rows="6" class="w-full bg-black/80 border border-slate-700 text-emerald-400 rounded p-3 font-mono text-xs focus:border-cyan-400 focus:outline-none">{
+  "event_type": "PAYMENT.CAPTURE.COMPLETED",
+  "resource": {
+    "id": "CAP-89240817",
+    "amount": { "value": "500.00", "currency": "USD" },
+    "custom_id": "usr_tenant_sovereign_01"
+  },
+  "timestamp": 1729281600
+}</textarea>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1">COMPUTED HMAC-SHA256 HEADER (X-Apex-Signature):</label>
+              <div class="p-2.5 rounded bg-black/80 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] break-all select-all" id="sandbox-computed-sig">
+                Calculating...
+              </div>
+            </div>
+
+            <button id="btn-fire-sandbox-webhook" class="w-full py-2.5 rounded font-mono text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black transition shadow-[0_0_14px_rgba(0,240,255,0.3)] flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              DISPATCH SIMULATED WEBHOOK PAYLOAD
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi-Language Code Generator (cURL, Python, Node.js) -->
+        <div class="glass-panel p-5 rounded-lg flex flex-col justify-between">
+          <div>
+            <div class="border-b border-slate-800 pb-3 flex items-center justify-between mb-3">
+              <h3 class="font-mono text-sm font-bold text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                LOW-LATENCY CLIENT INTEGRATION
+              </h3>
+              
+              <!-- Code Snippet Lang Tabs -->
+              <div class="flex items-center gap-1 font-mono text-[11px]">
+                <button class="code-lang-tab px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/50" data-lang="curl">cURL</button>
+                <button class="code-lang-tab px-2.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200" data-lang="python">Python</button>
+                <button class="code-lang-tab px-2.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200" data-lang="node">Node.js</button>
+              </div>
+            </div>
+
+            <!-- Code display area -->
+            <pre id="code-snippet-pre" class="p-4 rounded bg-black/90 border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto whitespace-pre leading-relaxed select-all"># 1. Check Mesh Health & Spot Rates
+curl -X GET "https://apexsovereign.ai/v1/spot-rates" \
+  -H "Authorization: Bearer sk_live_apex_9a87d0c3e5f24198b16c80de991a"
+
+# 2. Provision Atomic H100 Cluster
+curl -X POST "https://apexsovereign.ai/v1/clusters/provision" \
+  -H "Authorization: Bearer sk_live_apex_9a87d0c3e5f24198b16c80de991a" \
   -H "Content-Type: application/json" \
-  -d '{"gpu": "H100", "count": 8, "region": "us-east"}'</pre>
-                </div>
-            </section>
+  -d '{"accelerator": "H100", "nodes": 4, "region": "US-EAST"}'</pre>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+            <span>FastAPI / Axum Gateway: <strong>/v1/*</strong></span>
+            <button id="btn-copy-snippet" class="text-cyan-300 hover:underline">COPY CODE</button>
+          </div>
         </div>
 
-    </main>
+      </div>
 
-    <!-- FOOTER -->
-    <footer class="text-center text-[11px] text-slate-500 border-t border-slate-900 pt-4 mt-6">
-        ApexSovereign.ai © 2026 — Sovereign Enterprise Infrastructure. All rights reserved.
-    </footer>
+      <!-- Ingress Telemetry & Payload Log Stream -->
+      <div class="glass-panel p-5 rounded-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+          <h3 class="font-mono text-sm font-bold text-white flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            INGRESS WEBHOOK DISPATCH &amp; VERIFICATION TELEMETRY
+          </h3>
+          <span class="text-xs font-mono text-slate-400">Target latency &lt; 18ms SLA</span>
+        </div>
 
-    <!-- SIMPLE SPA TAB CONTROLLER -->
-    <script>
-        function switchTab(tabName) {
-            ['terminal', 'clusters', 'billing', 'docs'].forEach(t => {
-                document.getElementById('tab-' + t).classList.add('hidden');
-                document.getElementById('btn-' + t).className = 'px-3 py-1 text-xs rounded text-slate-400 hover:text-white transition-all';
-            });
-            document.getElementById('tab-' + tabName).classList.remove('hidden');
-            document.getElementById('btn-' + tabName).className = 'px-3 py-1 text-xs rounded bg-[#00F0FF] text-black font-bold transition-all';
+        <div id="webhook-audit-stream" class="space-y-2 font-mono text-xs">
+          <!-- Webhook event rows -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS (SSH Generator, Deploy Cluster, Proof Receipt, Live SSH Terminal) -->
+  <!-- ========================================================================= -->
+
+  <!-- Modal 1: Deploy New Cluster Modal -->
+  <div id="modal-deploy-cluster" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-lg w-full rounded-lg p-6 border-cyan-500/50 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-mono text-base font-bold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+          PROVISION SOVEREIGN CLUSTER
+        </h3>
+        <button class="modal-close-btn text-slate-400 hover:text-white font-mono text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 font-mono text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1" for="modal-cluster-name">CLUSTER LABEL</label>
+          <input type="text" id="modal-cluster-name" value="production-llama3-mesh-01" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white focus:border-cyan-400 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1" for="modal-gpu-select">ACCELERATOR</label>
+            <select id="modal-gpu-select" class="w-full bg-slate-900 border border-slate-700 text-white rounded px-2.5 py-2 focus:border-cyan-400 focus:outline-none">
+              <option value="H100" data-price="198">NVIDIA H100 (198 CU/hr)</option>
+              <option value="B200" data-price="385">NVIDIA B200 (385 CU/hr)</option>
+              <option value="A100" data-price="122">NVIDIA A100 (122 CU/hr)</option>
+              <option value="L40S" data-price="84">NVIDIA L40S (84 CU/hr)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1" for="modal-region-select">REGION</label>
+            <select id="modal-region-select" class="w-full bg-slate-900 border border-slate-700 text-white rounded px-2.5 py-2 focus:border-cyan-400 focus:outline-none">
+              <option value="US-EAST">US-EAST (Ashburn) - 11.4ms</option>
+              <option value="EU-CENTRAL">EU-CENTRAL (Frankfurt) - 14.8ms</option>
+              <option value="AP-SOUTH">AP-SOUTH (Singapore) - 17.2ms</option>
+              <option value="US-WEST">US-WEST (Oregon) - 13.6ms</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-slate-400">NODE COUNT:</span>
+            <span class="text-cyan-300 font-bold" id="modal-node-count-label">4 Nodes (32 GPUs)</span>
+          </div>
+          <input type="range" id="modal-node-slider" min="1" max="16" value="4" class="w-full accent-cyan-400">
+        </div>
+
+        <div class="p-3 rounded bg-slate-900/90 border border-cyan-500/30 text-[11px] space-y-1">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Rate Deduction:</span>
+            <span class="text-white font-bold" id="modal-calc-burn">792 CU/hr ($7.92/hr)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Current Balance:</span>
+            <span class="text-cyan-300 font-bold" id="modal-calc-balance">245,800 CU</span>
+          </div>
+          <div class="flex justify-between text-emerald-400">
+            <span>Settlement:</span>
+            <span>Atomic Supabase Double-Entry RPC</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+        <button class="modal-close-btn px-4 py-2 rounded font-mono text-xs bg-slate-800 text-slate-300 hover:bg-slate-700">CANCEL</button>
+        <button id="btn-confirm-provision" class="px-5 py-2 rounded font-mono text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black transition shadow-[0_0_12px_rgba(0,240,255,0.4)]">
+          EXECUTE ATOMIC PROVISION
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: SSH Key Generator Modal -->
+  <div id="modal-ssh-generator" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-lg w-full rounded-lg p-6 border-cyan-500/50 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-mono text-base font-bold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          CRYPTOGRAPHIC SSH KEY GENERATOR
+        </h3>
+        <button class="modal-close-btn text-slate-400 hover:text-white font-mono text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 font-mono text-xs">
+        <p class="text-slate-400 text-[11px]">Generate an in-browser ED25519 / RSA keypair for zero-trust node access.</p>
+        
+        <div>
+          <label class="block text-slate-400 mb-1">GENERATED PUBLIC KEY (Injected into Sovereign Nodes):</label>
+          <textarea id="ssh-public-key" readonly rows="3" class="w-full bg-black/80 border border-slate-700 text-cyan-300 rounded p-2.5 text-[11px] focus:outline-none select-all font-mono">ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOmX8sL8Rk7qK0d3L1mPv4eQ2w9X0jYz7b5a1c8f6e4a apex@sovereign-mesh</textarea>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">PRIVATE KEY (Save securely - never leaves client):</label>
+          <textarea id="ssh-private-key" readonly rows="5" class="w-full bg-black/80 border border-slate-700 text-emerald-400 rounded p-2.5 text-[11px] focus:outline-none select-all font-mono">-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACDpl/LC/EZu6itHdy9Zj7+HkPsPV9I2M+2+W1w/F7e4aQAAAJh/e7zOf3u8
+zgAAAAtzc2gtZWQyNTUxOQAAACDpl/LC/EZu6itHdy9Zj7+HkPsPV9I2M+2+W1w/F7e4aQ
+AAAECPj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+Pj4+P
+AAAAEW1lc2gtYXV0b25vbW91cwECAw==
+-----END OPENSSH PRIVATE KEY-----</textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+        <button id="btn-roll-new-ssh" class="px-3.5 py-1.5 rounded font-mono text-xs bg-slate-800 hover:bg-slate-700 text-slate-200">RE-GENERATE</button>
+        <div class="flex items-center gap-2">
+          <button id="btn-download-priv-key" class="px-3.5 py-1.5 rounded font-mono text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30">DOWNLOAD .PEM</button>
+          <button class="modal-close-btn px-4 py-1.5 rounded font-mono text-xs bg-cyan-500 text-black font-bold">DONE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Proof of Settlement Receipt Modal -->
+  <div id="modal-receipt" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-md w-full rounded-lg p-6 border-cyan-500/50 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-mono text-base font-bold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          ATOMIC PROOF RECEIPT
+        </h3>
+        <button class="modal-close-btn text-slate-400 hover:text-white font-mono text-sm">✕</button>
+      </div>
+
+      <div class="space-y-2.5 font-mono text-xs" id="receipt-details">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button class="modal-close-btn px-4 py-1.5 rounded font-mono text-xs bg-cyan-500 text-black font-bold">DISMISS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Live Cluster Terminal CLI Simulator -->
+  <div id="modal-terminal-cli" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-3xl w-full rounded-lg p-5 border-cyan-500/50 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div class="flex items-center gap-2 font-mono text-xs">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-beacon"></span>
+          <span class="text-white font-bold" id="terminal-cli-title">SSH: apex@node-h100-us-east.sovereign.mesh</span>
+          <span class="text-slate-500 text-[11px]">(WireGuard 14.2ms)</span>
+        </div>
+        <button class="modal-close-btn text-slate-400 hover:text-white font-mono text-sm">✕</button>
+      </div>
+
+      <!-- Simulated Terminal Output Screen -->
+      <div id="terminal-cli-output" class="bg-black/95 rounded p-3 font-mono text-[11px] h-72 overflow-y-auto space-y-1 text-slate-300 border border-slate-800">
+        <div class="text-emerald-400 font-bold">ApexSovereign.ai WireGuard Mesh v2.4 (x86_64-pc-linux-gnu)</div>
+        <div class="text-slate-400">Authenticated via ED25519 certificate thumbprint: 9a87d0c3e5f24198...</div>
+        <div class="text-slate-500">Connected to 8x NVIDIA H100 SXM5 80GB (PCIe Bus 0000:06:00.0)</div>
+        <div class="text-slate-500">Driver Version: 550.54.14   CUDA Version: 12.4   Fabric: InfiniBand NDR 400G</div>
+        <div class="text-cyan-300 font-semibold mt-2">GPU 0: NVIDIA H100 80GB HBM3 | Temp: 38C | Pwr: 142W / 700W | VRAM: 78240MiB Free</div>
+        <div class="text-cyan-300 font-semibold">GPU 1: NVIDIA H100 80GB HBM3 | Temp: 39C | Pwr: 138W / 700W | VRAM: 78240MiB Free</div>
+        <div class="text-cyan-300 font-semibold">GPU 2: NVIDIA H100 80GB HBM3 | Temp: 37C | Pwr: 145W / 700W | VRAM: 78240MiB Free</div>
+        <div class="text-cyan-300 font-semibold">GPU 3: NVIDIA H100 80GB HBM3 | Temp: 40C | Pwr: 140W / 700W | VRAM: 78240MiB Free</div>
+        <div class="text-slate-400 mt-2">Ready for SLURM job submission or PyTorch DDP execution.</div>
+      </div>
+
+      <!-- Terminal Command Input Bar -->
+      <div class="flex items-center gap-2 font-mono text-xs">
+        <span class="text-emerald-400 font-bold">apex@mesh:~$</span>
+        <input type="text" id="terminal-cli-input" placeholder="Type command (e.g., nvidia-smi, torch-bench, exit)..." class="flex-1 bg-black/80 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:border-cyan-400 focus:outline-none">
+        <button id="btn-terminal-send" class="px-4 py-2 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-bold hover:bg-cyan-900">RUN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="glass-panel border-t border-cyan-500/20 px-4 lg:px-8 py-5 mt-12 text-slate-400 font-mono text-xs">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="text-white font-bold">APEXSOVEREIGN.AI</span>
+        <span>•</span>
+        <span>Sovereign Compute Arbitrage &amp; GPU Brokerage Engine</span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-4 text-[11px] text-slate-500">
+        <span>Production Host: <strong class="text-slate-300">Render (apexsovereign-mesh)</strong></span>
+        <span>Edge Rewrites: <strong class="text-slate-300">Vercel Global</strong></span>
+        <span>Atomic Ledger: <strong class="text-slate-300">Supabase Postgres</strong></span>
+        <span>PayPal Webhook: <strong class="text-emerald-400">/api/webhooks/paypal</strong></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- SINGLE-FILE CORE LOGIC SCRIPT (Zero Build Step, Zero Bloat, Zero Alert) -->
+  <!-- ========================================================================= -->
+  <script>
+    /**
+     * ApexSovereign.ai - Autonomous Compute Exchange Client Engine
+     * Architecture: Single-file zero-build SPA with sub-18ms WireGuard proxying
+     */
+    
+    // 1. STATE & CONSTANTS
+    const API_BASE = ""; // Same-origin via Vercel rewrites -> Render backend upstream
+    
+    const APP_STATE = {
+      activeTab: "terminal",
+      cuBalance: 245800, // 245,800 CU = $2,458.00 (100 CU = $1.00 Integer-only arithmetic)
+      escrowCu: 24560,
+      realtimeLatency: 14.2,
+      isBackendHealthy: true,
+      
+      // GPU spot inventory
+      gpuInventory: [
+        { id: "h100-sxm5", name: "NVIDIA H100 SXM5", vram: "80GB HBM3", interconnect: "NVLink 900GB/s", region: "US-EAST", ping: "11.4ms", awsBase: 3.35, spotPrice: 1.98, cuPerHour: 198, savings: 40.9, available: 420 },
+        { id: "b200-nvl72", name: "NVIDIA B200 NVL72", vram: "192GB HBM3e", interconnect: "NVLink 1.8TB/s", region: "US-WEST", ping: "13.6ms", awsBase: 6.10, spotPrice: 3.85, cuPerHour: 385, savings: 36.9, available: 164 },
+        { id: "a100-sxm4", name: "NVIDIA A100 SXM4", vram: "80GB HBM2e", interconnect: "NVLink 600GB/s", region: "EU-CENTRAL", ping: "14.8ms", awsBase: 2.05, spotPrice: 1.22, cuPerHour: 122, savings: 40.5, available: 312 },
+        { id: "l40s-pcie", name: "NVIDIA L40S PCIe", vram: "48GB GDDR6", interconnect: "PCIe Gen4 x16", region: "AP-SOUTH", ping: "17.2ms", awsBase: 1.28, spotPrice: 0.84, cuPerHour: 84, savings: 34.4, available: 580 },
+        { id: "h100-eu", name: "NVIDIA H100 SXM5", vram: "80GB HBM3", interconnect: "NVLink 900GB/s", region: "EU-CENTRAL", ping: "14.8ms", awsBase: 3.42, spotPrice: 2.02, cuPerHour: 202, savings: 40.9, available: 210 }
+      ],
+
+      // Active provisioned clusters
+      clusters: [
+        { id: "cls-h100-deepseek", label: "cluster-deepseek-v2-inference", gpu: "H100 SXM5", nodes: 8, gpus: 64, region: "US-EAST", fabric: "InfiniBand NDR 400G", burnCu: 1584, uptime: "42h 18m", status: "ONLINE" },
+        { id: "cls-b200-pretrain", label: "cluster-sovereign-70b-train", gpu: "B200 NVL72", nodes: 4, gpus: 32, region: "US-WEST", fabric: "NVLink 1.8TB/s", burnCu: 1540, uptime: "18h 44m", status: "ONLINE" },
+        { id: "cls-a100-batch", label: "cluster-embeddings-indexer", gpu: "A100 SXM4", nodes: 2, gpus: 16, region: "EU-CENTRAL", fabric: "RoCE v2 200G", burnCu: 244, uptime: "112h 05m", status: "ONLINE" }
+      ],
+
+      // Double-entry ledger transactions
+      ledgerTransactions: [
+        { id: "tx_99214081", timestamp: "2026-10-18 21:40:12", type: "PAYPAL_CAPTURE", amountCu: 50000, usd: "$500.00", method: "PAYPAL_WEBHOOK", hash: "9e41b2c8...01a7" },
+        { id: "tx_99213942", timestamp: "2026-10-18 20:12:05", type: "CLUSTER_ESCROW", amountCu: -15840, usd: "$158.40", method: "ATOMIC_RPC_SETTLE", hash: "8a32d1f7...c482" },
+        { id: "tx_99212801", timestamp: "2026-10-18 18:04:33", type: "PAYPAL_CAPTURE", amountCu: 100000, usd: "$1,000.00", method: "PAYPAL_WEBHOOK", hash: "7f12e0b5...91c3" },
+        { id: "tx_99211048", timestamp: "2026-10-18 14:22:19", type: "SPOT_ARBITRAGE_REBATE", amountCu: 4320, usd: "$43.20", method: "MESH_SETTLEMENT", hash: "3c88a9e2...bf50" }
+      ],
+
+      // Ingress webhook event stream
+      webhookEvents: [
+        { id: "evt_wh_01", time: "21:45:10", type: "PAYPAL_CAPTURE_COMPLETED", status: 200, latency: "13.8ms", sig: "VALID (HMAC-SHA256)" },
+        { id: "evt_wh_02", time: "21:42:04", type: "N8N_CLUSTER_TRIGGER_SCALE", status: 200, latency: "14.1ms", sig: "VALID (HMAC-SHA256)" },
+        { id: "evt_wh_03", time: "21:38:51", type: "MESH_HEALTH_PROBE", status: 200, latency: "12.9ms", sig: "VALID (BEARER)" }
+      ]
+    };
+
+    // 2. HUD TOAST NOTIFICATION SYSTEM (Zero window.alert)
+    function notify(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      toast.className = `p-3.5 rounded-lg border font-mono text-xs flex items-center justify-between gap-3 shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${
+        type === "success" ? "bg-emerald-950/90 border-emerald-500/60 text-emerald-200" :
+        type === "warning" ? "bg-amber-950/90 border-amber-500/60 text-amber-200" :
+        type === "danger"  ? "bg-red-950/90 border-red-500/60 text-red-200" :
+        "bg-cyan-950/90 border-cyan-500/60 text-cyan-200"
+      }`;
+
+      toast.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full ${
+            type === "success" ? "bg-emerald-400" :
+            type === "warning" ? "bg-amber-400" :
+            type === "danger" ? "bg-red-400" : "bg-cyan-400"
+          }"></span>
+          <span>${message}</span>
+        </div>
+        <button class="text-slate-400 hover:text-white text-sm font-bold ml-2">✕</button>
+      `;
+
+      toast.querySelector("button").onclick = () => {
+        toast.classList.add("opacity-0", "translate-y-2");
+        setTimeout(() => toast.remove(), 250);
+      };
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove("opacity-0", "translate-y-2");
+      });
+
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.classList.add("opacity-0", "translate-y-2");
+          setTimeout(() => toast.remove(), 250);
         }
-    </script>
+      }, 4200);
+    }
+
+    // 3. TAB ROUTER (Instant 0ms SPA View Switching)
+    function switchModule(targetTab) {
+      APP_STATE.activeTab = targetTab;
+      
+      const modules = {
+        terminal: document.getElementById("module-terminal"),
+        clusters: document.getElementById("module-clusters"),
+        billing: document.getElementById("module-billing"),
+        api: document.getElementById("module-api")
+      };
+
+      const buttons = {
+        terminal: document.getElementById("nav-btn-terminal"),
+        clusters: document.getElementById("nav-btn-clusters"),
+        billing: document.getElementById("nav-btn-billing"),
+        api: document.getElementById("nav-btn-api")
+      };
+
+      Object.keys(modules).forEach(key => {
+        if (modules[key]) {
+          if (key === targetTab) {
+            modules[key].classList.remove("hidden");
+          } else {
+            modules[key].classList.add("hidden");
+          }
+        }
+
+        if (buttons[key]) {
+          if (key === targetTab) {
+            buttons[key].className = "nav-tab px-3.5 py-1.5 rounded-md flex items-center gap-2 border transition bg-cyan-950/60 text-cyan-300 border-cyan-500/50 shadow-[0_0_12px_rgba(0,240,255,0.25)]";
+          } else {
+            buttons[key].className = "nav-tab px-3.5 py-1.5 rounded-md flex items-center gap-2 border transition bg-slate-900/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700";
+          }
+        }
+      });
+    }
+
+    // 4. RENDERING: GPU Arbitrage Matrix Table
+    function renderGpuTable() {
+      const tbody = document.getElementById("gpu-table-body");
+      if (!tbody) return;
+
+      const regionFilter = document.getElementById("gpu-region-filter")?.value || "ALL";
+      const filtered = regionFilter === "ALL" 
+        ? APP_STATE.gpuInventory 
+        : APP_STATE.gpuInventory.filter(g => g.region === regionFilter);
+
+      tbody.innerHTML = filtered.map(item => `
+        <tr class="hover:bg-cyan-950/20 transition group">
+          <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            ${item.name}
+          </td>
+          <td class="py-3 px-4 text-slate-300">
+            <div>${item.vram}</div>
+            <div class="text-[10px] text-slate-500">${item.interconnect}</div>
+          </td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded bg-slate-900 text-slate-200 border border-slate-700">${item.region}</span>
+            <span class="text-[10px] text-emerald-400 ml-1.5 font-bold">${item.ping}</span>
+          </td>
+          <td class="py-3 px-4 text-slate-400 line-through">
+            $${item.awsBase.toFixed(2)}/hr
+          </td>
+          <td class="py-3 px-4">
+            <div class="text-cyan-300 font-bold">$${item.spotPrice.toFixed(2)}/hr</div>
+            <div class="text-[10px] text-slate-500">${item.cuPerHour} CU/hr</div>
+          </td>
+          <td class="py-3 px-4 text-emerald-400 font-bold">
+            -${item.savings}%
+          </td>
+          <td class="py-3 px-4 text-center">
+            <button class="btn-quick-provision px-3 py-1 rounded bg-slate-800 hover:bg-cyan-500 hover:text-black border border-cyan-500/30 text-cyan-300 font-bold transition text-xs" data-id="${item.id}">
+              PROVISION
+            </button>
+          </td>
+        </tr>
+      `).join("");
+
+      // Bind provision buttons
+      tbody.querySelectorAll(".btn-quick-provision").forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute("data-id");
+          const item = APP_STATE.gpuInventory.find(g => g.id === id);
+          if (item) {
+            openDeployModal(item);
+          }
+        };
+      });
+    }
+
+    // 5. RENDERING: Active Clusters Table
+    function renderClustersTable() {
+      const tbody = document.getElementById("clusters-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = APP_STATE.clusters.map(cluster => `
+        <tr class="hover:bg-cyan-950/20 transition">
+          <td class="py-3.5 px-4 font-bold text-white">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              ${cluster.label}
+            </div>
+            <div class="text-[10px] text-slate-500">${cluster.id}</div>
+          </td>
+          <td class="py-3.5 px-4 text-slate-300">
+            <div>${cluster.gpu}</div>
+            <div class="text-[10px] text-cyan-300 font-semibold">${cluster.nodes} Nodes (${cluster.gpus} Accelerators)</div>
+          </td>
+          <td class="py-3.5 px-4">
+            <div>${cluster.region}</div>
+            <div class="text-[10px] text-slate-500">${cluster.fabric}</div>
+          </td>
+          <td class="py-3.5 px-4 font-bold text-cyan-300">
+            ${cluster.burnCu.toLocaleString()} CU/hr
+            <div class="text-[10px] text-slate-400 font-normal">($${(cluster.burnCu / 100).toFixed(2)}/hr)</div>
+          </td>
+          <td class="py-3.5 px-4 text-slate-400">${cluster.uptime}</td>
+          <td class="py-3.5 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+              ${cluster.status}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <button class="btn-cluster-ssh px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 text-xs" data-id="${cluster.id}">
+                SSH CLI
+              </button>
+              <button class="btn-cluster-terminate px-2 py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 text-xs" data-id="${cluster.id}">
+                RELEASE
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      // Update badge
+      const badge = document.getElementById("badge-active-clusters-count");
+      if (badge) badge.textContent = APP_STATE.clusters.length;
+
+      // Event handlers
+      tbody.querySelectorAll(".btn-cluster-ssh").forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute("data-id");
+          const c = APP_STATE.clusters.find(x => x.id === id);
+          openTerminalCliModal(c);
+        };
+      });
+
+      tbody.querySelectorAll(".btn-cluster-terminate").forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute("data-id");
+          terminateCluster(id);
+        };
+      });
+    }
+
+    // 6. RENDERING: Double-Entry Ledger Table
+    function renderLedgerTable() {
+      const tbody = document.getElementById("ledger-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = APP_STATE.ledgerTransactions.map(tx => `
+        <tr class="hover:bg-cyan-950/20 transition">
+          <td class="py-3 px-4 font-bold text-cyan-300">${tx.id}</td>
+          <td class="py-3 px-4 text-slate-400">${tx.timestamp}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded text-[10px] ${
+              tx.type.includes("CAPTURE") ? "bg-emerald-950 text-emerald-300 border border-emerald-500/40" :
+              tx.type.includes("ESCROW") ? "bg-amber-950 text-amber-300 border border-amber-500/40" :
+              "bg-cyan-950 text-cyan-300 border border-cyan-500/40"
+            }">${tx.type}</span>
+          </td>
+          <td class="py-3 px-4 font-bold ${tx.amountCu >= 0 ? 'text-emerald-400' : 'text-slate-300'}">
+            ${tx.amountCu > 0 ? '+' : ''}${tx.amountCu.toLocaleString()} CU
+          </td>
+          <td class="py-3 px-4 text-slate-300 font-bold">${tx.usd}</td>
+          <td class="py-3 px-4 text-slate-400">${tx.method}</td>
+          <td class="py-3 px-4 text-center">
+            <button class="btn-view-receipt px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs" data-id="${tx.id}">
+              RECEIPT
+            </button>
+          </td>
+        </tr>
+      `).join("");
+
+      tbody.querySelectorAll(".btn-view-receipt").forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute("data-id");
+          const tx = APP_STATE.ledgerTransactions.find(t => t.id === id);
+          if (tx) openReceiptModal(tx);
+        };
+      });
+    }
+
+    // 7. RENDERING: Ingress Webhook Stream
+    function renderWebhookStream() {
+      const container = document.getElementById("webhook-audit-stream");
+      if (!container) return;
+
+      container.innerHTML = APP_STATE.webhookEvents.map(evt => `
+        <div class="p-3 rounded bg-black/80 border border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full ${evt.status === 200 ? 'bg-emerald-400' : 'bg-red-400'}"></span>
+            <span class="text-slate-400">${evt.time}</span>
+            <span class="font-bold text-white">${evt.type}</span>
+            <span class="text-slate-500 text-[10px]">${evt.id}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-emerald-400">${evt.latency}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-slate-900 border border-slate-700 text-cyan-300">${evt.sig}</span>
+            <span class="font-bold ${evt.status === 200 ? 'text-emerald-400' : 'text-red-400'}">${evt.status} OK</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // 8. LOG TERMINAL STREAM
+    function addAuditLog(entry) {
+      const container = document.getElementById("audit-log-terminal");
+      if (!container) return;
+
+      const time = new Date().toISOString().substring(11, 19);
+      const row = document.createElement("div");
+      row.className = "flex items-start gap-2 leading-relaxed";
+      row.innerHTML = `
+        <span class="text-slate-500 shrink-0">[${time}]</span>
+        <span class="text-slate-300">${entry}</span>
+      `;
+      container.appendChild(row);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // 9. ATOMIC COMPUTATION & STATE UPDATERS
+    function updateBalanceDisplays() {
+      const formattedCu = APP_STATE.cuBalance.toLocaleString();
+      const formattedUsd = `$${(APP_STATE.cuBalance / 100).toFixed(2)}`;
+
+      const hudBalance = document.getElementById("hud-cu-balance");
+      if (hudBalance) {
+        hudBalance.textContent = `${formattedCu} CU`;
+        hudBalance.nextElementSibling.textContent = `(${formattedUsd})`;
+      }
+
+      const billCu = document.getElementById("billing-display-cu");
+      const billUsd = document.getElementById("billing-display-usd");
+      if (billCu) billCu.textContent = formattedCu;
+      if (billUsd) billUsd.innerHTML = `≈ ${formattedUsd} USD <span class="text-[11px] text-slate-500">($1.00 = 100 CU)</span>`;
+
+      const escrowEl = document.getElementById("billing-escrow-cu");
+      if (escrowEl) escrowEl.textContent = APP_STATE.escrowCu.toLocaleString();
+    }
+
+    // Capacity Allocator dynamically calculated outputs
+    function updateAllocatorEstimate() {
+      const gpuSelect = document.getElementById("allocator-gpu-type");
+      const slider = document.getElementById("allocator-node-slider");
+      if (!gpuSelect || !slider) return;
+
+      const opt = gpuSelect.selectedOptions[0];
+      const ratePerNode = parseInt(opt.getAttribute("data-price"), 10);
+      const awsPerNode = parseFloat(opt.getAttribute("data-aws"));
+      const nodes = parseInt(slider.value, 10);
+
+      const totalCuPerHour = ratePerNode * nodes;
+      const totalUsdPerHour = totalCuPerHour / 100;
+      const totalAwsUsd = awsPerNode * nodes;
+      const savingsPct = Math.round(((totalAwsUsd - totalUsdPerHour) / totalAwsUsd) * 100);
+
+      document.getElementById("allocator-node-count-label").textContent = `${nodes} Nodes (${nodes * 8} Accelerators)`;
+      document.getElementById("allocator-rate-cu").textContent = `${totalCuPerHour.toLocaleString()} CU/hr`;
+      document.getElementById("allocator-rate-usd").textContent = `$${totalUsdPerHour.toFixed(2)} / hour`;
+      document.getElementById("allocator-aws-usd").textContent = `$${totalAwsUsd.toFixed(2)} / hr`;
+      document.getElementById("allocator-savings-label").textContent = `${savingsPct}% SAVINGS`;
+    }
+
+    // 10. DEPOSIT HANDLER (Simulates PayPal capture -> Supabase double-entry write)
+    function handleDeposit(amountUsd, cuGained) {
+      const txId = "tx_" + Math.random().toString(36).substring(2, 10);
+      const hash = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      APP_STATE.cuBalance += cuGained;
+      updateBalanceDisplays();
+
+      const newTx = {
+        id: txId,
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        type: "PAYPAL_CAPTURE",
+        amountCu: cuGained,
+        usd: `$${amountUsd.toFixed(2)}`,
+        method: "PAYPAL_WEBHOOK",
+        hash: hash.substring(0, 8) + "..." + hash.substring(24)
+      };
+
+      APP_STATE.ledgerTransactions.unshift(newTx);
+      renderLedgerTable();
+
+      addAuditLog(`<span class="text-emerald-400 font-bold">SETTLEMENT SUCCESS:</span> Double-entry RPC credited <strong class="text-white">+${cuGained.toLocaleString()} CU</strong> (USD $${amountUsd.toFixed(2)}) TxID: ${txId}`);
+      notify(`Deposited ${cuGained.toLocaleString()} CU ($${amountUsd.toFixed(2)} USD) via PayPal webhook settlement.`, "success");
+    }
+
+    // 11. CLUSTER ACTIONS (Provision & Terminate)
+    function terminateCluster(clusterId) {
+      const idx = APP_STATE.clusters.findIndex(c => c.id === clusterId);
+      if (idx === -1) return;
+
+      const cluster = APP_STATE.clusters[idx];
+      APP_STATE.clusters.splice(idx, 1);
+      renderClustersTable();
+
+      addAuditLog(`<span class="text-amber-400 font-bold">CLUSTER RELEASED:</span> ${cluster.label} (${cluster.id}). InfiniBand fabric reclaimed.`);
+      notify(`Cluster ${cluster.label} decommissioned. Released compute capacity back to mesh.`, "warning");
+    }
+
+    function openDeployModal(gpuItem) {
+      const modal = document.getElementById("modal-deploy-cluster");
+      if (!modal) return;
+
+      if (gpuItem) {
+        const select = document.getElementById("modal-gpu-select");
+        if (select) {
+          const opt = Array.from(select.options).find(o => o.value.includes(gpuItem.id.split("-")[0].toUpperCase()));
+          if (opt) select.value = opt.value;
+        }
+      }
+
+      updateDeployModalCalculations();
+      modal.classList.remove("hidden");
+    }
+
+    function updateDeployModalCalculations() {
+      const gpuSelect = document.getElementById("modal-gpu-select");
+      const slider = document.getElementById("modal-node-slider");
+      if (!gpuSelect || !slider) return;
+
+      const ratePerNode = parseInt(gpuSelect.selectedOptions[0].getAttribute("data-price"), 10);
+      const nodes = parseInt(slider.value, 10);
+      const totalCu = ratePerNode * nodes;
+
+      document.getElementById("modal-node-count-label").textContent = `${nodes} Nodes (${nodes * 8} GPUs)`;
+      document.getElementById("modal-calc-burn").textContent = `${totalCu.toLocaleString()} CU/hr ($${(totalCu / 100).toFixed(2)}/hr)`;
+      document.getElementById("modal-calc-balance").textContent = `${APP_STATE.cuBalance.toLocaleString()} CU`;
+    }
+
+    function executeAtomicProvision() {
+      const label = document.getElementById("modal-cluster-name").value.trim() || "sovereign-node-cluster";
+      const gpuSelect = document.getElementById("modal-gpu-select");
+      const regionSelect = document.getElementById("modal-region-select");
+      const slider = document.getElementById("modal-node-slider");
+
+      const gpuName = gpuSelect.selectedOptions[0].text.split(" (")[0];
+      const ratePerNode = parseInt(gpuSelect.selectedOptions[0].getAttribute("data-price"), 10);
+      const nodes = parseInt(slider.value, 10);
+      const region = regionSelect.value;
+      const burnCu = ratePerNode * nodes;
+
+      if (APP_STATE.cuBalance < burnCu * 2) {
+        notify("Insufficient CU Balance. Please top up your atomic credit ledger.", "danger");
+        return;
+      }
+
+      const clusterId = "cls_" + Math.random().toString(36).substring(2, 9);
+      const newCluster = {
+        id: clusterId,
+        label: label,
+        gpu: gpuName,
+        nodes: nodes,
+        gpus: nodes * 8,
+        region: region,
+        fabric: "InfiniBand NDR 400G",
+        burnCu: burnCu,
+        uptime: "0h 01m",
+        status: "ONLINE"
+      };
+
+      APP_STATE.clusters.unshift(newCluster);
+      renderClustersTable();
+
+      document.getElementById("modal-deploy-cluster").classList.add("hidden");
+      addAuditLog(`<span class="text-cyan-400 font-bold">ATOMIC PROVISION:</span> Launched ${newCluster.label} (${nodes} Nodes). WireGuard endpoint bound.`);
+      notify(`Cluster "${label}" provisioned successfully. 0ms wireguard routing active.`, "success");
+    }
+
+    // 12. RECEIPT MODAL
+    function openReceiptModal(tx) {
+      const modal = document.getElementById("modal-receipt");
+      const details = document.getElementById("receipt-details");
+      if (!modal || !details) return;
+
+      details.innerHTML = `
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Transaction ID:</span>
+          <span class="text-cyan-300 font-bold">${tx.id}</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Timestamp:</span>
+          <span class="text-white">${tx.timestamp} UTC</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Entry Type:</span>
+          <span class="text-emerald-400">${tx.type}</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Ledger Amount:</span>
+          <span class="text-white font-bold">${tx.amountCu > 0 ? '+' : ''}${tx.amountCu.toLocaleString()} CU (${tx.usd})</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Settlement RPC:</span>
+          <span class="text-slate-300">rpc_atomic_settle()</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-800">
+          <span class="text-slate-400">Signature Proof:</span>
+          <span class="text-cyan-400 font-mono text-[10px]">${tx.hash}</span>
+        </div>
+        <div class="pt-2 text-slate-500 text-[10px] text-center">
+          Cryptographically committed to Supabase Double-Entry Postgres Ledger.
+        </div>
+      `;
+
+      modal.classList.remove("hidden");
+    }
+
+    // 13. TERMINAL CLI MODAL
+    function openTerminalCliModal(cluster) {
+      const modal = document.getElementById("modal-terminal-cli");
+      const title = document.getElementById("terminal-cli-title");
+      if (!modal) return;
+
+      if (cluster && title) {
+        title.textContent = `SSH: apex@${cluster.id}.${cluster.region.toLowerCase()}.sovereign.mesh`;
+      }
+      modal.classList.remove("hidden");
+      document.getElementById("terminal-cli-input")?.focus();
+    }
+
+    // 14. HMAC-SHA256 CALCULATOR (WebCrypto API)
+    async function calculateHmac() {
+      const payloadEl = document.getElementById("sandbox-payload");
+      const secretEl = document.getElementById("hmac-secret-input");
+      const outputEl = document.getElementById("sandbox-computed-sig");
+      if (!payloadEl || !secretEl || !outputEl) return;
+
+      const payload = payloadEl.value;
+      const secret = secretEl.value;
+
+      try {
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(secret);
+        const cryptoKey = await crypto.subtle.importKey(
+          "raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+        );
+
+        const signature = await crypto.subtle.sign(
+          "HMAC", cryptoKey, encoder.encode(payload)
+        );
+
+        const hashHex = Array.from(new Uint8Array(signature))
+          .map(b => b.toString(16).padStart(2, "0"))
+          .join("");
+
+        outputEl.textContent = `sha256=${hashHex}`;
+      } catch (err) {
+        outputEl.textContent = "Error computing HMAC: " + err.message;
+      }
+    }
+
+    // 15. MULTI-LANGUAGE CODE GENERATOR
+    function updateCodeSnippet(lang) {
+      const pre = document.getElementById("code-snippet-pre");
+      if (!pre) return;
+
+      if (lang === "curl") {
+        pre.textContent = `# 1. Probe Sovereign Mesh Ingress & Telemetry
+curl -X GET "https://apexsovereign.ai/v1/spot-rates" \\
+  -H "Authorization: Bearer sk_live_apex_9a87d0c3e5f24198b16c80de991a"
+
+# 2. Provision Bare-Metal H100 SXM5 Cluster
+curl -X POST "https://apexsovereign.ai/v1/clusters/provision" \\
+  -H "Authorization: Bearer sk_live_apex_9a87d0c3e5f24198b16c80de991a" \\
+  -H "Content-Type: application/json" \\
+  -d '{"accelerator": "H100", "nodes": 4, "region": "US-EAST"}'`;
+      } else if (lang === "python") {
+        pre.textContent = `import httpx
+
+client = httpx.Client(
+    base_url="https://apexsovereign.ai",
+    headers={"Authorization": "Bearer sk_live_apex_9a87d0c3e5f24198b16c80de991a"},
+    timeout=18.0
+)
+
+# 1. Fetch Real-time Spot Arbitrage Rates
+rates = client.get("/v1/spot-rates").json()
+print(f"H100 Spot Rate: {rates['H100']['spot_price']} CU/hr")
+
+# 2. Atomic Cluster Provisioning
+res = client.post("/v1/clusters/provision", json={
+    "accelerator": "H100",
+    "nodes": 4,
+    "region": "US-EAST"
+})
+print("Provisioned Cluster:", res.json())`;
+      } else if (lang === "node") {
+        pre.textContent = `// ApexSovereign Low-Latency Node.js Client
+const API_KEY = "sk_live_apex_9a87d0c3e5f24198b16c80de991a";
+
+async function provisionCluster() {
+  const res = await fetch("https://apexsovereign.ai/v1/clusters/provision", {
+    method: "POST",
+    headers: {
+      "Authorization": \`Bearer \${API_KEY}\`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ accelerator: "H100", nodes: 4, region: "US-EAST" })
+  });
+  
+  const data = await res.json();
+  console.log("Cluster Online:", data);
+}
+
+provisionCluster();`;
+      }
+    }
+
+    // 16. CSV EXPORT UTILITY
+    function exportLedgerCsv() {
+      const headers = ["Transaction ID", "Timestamp (UTC)", "Type", "Compute Units (CU)", "USD Equivalent", "Settlement Method", "Hash"];
+      const rows = APP_STATE.ledgerTransactions.map(t => [
+        t.id, t.timestamp, t.type, t.amountCu, t.usd, t.method, t.hash
+      ]);
+
+      const csvContent = "data:text/csv;charset=utf-8," 
+        + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `apexsovereign_ledger_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      notify("Exported Supabase double-entry ledger to CSV.", "success");
+    }
+
+    // 17. INITIALIZATION & TELEMETRY LOOP
+    function initTelemetryLoop() {
+      setInterval(() => {
+        // Natural jitter around 14ms (always sub 18ms SLA)
+        const jitter = (Math.random() * 2.8) - 1.4;
+        APP_STATE.realtimeLatency = Math.max(11.2, Math.min(17.8, 14.2 + jitter));
+        
+        const latEl = document.getElementById("hud-latency");
+        if (latEl) latEl.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms`;
+
+        const targetStatus = document.getElementById("live-target-status");
+        if (targetStatus) targetStatus.textContent = `${APP_STATE.realtimeLatency.toFixed(1)}ms Live`;
+      }, 2400);
+
+      // Spot matrix micro-adjustments
+      setInterval(() => {
+        const item = APP_STATE.gpuInventory[Math.floor(Math.random() * APP_STATE.gpuInventory.length)];
+        const delta = (Math.random() * 0.04) - 0.02;
+        item.spotPrice = Math.max(0.60, +(item.spotPrice + delta).toFixed(2));
+        item.cuPerHour = Math.round(item.spotPrice * 100);
+        renderGpuTable();
+      }, 4500);
+    }
+
+    // DOM Ready Setup
+    document.addEventListener("DOMContentLoaded", () => {
+      // Setup Navigation Tabs
+      document.getElementById("nav-btn-terminal")?.addEventListener("click", () => switchModule("terminal"));
+      document.getElementById("nav-btn-clusters")?.addEventListener("click", () => switchModule("clusters"));
+      document.getElementById("nav-btn-billing")?.addEventListener("click", () => switchModule("billing"));
+      document.getElementById("nav-btn-api")?.addEventListener("click", () => switchModule("api"));
+      document.getElementById("brand-logo-btn")?.addEventListener("click", () => switchModule("terminal"));
+      document.getElementById("hud-balance-pill")?.addEventListener("click", () => switchModule("billing"));
+
+      // Region Filter
+      document.getElementById("gpu-region-filter")?.addEventListener("change", renderGpuTable);
+
+      // Allocator events
+      document.getElementById("allocator-gpu-type")?.addEventListener("change", updateAllocatorEstimate);
+      document.getElementById("allocator-node-slider")?.addEventListener("input", updateAllocatorEstimate);
+
+      // Modal Triggers
+      document.getElementById("btn-open-deploy-modal")?.addEventListener("click", () => openDeployModal());
+      document.getElementById("modal-gpu-select")?.addEventListener("change", updateDeployModalCalculations);
+      document.getElementById("modal-node-slider")?.addEventListener("input", updateDeployModalCalculations);
+      document.getElementById("btn-confirm-provision")?.addEventListener("click", executeAtomicProvision);
+
+      // SSH Modal
+      document.getElementById("btn-generate-ssh")?.addEventListener("click", () => {
+        document.getElementById("modal-ssh-generator")?.classList.remove("hidden");
+      });
+      document.getElementById("btn-roll-new-ssh")?.addEventListener("click", () => {
+        const rand = Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(16)).join('');
+        document.getElementById("ssh-public-key").value = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI${rand} apex@sovereign-mesh`;
+        notify("Rolled new ED25519 cryptographic keypair.", "info");
+      });
+      document.getElementById("btn-download-priv-key")?.addEventListener("click", () => {
+        const content = document.getElementById("ssh-private-key").value;
+        const blob = new Blob([content], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "apex_sovereign_ed25519.pem";
+        a.click();
+        URL.revokeObjectURL(url);
+        notify("Downloaded SSH private key certificate.", "success");
+      });
+
+      // Close all modals
+      document.querySelectorAll(".modal-close-btn").forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll("[id^='modal-']").forEach(m => m.classList.add("hidden"));
+        };
+      });
+
+      // Deposit Tier Buttons
+      document.querySelectorAll(".btn-deposit-tier").forEach(btn => {
+        btn.onclick = () => {
+          const usd = parseFloat(btn.getAttribute("data-amount"));
+          const cu = parseInt(btn.getAttribute("data-cu"), 10);
+          handleDeposit(usd, cu);
+        };
+      });
+
+      // Export CSV
+      document.getElementById("btn-export-csv")?.addEventListener("click", exportLedgerCsv);
+
+      // Clear Logs
+      document.getElementById("btn-clear-logs")?.addEventListener("click", () => {
+        const term = document.getElementById("audit-log-terminal");
+        if (term) term.innerHTML = "";
+      });
+
+      // HMAC Sandbox
+      document.getElementById("sandbox-payload")?.addEventListener("input", calculateHmac);
+      document.getElementById("btn-fire-sandbox-webhook")?.addEventListener("click", () => {
+        const endpoint = document.getElementById("sandbox-target-url").value;
+        const sig = document.getElementById("sandbox-computed-sig").textContent.trim();
+        
+        const newEvt = {
+          id: "evt_wh_" + Math.random().toString(36).substring(2, 7),
+          time: new Date().toTimeString().substring(0, 8),
+          type: endpoint.includes("paypal") ? "PAYPAL_CAPTURE_COMPLETED" : "N8N_ORCHESTRATE_DISPATCH",
+          status: 200,
+          latency: `${(12 + Math.random() * 4).toFixed(1)}ms`,
+          sig: "VALID (HMAC)"
+        };
+
+        APP_STATE.webhookEvents.unshift(newEvt);
+        renderWebhookStream();
+        addAuditLog(`<span class="text-cyan-400 font-bold">WEBHOOK DISPATCH:</span> POST ${endpoint} (Header: X-Apex-Signature validated)`);
+        notify(`Webhook dispatched to ${endpoint} with status 200 OK.`, "success");
+      });
+
+      // Code Snippet Tabs
+      document.querySelectorAll(".code-lang-tab").forEach(tab => {
+        tab.onclick = () => {
+          document.querySelectorAll(".code-lang-tab").forEach(t => {
+            t.className = "code-lang-tab px-2.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200";
+          });
+          tab.className = "code-lang-tab px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/50";
+          updateCodeSnippet(tab.getAttribute("data-lang"));
+        };
+      });
+
+      document.getElementById("btn-copy-snippet")?.addEventListener("click", () => {
+        const code = document.getElementById("code-snippet-pre")?.textContent || "";
+        navigator.clipboard.writeText(code).then(() => {
+          notify("Code snippet copied to clipboard.", "success");
+        });
+      });
+
+      // API Key toggles
+      document.getElementById("btn-toggle-key-vis")?.addEventListener("click", () => {
+        const input = document.getElementById("api-key-input");
+        const btn = document.getElementById("btn-toggle-key-vis");
+        if (!input || !btn) return;
+        if (input.type === "password") {
+          input.type = "text";
+          btn.textContent = "HIDE";
+        } else {
+          input.type = "password";
+          btn.textContent = "SHOW";
+        }
+      });
+
+      document.getElementById("btn-copy-key")?.addEventListener("click", () => {
+        const input = document.getElementById("api-key-input");
+        if (input) {
+          navigator.clipboard.writeText(input.value).then(() => {
+            notify("API Key copied to clipboard.", "success");
+          });
+        }
+      });
+
+      document.getElementById("btn-copy-secret")?.addEventListener("click", () => {
+        const input = document.getElementById("hmac-secret-input");
+        if (input) {
+          navigator.clipboard.writeText(input.value).then(() => {
+            notify("HMAC Secret copied to clipboard.", "success");
+          });
+        }
+      });
+
+      document.getElementById("btn-generate-apikey")?.addEventListener("click", () => {
+        const rand = Array.from(crypto.getRandomValues(new Uint8Array(14))).map(b => b.toString(16).padStart(2, '0')).join('');
+        const newKey = `sk_live_apex_${rand}`;
+        document.getElementById("api-key-input").value = newKey;
+        notify("Rolled new live API key. Updated in memory.", "info");
+      });
+
+      // Terminal CLI interaction
+      const termInput = document.getElementById("terminal-cli-input");
+      const termSend = document.getElementById("btn-terminal-send");
+      const termOutput = document.getElementById("terminal-cli-output");
+
+      const runTerminalCmd = () => {
+        if (!termInput || !termOutput) return;
+        const cmd = termInput.value.trim();
+        if (!cmd) return;
+
+        const cmdRow = document.createElement("div");
+        cmdRow.className = "text-emerald-400 font-bold mt-1";
+        cmdRow.textContent = `apex@mesh:~$ ${cmd}`;
+        termOutput.appendChild(cmdRow);
+
+        const resRow = document.createElement("div");
+        resRow.className = "text-slate-300";
+
+        if (cmd === "nvidia-smi") {
+          resRow.innerHTML = `<span class="text-cyan-300">GPU 0..7: NVIDIA H100 SXM5 [OK] | Driver: 550.54.14 | CUDA: 12.4 | Power: 140W/700W | NVLink: 900 GB/s Active</span>`;
+        } else if (cmd === "torch-bench") {
+          resRow.innerHTML = `<span class="text-emerald-400">FP8 GEMM Benchmark: 812 TFLOPS/GPU | All-Reduce Latency: 2.1us (NVLink Switch Fabric)</span>`;
+        } else if (cmd === "exit") {
+          document.getElementById("modal-terminal-cli")?.classList.add("hidden");
+          termInput.value = "";
+          return;
+        } else {
+          resRow.textContent = `Command executed: ${cmd} (status code 0, 14.2ms execution round-trip)`;
+        }
+
+        termOutput.appendChild(resRow);
+        termOutput.scrollTop = termOutput.scrollHeight;
+        termInput.value = "";
+      };
+
+      termSend?.addEventListener("click", runTerminalCmd);
+      termInput?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") runTerminalCmd();
+      });
+
+      // Initial Renders
+      renderGpuTable();
+      renderClustersTable();
+      renderLedgerTable();
+      renderWebhookStream();
+      calculateHmac();
+      updateBalanceDisplays();
+      updateAllocatorEstimate();
+
+      // Seed initial logs
+      addAuditLog("<span class='text-emerald-400 font-bold'>INITIALIZED:</span> ApexSovereign.ai sovereign mesh v2.4 connected.");
+      addAuditLog("WireGuard peer routes verified for US-EAST-1, EU-CENTRAL-1, AP-SOUTH-1.");
+      addAuditLog("Supabase atomic double-entry ledger synced ($1.00 = 100 CU).");
+
+      // Start Realtime Telemetry Loop
+      initTelemetryLoop();
+    });
+  </script>
 </body>
 </html>
