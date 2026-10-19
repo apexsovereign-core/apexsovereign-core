@@ -1,205 +1,112 @@
 """
-ApexSovereign.ai - Enterprise Work OS & Autonomous Compute Broker
-Module: Main Application Entry Point
-Author: Principal Systems Architect
+ApexSovereign.ai Master Core Engine - FastAPI Application Entry Point.
+Production-grade routing, structured logging, CORS containment, and security headers.
 """
 
-from __future__ import annotations
-
+import time
+import uuid
 import logging
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
-from fastapi import FastAPI, Request, status
+from typing import Callable
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.app.config import get_settings
-from backend.app.db.session import init_db_pool, close_db_pool
-from backend.app.services.paypal_service import get_paypal_service
-from backend.app.api.v1.health import router as health_router
-from backend.app.api.v1.compute import router as compute_router
-from backend.app.api.v1.billing import router as billing_router
-from backend.app.api.v1.workflow import router as workflow_router
-from backend.app.api.v1.api_keys import router as api_keys_router
-from backend.app.services.gpu_arbitrage_engine import router as arbitrage_router
-from backend.app.services.corporate_invoicing_engine import router as corporate_invoicing_router
-from backend.app.services.compliance_audit_pipeline import (
-    router as compliance_router,
-    SOC2AuditMiddleware,
-)
-from backend.app.services.decentralized_marketplace import router as marketplace_router
-from backend.app.services.predictive_autoscaling_engine import router as autoscaling_router
-from backend.app.services.treasury_tax_engine import router as treasury_tax_router
-from backend.app.services.confidential_enclave_gateway import router as enclave_router
-from backend.app.services.fleet_security_daemon import router as fleet_security_router
-from backend.app.services.anycast_mesh_controller import router as anycast_mesh_router
-from backend.app.services.pqc_lattice_engine import router as pqc_crypto_router
-from backend.app.services.neural_spot_arbitrage import router as neural_arbitrage_router
-from backend.app.services.dao_treasury_engine import router as dao_treasury_router
-from backend.app.agency import router as agency_router
-from backend.app.api.v1.leads import router as leads_router
-from backend.app.api.v1.neural_chat import router as neural_router
-from backend.app.api.v1.telemetry_ws import router as telemetry_ws_router
-from backend.app.api.v1.concierge import router as concierge_router
-from backend.app.routers.telemetry import router as telemetry_router
-from backend.app.routers.migration import router as migration_router
-from backend.app.routers.enterprise_billing import router as enterprise_billing_router
-from backend.app.core.exceptions import (
-    ApexSovereignBaseException,
-    IdempotencyConflictError,
-    InsufficientCreditsError,
-    PayPalVerificationError,
-)
+from .config import settings
+from . import db
+from .routes_public import router as public_router
+from .routes_auth import router as auth_router
+from .routes_billing import router as billing_router
+from .routes_clusters import router as clusters_router
+from .routes_keys import router as keys_router
+from .routes_waitlist import router as waitlist_router
+from .routes_account import router as account_router
 
-# Configure enterprise structured logging
+# Configure Structured Logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+    format='{"time": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}'
 )
-logger = logging.getLogger("apexsovereign.main")
+logger = logging.getLogger("apex.main")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """
-    Application lifespan manager.
-    Initializes the asyncpg connection pool and services on startup;
-    gracefully drains connections and cleans up resources on shutdown.
-    """
-    settings = get_settings()
-    logger.info("Starting %s (%s) in %s mode...", settings.APP_NAME, settings.APP_VERSION, settings.ENVIRONMENT)
-
-    # Initialize asyncpg database pool
-    try:
-        await init_db_pool()
-        logger.info("Database connection pool established successfully.")
-    except Exception as exc:
-        logger.critical("Database initialization failure during startup: %s", str(exc))
-        if settings.is_production:
-            raise
-
+async def lifespan(app: FastAPI):
+    logger.info(f"Starting ApexSovereign.ai Master Core Engine (Build: {settings.BUILD_ID}, Env: {settings.ENV})")
+    await db.init_pool()
     yield
+    logger.info("Shutting down ApexSovereign.ai Core Engine...")
+    await db.close_pool()
 
-    # Shutdown sequence
-    logger.info("Initiating graceful shutdown...")
-    paypal = get_paypal_service()
-    await paypal.close()
-    await close_db_pool()
-    logger.info("Shutdown complete. All connections closed.")
-
-
-settings = get_settings()
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description=(
-        "Enterprise Work OS & Autonomous Compute Broker backend engineered for extreme "
-        "horizontal scalability, asynchronous Supabase PostgreSQL pooling, idempotent double-entry "
-        "financial ledgers, and cryptographically verified PayPal webhook ingestion."
-    ),
-    docs_url="/docs" if not settings.is_production else None,
-    redoc_url="/redoc" if not settings.is_production else None,
-    openapi_url="/openapi.json" if not settings.is_production else None,
+    title="ApexSovereign.ai Master Core Engine",
+    description="Sovereign GPU Compute Exchange & Arbitrage Mesh",
+    version=settings.BUILD_ID,
     lifespan=lifespan,
+    docs_url="/docs" if settings.ENV != "production" else None,
+    redoc_url=None
 )
 
-# Enterprise CORS middleware
+# -----------------------------------------------------------------------------
+# 1. CORS MIDDLEWARE
+# -----------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Request-Id", "Content-Disposition"]
 )
 
-# SOC 2 Tamper-Evident Immutable Audit Log Middleware
-app.add_middleware(SOC2AuditMiddleware)
 
+# -----------------------------------------------------------------------------
+# 2. TELEMETRY, TRACE ID & SECURITY HEADERS MIDDLEWARE
+# -----------------------------------------------------------------------------
+@app.middleware("http")
+async def security_and_tracing_middleware(request: Request, call_next: Callable) -> Response:
+    trace_id = request.headers.get("X-Request-Id") or f"trace_{uuid.uuid4().hex[:16]}"
+    request.state.trace_id = trace_id
+    start_time = time.monotonic()
 
-# Global Exception Handlers
-@app.exception_handler(InsufficientCreditsError)
-async def insufficient_credits_handler(request: Request, exc: InsufficientCreditsError):
-    return JSONResponse(
-        status_code=status.HTTP_402_PAYMENT_REQUIRED,
-        content={
-            "error": exc.code,
-            "message": exc.message,
-            "tenant_id": exc.tenant_id,
-            "required": exc.required,
-            "available": exc.available,
-        },
+    # Max body size check (64KB payload guard for public APIs)
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > 65536:
+        return JSONResponse(
+            status_code=413,
+            content={"error": {"code": "payload_too_large", "message": "Request payload exceeds 64KB security limit."}}
+        )
+
+    response = await call_next(request)
+    duration_ms = (time.monotonic() - start_time) * 1000.0
+
+    # Attach Security & Telemetry Headers
+    response.headers["X-Request-Id"] = trace_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(self 'https://www.paypal.com')"
+    response.headers["X-Mesh-Latency-Target"] = "18ms"
+    response.headers["X-Apex-Engine"] = "FastAPI-Core"
+
+    # Avoid caching dynamic v1 API responses
+    if request.url.path.startswith("/v1"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+
+    logger.info(
+        f'{{"method": "{request.method}", "path": "{request.url.path}", "status": {response.status_code}, "latency_ms": {duration_ms:.2f}, "trace_id": "{trace_id}"}}'
     )
+    return response
 
 
-@app.exception_handler(IdempotencyConflictError)
-async def idempotency_conflict_handler(request: Request, exc: IdempotencyConflictError):
-    return JSONResponse(
-        status_code=status.HTTP_409_CONFLICT,
-        content={"error": exc.code, "message": exc.message, "key": exc.key},
-    )
-
-
-@app.exception_handler(PayPalVerificationError)
-async def paypal_verification_handler(request: Request, exc: PayPalVerificationError):
-    return JSONResponse(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        content={"error": exc.code, "message": exc.message},
-    )
-
-
-@app.exception_handler(ApexSovereignBaseException)
-async def domain_exception_handler(request: Request, exc: ApexSovereignBaseException):
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"error": exc.code, "message": exc.message},
-    )
-
-
-# Mount Modular API Routers
-app.include_router(health_router)
-app.include_router(compute_router)
+# -----------------------------------------------------------------------------
+# 3. MOUNT ROUTERS
+# -----------------------------------------------------------------------------
+app.include_router(public_router)
+app.include_router(auth_router)
 app.include_router(billing_router)
-app.include_router(workflow_router)
-app.include_router(api_keys_router)
-app.include_router(arbitrage_router)
-app.include_router(corporate_invoicing_router)
-app.include_router(compliance_router)
-app.include_router(marketplace_router)
-app.include_router(autoscaling_router)
-app.include_router(treasury_tax_router)
-app.include_router(enclave_router)
-app.include_router(fleet_security_router)
-app.include_router(anycast_mesh_router)
-app.include_router(pqc_crypto_router)
-app.include_router(neural_arbitrage_router)
-app.include_router(dao_treasury_router)
-app.include_router(agency_router)
-app.include_router(leads_router)
-app.include_router(neural_router)
-app.include_router(telemetry_ws_router)
-app.include_router(concierge_router)
-app.include_router(telemetry_router)
-app.include_router(migration_router)
-app.include_router(enterprise_billing_router)
-
-
-@app.get("/", summary="Root API Index")
-async def root():
-    return {
-        "service": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "status": "OPERATIONAL",
-        "documentation": "/docs" if not settings.is_production else "DISABLED_IN_PROD",
-        "endpoints": {
-            "health": "/health",
-            "compute_dispatch": "/compute/dispatch",
-            "billing_webhook": "/billing/webhook",
-            "workflow_tasks": "/workflow/tasks",
-        },
-    }
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("backend.app.main:app", host=settings.HOST, port=settings.PORT, reload=settings.DEBUG)
+app.include_router(clusters_router)
+app.include_router(keys_router)
+app.include_router(waitlist_router)
+app.include_router(account_router)

@@ -1,76 +1,114 @@
-# ==============================================================================
-# APEXSOVEREIGN.AI — PRODUCTION RENDER BLUEPRINT INFRASTRUCTURE MANIFEST
-# Repository Root: /opt/render/project/src/ (Zero Subdirectory Nesting)
-# ==============================================================================
+# =============================================================================
+# APEXSOVEREIGN.AI - RENDER DEPLOYMENT SPECIFICATION (BLUEPRINT)
+# Service Name: apexsovereign-mesh
+# Hostname: apexsovereign-mesh.onrender.com
+# Region: singapore (Select region geographically closest to your Supabase instance)
+# =============================================================================
 
 services:
-  # ----------------------------------------------------------------------------
-  # Service 1: ApexSovereign Primary Gateway & FastAPI Revenue Engine
-  # ----------------------------------------------------------------------------
+  # 1. Main High-Throughput Web Mesh API
   - type: web
-    name: apex-revenue-engine
+    name: apexsovereign-mesh
     env: python
-    region: oregon
+    region: singapore
     plan: starter
-    rootDir: .
-    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
-    startCommand: "python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --proxy-headers"
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: ENVIRONMENT
+      - key: ENV
         value: production
-      - key: PORT
-        value: "10000"
-      - key: PAYPAL_MODE
-        value: live
+      - key: BUILD_ID
+        value: apex-v2.4.8-gold
+      - key: LAUNCH_MODE
+        value: early_access
+      - key: PROVIDER_MODE
+        value: simulated
+      - key: LIVE_PAYMENTS_ACK
+        sync: false
+      - key: PAYPAL_ENV
+        value: sandbox
       - key: PAYPAL_CLIENT_ID
         sync: false
-      - key: PAYPAL_LIVE_SECRET
+      - key: PAYPAL_CLIENT_SECRET
         sync: false
       - key: PAYPAL_WEBHOOK_ID
         sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: SUPABASE_ANON_KEY
         sync: false
-      - key: RUNPOD_API_KEY
+      - key: SUPABASE_JWT_SECRET
         sync: false
-      - key: RUNPOD_GRAPHQL_URL
-        value: "https://api.runpod.io/graphql"
-      - key: APEX_HMAC_SECRET
+      - key: LEDGER_HMAC_KID
+        value: k1
+      - key: LEDGER_HMAC_KEYS_JSON
         sync: false
       - key: ALLOWED_ORIGINS
-        value: "https://apexsovereign.ai,https://www.apexsovereign.ai,https://*.vercel.app,http://localhost:3000"
+        value: "https://www.apexsovereign.ai,https://apexsovereign.ai"
+      - key: WAITLIST_IP_SALT
+        sync: false
+      - key: DEPOSIT_MAX_TX_CENTS
+        value: "100000"
+      - key: DEPOSIT_MAX_DAY_CENTS
+        value: "200000"
+      - key: DEPOSIT_MAX_NEW_ACCOUNT_DAY_CENTS
+        value: "50000"
+      - key: SUPPLIER_BASE_URL
+        sync: false
+      - key: SUPPLIER_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
 
-  # ----------------------------------------------------------------------------
-  # Service 2: Autonomous Agent Swarm Daemon (Background Worker)
-  # ----------------------------------------------------------------------------
-  - type: worker
-    name: apex-agent-swarm
+  # 2. Compute Metering Cron Worker (Runs every 5 minutes)
+  - type: cron
+    name: apexsovereign-metering
     env: python
-    region: oregon
+    region: singapore
     plan: starter
-    rootDir: .
-    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
-    startCommand: "python3 agent_swarm.py"
-    autoDeploy: true
+    rootDir: backend
+    schedule: "*/5 * * * *"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python -m app.jobs metering"
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: ENVIRONMENT
-        value: production
-      - key: FASTAPI_MAIN_URL
-        value: "http://apex-revenue-engine:10000"
-      - key: PROVISIONER_URL
-        value: "http://apex-revenue-engine:10000/v1/provision/execute"
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: RUNPOD_API_KEY
-        sync: false
-      - key: APEX_HMAC_SECRET
-        sync: false
+      - fromService:
+          type: web
+          name: apexsovereign-mesh
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: apexsovereign-mesh
+          envVarKey: PROVIDER_MODE
+      - fromService:
+          type: web
+          name: apexsovereign-mesh
+          envVarKey: LEDGER_HMAC_KID
+      - fromService:
+          type: web
+          name: apexsovereign-mesh
+          envVarKey: LEDGER_HMAC_KEYS_JSON
+
+  # 3. PayPal Daily Settlement & Reconciliation Cron (Runs daily at midnight)
+  - type: cron
+    name: apexsovereign-reconcile
+    env: python
+    region: singapore
+    plan: starter
+    rootDir: backend
+    schedule: "0 0 * * *"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python -m app.jobs reconcile"
+    envVars:
+      - fromService:
+          type: web
+          name: apexsovereign-mesh
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: apexsovereign-mesh
+          envVarKey: PAYPAL_ENV
