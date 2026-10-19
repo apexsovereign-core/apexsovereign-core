@@ -78,9 +78,13 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/v1/health", tags=["Telemetry"])
 async def health_check():
     return {
-        "status": "online",
+        "status": "ok",
         "system": "ApexSovereign Core Engine",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "build": "v2.4-prod",
+        "env": "mesh",
+        "router_host": "apexsovereign-mesh.onrender.com",
+        "engine": "FastAPI/Axum"
     }
 
 # PayPal Webhook Ingress
