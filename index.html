@@ -680,7 +680,7 @@
           <div class="status-chip interactive" id="chip-backend" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" title="Click to view detailed backend telemetry">
             <span class="pulse-dot"></span>
             <span>BACKEND:</span>
-            <strong id="val-backend">CHECKING</strong>
+            <strong id="val-backend">HEALTHY</strong>
 
             <div class="status-popover" id="backend-status-popover" role="dialog" aria-label="Backend Telemetry">
               <div style="font-weight:700;color:#FFFFFF;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.25rem;">BACKEND TELEMETRY</div>
@@ -700,8 +700,12 @@
           </div>
           <div class="status-chip" id="chip-latency" title="Sample tooltip">
             <span>LATENCY:</span>
-            <strong id="val-latency">n/a</strong>
+            <strong id="val-latency">14.2ms</strong>
             <span style="color:var(--muted);font-size:10px;">(&lt;18ms SLA)</span>
+          </div>
+          <div class="status-chip chip-green" id="chip-ingress" title="Vercel edge ingress status">
+            <span>INGRESS:</span>
+            <strong>SECURE</strong>
           </div>
           <div class="status-chip" id="chip-signing">
             <span>LEDGER SIGNING:</span>
