@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ApexSovereign Exchange</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* "Void Sovereign". Color: void #020305, obsidian glass #080D16/85, diamond cyan #00F0FF, emerald #10B981. Type: Bricolage Grotesque headlines, JetBrains Mono telemetry. Layout: sticky WebGL stage (per-accelerator teardown scrubbed by scroll), then mesh globe, rate matrix, CLI, six-card bento. Single committed dark look. */
+:root{
+  --void:#020305; --obsidian:#080D16; --panel:rgba(8,13,22,.85); --line:rgba(120,170,200,.16);
+  --text:#E8EEF4; --muted:#8497A8; --cyan:#00F0FF; --emerald:#10B981; --amber:#F2B84B; --bad:#FF6B7A; --body:#B4C2CF;
+  --font-display:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--text);font-family:var(--font-display);font-size:16px;line-height:1.55;font-variant-numeric:tabular-nums;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--void);z-index:60}
+.w{max-width:1200px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--cyan)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.label{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;padding:2px 8px;border:1px solid var(--amber);color:var(--amber);border-radius:3px;white-space:nowrap}
+.glass{background:var(--panel);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(2,3,5,.86);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+nav .w{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-weight:700;letter-spacing:.12em;font-size:14px;color:#fff;text-decoration:none}
+.brand svg{width:26px;height:26px;filter:drop-shadow(0 0 8px rgba(0,240,255,.6))}
+.brand b{color:var(--cyan)}
+.navlinks{display:flex;gap:18px;font-family:var(--font-mono);font-size:12px;flex-wrap:wrap}
+.navlinks a{color:var(--muted);text-decoration:none}
+.navlinks a:hover{color:var(--cyan)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;background:var(--cyan);color:#021014;border:0;padding:12px 18px;border-radius:4px;cursor:pointer;transition:box-shadow .2s}
+.btn:hover{box-shadow:0 0 28px rgba(0,240,255,.45)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--cyan);box-shadow:none}
+
+.hero{padding-block:72px 56px;background:radial-gradient(900px 420px at 80% -10%,rgba(0,240,255,.10),transparent 62%),radial-gradient(600px 300px at 0% 30%,rgba(16,185,129,.06),transparent 60%)}
+.hero h1{font-size:clamp(2.4rem,7.4vw,5.6rem);line-height:.96;letter-spacing:-.035em;font-weight:800;margin:20px 0 22px;max-width:15ch;text-wrap:balance}
+.hero h1 em{font-style:normal;color:var(--cyan)}
+.hero p.lede{max-width:56ch;color:var(--body);font-size:1.1rem;margin:0 0 28px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.ticker{margin-top:44px;display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;font-family:var(--font-mono);font-size:12px;overflow:hidden}
+.ticker > div{flex:1 1 150px;min-width:0;padding:14px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -1px -1px 0}
+.ticker .v{display:block;font-size:19px;font-weight:700;color:#fff;margin-top:4px;white-space:nowrap}
+.ticker .v.c{color:var(--cyan)} .ticker .v.g{color:var(--emerald)}
+
+/* stage */
+.scrub{position:relative;height:420vh}
+.stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 56px);height:calc(100svh - 56px - env(safe-area-inset-top,0px));overflow:hidden;border-block:1px solid var(--line);background:radial-gradient(700px 500px at 60% 55%,rgba(0,240,255,.08),transparent 70%),var(--void)}
+.bgword{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:clamp(3rem,14vw,12rem);line-height:.9;letter-spacing:-.04em;color:rgba(0,240,255,.065);text-transform:uppercase;opacity:0;pointer-events:none;padding:0 16px;text-wrap:balance}
+#stageCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;will-change:transform}
+.tabs{position:absolute;top:14px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:6px;flex-wrap:wrap;z-index:2}
+.tab{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;padding:8px 12px;border:1px solid var(--line);background:rgba(8,13,22,.85);color:var(--muted);border-radius:4px;cursor:pointer}
+.tab:hover{color:#fff;border-color:rgba(0,240,255,.5)}
+.tab[aria-selected="true"]{background:var(--cyan);color:#021014;border-color:var(--cyan);font-weight:700}
+.cap{position:absolute;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:20px;max-width:460px;border:1px solid var(--line);border-radius:6px;padding:16px 18px;z-index:2}
+.cap h3{margin:6px 0 6px;font-size:1.2rem;letter-spacing:-.01em;line-height:1.2}
+.cap p{margin:0;color:var(--body);font-size:.9rem}
+.cap .spec{display:block;margin-top:10px;font-family:var(--font-mono);font-size:10.5px;color:var(--emerald);letter-spacing:.06em}
+.rail{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:24px;display:flex;flex-direction:column;gap:7px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:right;max-width:260px;z-index:2}
+.rail span{opacity:.6}.rail span.on{color:var(--cyan);opacity:1}
+.bar{position:absolute;left:0;bottom:0;height:2px;background:var(--cyan);width:0;box-shadow:0 0 12px var(--cyan);z-index:2}
+
+section.band{padding-block:88px}
+h2{font-size:clamp(1.8rem,4.4vw,3.2rem);line-height:1.02;letter-spacing:-.03em;font-weight:800;margin:12px 0 12px;max-width:20ch;text-wrap:balance}
+.sub{color:var(--body);max-width:60ch;margin:0 0 32px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+
+/* mesh */
+.mesh{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:stretch}
+.mcv{position:relative;min-height:440px;overflow:hidden;background:radial-gradient(closest-side at 50% 50%,rgba(0,240,255,.08),transparent 80%),rgba(8,13,22,.85)}
+#meshCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:pan-y}
+.mcv .tag{position:absolute;top:14px;left:14px}
+.mlist{display:flex;flex-direction:column}
+.mrow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;text-align:left;width:100%;padding:16px 18px;background:transparent;border:0;border-bottom:1px solid rgba(120,170,200,.1);color:var(--text);font-family:var(--font-mono);font-size:12.5px;cursor:pointer}
+.mrow:last-child{border-bottom:0}
+.mrow:hover,.mrow.on{background:rgba(0,240,255,.07)}
+.mrow.on{box-shadow:inset 3px 0 0 var(--cyan)}
+.mrow strong{color:#fff;font-size:14px;font-family:var(--font-display);letter-spacing:-.01em}
+.mrow .ms{font-weight:700;font-size:15px;color:var(--emerald)}
+.mrow .tr{grid-column:1/-1;height:3px;background:rgba(120,170,200,.14);border-radius:2px;overflow:hidden}
+.mrow .tr i{display:block;height:100%;background:var(--emerald);width:50%;transition:width .6s}
+.mrow small{color:var(--muted);font-size:11px}
+
+/* matrix */
+.mx{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:start}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12.5px;min-width:520px}
+th{font-weight:500;text-align:left;color:var(--muted);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+td{padding:14px;border-bottom:1px solid rgba(120,170,200,.08)}
+tr.row{cursor:pointer}
+tr.row:hover td{background:rgba(0,240,255,.04)}
+tr.row.sel td{background:rgba(0,240,255,.09)}
+tr.row.sel td:first-child{box-shadow:inset 3px 0 0 var(--cyan)}
+.strike{color:var(--muted);text-decoration:line-through}
+.calc{padding:22px;display:flex;flex-direction:column;gap:18px}
+.ctl{display:flex;flex-direction:column;gap:8px}
+.step{display:flex;align-items:stretch;gap:8px}
+.step button{width:44px;background:var(--obsidian);border:1px solid rgba(0,240,255,.3);color:var(--cyan);font-family:var(--font-mono);font-weight:700;font-size:16px;border-radius:4px;cursor:pointer}
+.step button:hover{background:rgba(0,240,255,.14);border-color:var(--cyan)}
+.step output{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;border:1px solid var(--line);border-radius:4px;padding:10px;background:var(--obsidian)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;cursor:pointer}
+.chip.on{background:var(--cyan);color:#021014;border-color:var(--cyan);font-weight:700}
+.out{border-top:1px solid var(--line);padding-top:16px;display:grid;gap:8px;font-family:var(--font-mono);font-size:12.5px}
+.out div{display:flex;justify-content:space-between;gap:12px}
+.out .big{font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:700;color:var(--emerald);font-family:var(--font-display);letter-spacing:-.02em}
+
+.cli{overflow:hidden}
+.cli header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#term{height:360px;overflow-y:auto;padding:16px;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;background:#010203}
+#term .ln{white-space:pre-wrap;word-break:break-word}
+#term .cmd{color:var(--cyan)} #term .err{color:var(--bad)} #term .dim{color:var(--muted)}
+.prompt{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:#010203;font-family:var(--font-mono);font-size:13px}
+.prompt input{flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;outline:0}
+.hints{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 14px;background:#010203}
+
+.bento{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.bento article{padding:24px;grid-column:span 2;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .2s}
+.bento article:hover{border-color:rgba(0,240,255,.5);transform:translateY(-2px)}
+.bento article.wide{grid-column:span 3}
+.bento article.full{grid-column:span 6}
+.bento h3{margin:0;font-size:1.2rem;letter-spacing:-.01em}
+.bento p{margin:0;color:var(--body);font-size:.92rem;max-width:70ch}
+.bento .spec{margin-top:auto;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;color:var(--cyan)}
+.bento .spec.g{color:var(--emerald)}
+
+footer{border-top:1px solid var(--line);padding-block:48px 56px}
+.fin{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-end}
+.fine{font-family:var(--font-mono);font-size:11px;color:var(--muted);max-width:70ch;margin-top:28px;line-height:1.7}
+
+@media (max-width:900px){
+  .mx,.mesh{grid-template-columns:minmax(0,1fr)}
+  .mcv{min-height:340px}
+  .bento article,.bento article.wide{grid-column:span 6}
+  .rail{display:none}
+  .cap{bottom:12px;padding:12px 14px}
+  .cap p{font-size:.84rem}
+  .hero{padding-block:48px 40px}
+  section.band{padding-block:64px}
+  .tab{padding:6px 9px;font-size:10px}
+}
+@media (min-width:600px) and (max-width:900px){.bento article,.bento article.wide{grid-column:span 3}.bento article.full{grid-column:span 6}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bento article,.btn,.mrow .tr i{transition:none}}
+</style>
+
+</head>
+<body>
+<nav>
+  <div class="w">
+    <a class="brand" href="#top" aria-label="ApexSovereign.ai home">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs><linearGradient id="gem" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00F0FF"/><stop offset="1" stop-color="#005580"/></linearGradient></defs>
+        <polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="url(#gem)" stroke="#00F0FF" stroke-width="2" stroke-linejoin="round"/>
+        <polygon points="50,28 68,50 50,72 32,50" fill="#020305"/>
+      </svg>
+      <span>APEX<b>SOVEREIGN</b>.AI</span>
+    </a>
+    <div class="navlinks">
+      <a href="#blade">Hardware</a><a href="#mesh">Mesh</a><a href="#matrix">Rate matrix</a><a href="#console">Console</a><a href="#capabilities">Capabilities</a>
+    </div>
+    <a class="btn" href="https://www.apexsovereign.ai" target="_blank" rel="noopener">Launch exchange terminal</a>
+  </div>
+</nav>
+
+<main id="top">
+<header class="hero">
+  <div class="w">
+    <span class="label">Sovereign compute exchange · GPU spot arbitrage</span>
+    <h1>The autonomous global <em>sovereign compute</em> exchange.</h1>
+    <p class="lede">Route Rubin, B200, H100, A100 and L40S workloads across a regional mesh at reference rates 32% to 41% under a hyperscaler on-demand baseline. Prepaid credits, one rule: $1.00 = 100 CU.</p>
+    <div class="cta">
+      <a class="btn" href="https://www.apexsovereign.ai" target="_blank" rel="noopener">Launch exchange terminal</a>
+      <a class="btn ghost" href="#blade">Take the hardware apart</a>
+    </div>
+    <div class="ticker glass" role="group" aria-label="Platform telemetry">
+      <div><span class="label">Ingress latency target</span><span class="v c">&lt; 18 ms</span></div>
+      <div><span class="label">Node ping <span class="tag" style="margin-left:4px">SIMULATED</span></span><span class="v g" id="pingVal">Ashburn 12.4 ms</span></div>
+      <div><span class="label">Mesh uptime <span class="tag" style="margin-left:4px">TARGET</span></span><span class="v g">99.99%</span></div>
+      <div><span class="label">Exchange rate</span><span class="v">1 USD = 100 CU</span></div>
+      <div><span class="label">H100 SXM5 reference</span><span class="v c">$1.94 / hr</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="scrub" id="blade">
+  <div class="stage">
+    <div class="bgword">Sub-18ms ingress</div>
+    <div class="bgword">Disaggregated memory</div>
+    <div class="bgword">Atomic settlement</div>
+    <canvas id="stageCanvas" role="img" aria-label="Interactive 3D teardown of the selected accelerator. Scroll to separate its layers."></canvas>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Accelerator"></div>
+    <div class="rail" id="rail" aria-hidden="true"></div>
+    <div class="cap glass" aria-live="polite">
+      <span class="label" id="capKicker">H100 SXM5 · layer 1 of 5</span>
+      <h3 id="capTitle"></h3>
+      <p id="capBody"></p>
+      <span class="spec" id="capSpec"></span>
+    </div>
+    <div class="bar" id="bar"></div>
+  </div>
+</div>
+
+<section class="band" id="mesh">
+  <div class="w">
+    <span class="label">Global sovereign mesh</span>
+    <h2>Six ingress metros. One routing fabric.</h2>
+    <p class="sub">Drag the globe or pick a metro. Arcs show the routing mesh fanning out from Ashburn; the pulses and millisecond readings are simulated reference probes, not live measurements.</p>
+    <div class="mesh">
+      <div class="panel mcv"><span class="tag">SIMULATED PROBES</span><canvas id="meshCanvas" role="img" aria-label="Rotating globe with six mesh nodes: Ashburn, Dallas, Frankfurt, Dublin, Singapore and Tokyo."></canvas></div>
+      <div class="panel mlist" id="meshList"></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="matrix">
+  <div class="w">
+    <span class="label">Arbitrage matrix</span>
+    <h2>Price a fleet before you reserve it.</h2>
+    <p class="sub">Select an accelerator (the 3D stage above follows), set fleet size and duration with the steppers. Rates are reference baselines from the platform catalog, not a live supplier quote.</p>
+    <div class="mx">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px 14px 0;flex-wrap:wrap">
+          <span class="label">GPU spot rate matrix</span><span class="tag">REFERENCE RATES</span>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Accelerator</th><th>Baseline</th><th>Apex rate</th><th>Saving</th></tr></thead>
+            <tbody id="mxBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel calc">
+        <div class="ctl">
+          <span class="label">Fleet scale</span>
+          <div class="step"><button type="button" id="gMinus" aria-label="Fewer GPUs">[-]</button><output id="gOut" for="gMinus gPlus">32 GPUs</output><button type="button" id="gPlus" aria-label="More GPUs">[+]</button></div>
+          <div class="chips" id="gChips"></div>
+        </div>
+        <div class="ctl">
+          <span class="label">Duration</span>
+          <div class="step"><button type="button" id="hMinus" aria-label="Fewer hours">[-]</button><output id="hOut" for="hMinus hPlus">720 h (30 days)</output><button type="button" id="hPlus" aria-label="More hours">[+]</button></div>
+          <div class="chips" id="hChips"></div>
+        </div>
+        <div class="out" aria-live="polite">
+          <div><span class="strike" id="oBase">$0</span><span id="oName">H100 SXM5</span></div>
+          <div><span>Apex reference cost</span><strong id="oSpot">$0</strong></div>
+          <div><span>Prepaid compute units</span><strong id="oCu" style="color:var(--cyan)">0 CU</strong></div>
+          <div style="align-items:baseline"><span>Capital retained vs baseline</span><span class="big" id="oSave">$0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="console" style="background:linear-gradient(180deg,transparent,rgba(8,13,22,.6),transparent)">
+  <div class="w">
+    <span class="label">Developer console</span>
+    <h2>Query the exchange from a prompt.</h2>
+    <p class="sub">A local simulation of the exchange CLI. It runs in your browser, returns reference data and never contacts a server.</p>
+    <div class="panel cli">
+      <header><span class="label">apex-cli · simulated session</span><span class="tag">SIMULATED</span></header>
+      <div id="term" role="log" aria-live="polite" tabindex="0"></div>
+      <div class="hints" id="hints"></div>
+      <form class="prompt" id="cliForm" autocomplete="off">
+        <span style="color:var(--cyan)">apex&gt;</span>
+        <input id="cliIn" type="text" spellcheck="false" aria-label="CLI command" placeholder="status | quote h100 32 720 | nodes | orderbook b200 | clear">
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="capabilities">
+  <div class="w">
+    <span class="label">Enterprise primitives</span>
+    <h2>Six primitives for people who buy compute by the rack.</h2>
+    <p class="sub">Product descriptions of what the exchange is built to offer. Availability depends on your deployment mode.</p>
+    <div class="bento">
+      <article class="panel wide"><h3>Capacity Futures</h3><p>Trade forward GPU capacity with transparent pricing and multi-week settlement windows.</p><span class="spec">CLEARING SPEC · FORWARD_COMMITTED_SLO</span></article>
+      <article class="panel wide"><h3>Token Production Futures</h3><p>Lock future token output at fixed rates so inference spend becomes a planning number.</p><span class="spec">CLEARING SPEC · FIXED_RATE_THROUGHPUT</span></article>
+      <article class="panel"><h3>Live Order Book</h3><p>Bid and ask depth across the mesh, with continuous double-auction matching.</p><span class="spec">CONTINUOUS_DOUBLE_AUCTION</span></article>
+      <article class="panel"><h3>Reservation Calendar</h3><p>Book hard or soft GPU reservations weeks ahead with automatic confirmation.</p><span class="spec">DETERMINISTIC_TIME_LOCK</span></article>
+      <article class="panel"><h3>Disaggregated Prefill</h3><p>Move long-context prefill to high-bandwidth memory nodes to cut time to first token.</p><span class="spec">HIGH_BANDWIDTH_PREFILL</span></article>
+      <article class="panel full"><h3>Confidential Enclaves</h3><p>Hardware-enforced memory encryption (AMD SEV-SNP on the host, NVIDIA confidential computing on the GPU) so training IP stays private to the tenant.</p><span class="spec g">SECURITY SPEC · SEV_SNP + NVIDIA_CC</span></article>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="w">
+    <div class="fin">
+      <div>
+        <span class="label">Ready when your workload is</span>
+        <h2 style="margin-bottom:0">Route the workload. Keep the margin.</h2>
+      </div>
+      <a class="btn" href="https://www.apexsovereign.ai" target="_blank" rel="noopener">Launch exchange terminal</a>
+    </div>
+    <p class="fine">All rates on this page are reference catalog baselines, not live supplier quotes. Latency figures are design targets; node pings, the mesh pulses and the console are simulated in your browser. Savings are computed against a reference on-demand baseline, not against any named provider. 3D models are schematic illustrations, not engineering drawings. Payments settle as verified PayPal webhooks that credit prepaid compute units; $1.00 USD = 100 CU. © 2026 ApexSovereign.ai</p>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $=function(id){return document.getElementById(id)};
+  var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var MOBILE=window.matchMedia&&window.matchMedia('(max-width: 900px)').matches;
+  var T=window.THREE;
+
+  /* favicon: canonical emblem */
+  try{
+    var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00F0FF"/><stop offset="1" stop-color="#005580"/></linearGradient></defs><polygon points="50,5 92,28 92,72 50,95 8,72 8,28" fill="url(#g)"/><polygon points="50,28 68,50 50,72 32,50" fill="#020305"/></svg>';
+    var ln=document.createElement('link');ln.rel='icon';ln.type='image/svg+xml';ln.href='data:image/svg+xml,'+encodeURIComponent(svg);document.head.appendChild(ln);
+  }catch(e){}
+
+  /* ---------- shared data ---------- */
+  var GPUS=[
+    {id:'rubin',short:'Rubin · HBM4',spot:2.40,base:3.85,mem:'HBM4 rack-scale'},
+    {id:'b200',short:'B200 NVL72',spot:2.85,base:4.60,mem:'192GB HBM3e'},
+    {id:'h100',short:'H100 SXM5',spot:1.94,base:3.29,mem:'80GB HBM3'},
+    {id:'a100',short:'A100 SXM4',spot:1.42,base:2.20,mem:'80GB HBM2e'},
+    {id:'l40s',short:'L40S PCIe',spot:0.89,base:1.31,mem:'48GB GDDR6'}
+  ];
+  var NODES=[
+    {id:'us-ashburn',city:'Ashburn',lat:39.0,lon:-77.5,rtt:11.4},
+    {id:'us-dallas',city:'Dallas',lat:32.8,lon:-96.8,rtt:12.8},
+    {id:'eu-frankfurt',city:'Frankfurt',lat:50.1,lon:8.7,rtt:14.8},
+    {id:'eu-dublin',city:'Dublin',lat:53.3,lon:-6.3,rtt:15.2},
+    {id:'ap-singapore',city:'Singapore',lat:1.35,lon:103.8,rtt:17.2},
+    {id:'ap-tokyo',city:'Tokyo',lat:35.7,lon:139.7,rtt:16.8}
+  ];
+  var S={gpu:2,ci:5,hours:720};
+  var stage={set:null};
+  var COUNTS=[1,2,4,8,16,32,64,128,256,576];
+  var HCHIPS=[[24,'24 h'],[168,'7 days'],[720,'30 days'],[2160,'90 days']];
+  var usd=function(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})};
+
+  /* ---------- hero ping ---------- */
+  var ping=$('pingVal'),pi=0;
+  if(!reduce){setInterval(function(){pi=(pi+1)%NODES.length;ping.textContent=NODES[pi].city+' '+(NODES[pi].rtt+(Math.random()-.5)*1.6).toFixed(1)+' ms'},1800)}
+
+  /* ---------- matrix + calculator ---------- */
+  var body=$('mxBody');
+  GPUS.forEach(function(g,i){
+    var tr=document.createElement('tr');tr.className='row';tr.tabIndex=0;tr.setAttribute('role','button');
+    var sv=Math.round((1-g.spot/g.base)*100);
+    tr.innerHTML='<td><strong style="color:#fff">'+g.short+'</strong><br><span style="color:var(--muted);font-size:11px">'+g.mem+'</span></td><td class="strike">$'+g.base.toFixed(2)+'/hr</td><td style="color:var(--cyan);font-weight:700">$'+g.spot.toFixed(2)+'/hr<br><span style="color:var(--muted);font-weight:400;font-size:11px">'+Math.round(g.spot*100)+' CU</span></td><td style="color:var(--emerald);font-weight:700">'+sv+'%</td>';
+    var pick=function(){S.gpu=i;calc()};
+    tr.addEventListener('click',pick);
+    tr.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();pick()}});
+    body.appendChild(tr);
+  });
+  function chips(host,items,set){
+    items.forEach(function(it){
+      var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=it[1];b.dataset.v=it[0];
+      b.addEventListener('click',function(){set(it[0]);calc()});host.appendChild(b);
+    });
+  }
+  chips($('gChips'),[[8,'8 GPUs'],[32,'32 GPUs'],[128,'128 GPUs'],[576,'NVL72 Rack']],function(v){S.ci=COUNTS.indexOf(v)});
+  chips($('hChips'),HCHIPS,function(v){S.hours=v});
+  $('gMinus').addEventListener('click',function(){S.ci=Math.max(0,S.ci-1);calc()});
+  $('gPlus').addEventListener('click',function(){S.ci=Math.min(COUNTS.length-1,S.ci+1);calc()});
+  $('hMinus').addEventListener('click',function(){S.hours=Math.max(24,S.hours-24);calc()});
+  $('hPlus').addEventListener('click',function(){S.hours=Math.min(8760,S.hours+24);calc()});
+  function calc(){
+    var g=GPUS[S.gpu],n=COUNTS[S.ci],h=S.hours;
+    var spot=g.spot*n*h,base=g.base*n*h;
+    $('gOut').textContent=n+' GPUs';
+    $('hOut').textContent=h+' h ('+(h/24).toFixed(h%24?1:0)+' days)';
+    $('oName').textContent=g.short;
+    $('oBase').textContent=usd(base);
+    $('oSpot').textContent=usd(spot);
+    $('oCu').textContent=Math.round(spot*100).toLocaleString('en-US')+' CU';
+    $('oSave').textContent='+'+usd(base-spot);
+    [].forEach.call(body.children,function(tr,i){tr.classList.toggle('sel',i===S.gpu)});
+    [].forEach.call($('gChips').children,function(c){c.classList.toggle('on',+c.dataset.v===n)});
+    [].forEach.call($('hChips').children,function(c){c.classList.toggle('on',+c.dataset.v===h)});
+    [].forEach.call($('tabs').children,function(c,i){c.setAttribute('aria-selected',i===S.gpu?'true':'false')});
+    if(stage.set)stage.set(S.gpu);
+  }
+
+  /* ---------- 3D stage ---------- */
+  var cv=$('stageCanvas'),scrub=$('blade'),bar=$('bar');
+  var words=[].slice.call(document.querySelectorAll('.bgword'));
+  var P=0,SC=null,activeLayer=-1,lastKey='';
+  GPUS.forEach(function(g,i){
+    var b=document.createElement('button');b.type='button';b.className='tab';b.setAttribute('role','tab');b.textContent=g.short;
+    b.addEventListener('click',function(){S.gpu=i;calc()});$('tabs').appendChild(b);
+  });
+
+  var glOK=false,R=null,scene,camera,root,MAT={},cur=null,curIdx=-1,yawT=0,yaw=0;
+  function testGL(){try{var c=document.createElement('canvas');return !!(T&&(c.getContext('webgl')||c.getContext('experimental-webgl')))}catch(e){return false}}
+  if(testGL()){
+    try{R=new T.WebGLRenderer({canvas:cv,antialias:!MOBILE,alpha:true,powerPreference:'high-performance'});glOK=true}catch(e){glOK=false;R=null}
+  }
+  var ctx2=null;
+  if(!glOK){ctx2=cv.getContext('2d')}
+
+  if(glOK){
+    R.setClearColor(0x000000,0);
+    scene=new T.Scene();
+    camera=new T.PerspectiveCamera(36,1,.1,100);
+    root=new T.Group();scene.add(root);
+    scene.add(new T.AmbientLight(0x7aa7c0,.6));
+    var dl=new T.DirectionalLight(0xffffff,.95);dl.position.set(4,7,5);scene.add(dl);
+    var pl=new T.PointLight(0x00f0ff,1.3,24);pl.position.set(-4,2,4);scene.add(pl);
+    var mk=function(o){return new T.MeshStandardMaterial(o)};
+    MAT.body=mk({color:0x0c1d30,metalness:.55,roughness:.5});
+    MAT.dark=mk({color:0x070f1a,metalness:.5,roughness:.6});
+    MAT.die=mk({color:0x0f4a66,emissive:0x00323f,metalness:.4,roughness:.35});
+    MAT.hbm=mk({color:0x14344f,emissive:0x061826,metalness:.5,roughness:.4});
+    MAT.metal=mk({color:0x7d93a8,metalness:.9,roughness:.3});
+    MAT.copper=mk({color:0xc27a3d,metalness:.9,roughness:.35});
+    MAT.pipe=mk({color:0x10b981,emissive:0x053d2c,metalness:.3,roughness:.4});
+    MAT.glow=new T.MeshBasicMaterial({color:0x00f0ff});
+    MAT.dim=new T.MeshBasicMaterial({color:0x0a6b7a});
+  }
+
+  /* geometry helpers */
+  function edgeMat(){return new T.LineBasicMaterial({color:0x00f0ff,transparent:true,opacity:.5})}
+  function bx(w,h,d,mat,x,y,z,noEdge){
+    var g=new T.BoxGeometry(w,h,d),m=new T.Mesh(g,mat);m.position.set(x||0,y||0,z||0);
+    if(!noEdge)m.add(new T.LineSegments(new T.EdgesGeometry(g),edgeMat()));
+    return m;
+  }
+  function cyl(r,h,mat,x,y,z,rx,rz,seg){
+    var g=new T.CylinderGeometry(r,r,h,seg||16),m=new T.Mesh(g,mat);m.position.set(x||0,y||0,z||0);m.rotation.x=rx||0;m.rotation.z=rz||0;return m;
+  }
+  function Lr(name,desc,group,y){return {name:name,desc:desc,group:group,y:y||0}}
+  function grp(){var g=new T.Group();for(var i=0;i<arguments.length;i++)g.add(arguments[i]);return g}
+
+  /* scene builders: layers listed bottom to top, y = assembled height */
+  function hbmSites(g,xs,zs,mat,w,h,d){
+    for(var i=0;i<xs.length;i++)g.add(bx(w,h,d,mat,xs[i],0,zs[i]));
+  }
+  function sceneH100(){
+    var g0=grp(bx(4.2,.12,4.2,MAT.body,0,0,0));
+    for(var i=0;i<14;i++)g0.add(bx(.08,.05,.34,MAT.glow,-1.9+i*.29,.09,1.95,true));
+    var g1=grp(bx(1.4,.14,1.7,MAT.die,0,0,0));
+    hbmSites(g1,[-1.15,-1.15,1.15,1.15,1.15],[-.55,.55,-.6,0,.6],MAT.hbm,.55,.16,.8);
+    var g2=new T.Group();
+    for(var a=0;a<6;a++)for(var b=0;b<6;b++)g2.add(bx(.16,.05,.16,MAT.glow,-.55+a*.22,0,-.65+b*.26,true));
+    var g3=grp(bx(2.6,.1,2.6,MAT.metal,0,0,0));
+    var g4=grp(bx(2.8,.1,2.8,MAT.metal,0,0,0));
+    for(var f=0;f<14;f++)g4.add(bx(.06,.5,2.6,MAT.metal,-1.2+f*.185,.3,0));
+    return {gap:1.05,layers:[
+      Lr('SXM5 module substrate','Substrate and SXM5 connector. The pins bond the GPU to the HGX baseboard and its NVLink fabric.',g0,0),
+      Lr('GH100 die + 5 HBM3 stacks','One monolithic die with five active HBM3 stacks: 80GB of memory sitting millimetres from the compute.',g1,.14),
+      Lr('Tensor cores · 132 SMs','Fourth-generation tensor cores with FP8 support, the units that do the matrix math for training and inference.',g2,.26),
+      Lr('Integrated heat spreader','A metal lid that moves die heat sideways into the heatsink base.',g3,.36),
+      Lr('Heatsink fin stack','Fin block that hands heat to the chassis liquid or air loop.',g4,.5)
+    ],spec:'80GB HBM3 · SXM5 · 132 SMs'};
+  }
+  function sceneA100(){
+    var g0=grp(bx(4.2,.12,4.2,MAT.body,0,0,0));
+    for(var i=0;i<12;i++)g0.add(bx(.08,.05,.34,MAT.glow,-1.7+i*.3,.09,1.95,true));
+    var g1=new T.Group();
+    hbmSites(g1,[-1.2,-1.2,1.2,1.2,1.2],[-.55,.55,-.6,0,.6],MAT.hbm,.55,.16,.8);
+    var g2=new T.Group(),slices=[],cols=[0x10b981,0x00f0ff,0x2bd4b8,0x38bdf8,0x22d3a6,0x00c2d6,0x5eead4];
+    for(var s=0;s<7;s++){
+      var sm=new T.MeshStandardMaterial({color:cols[s],emissive:cols[s],emissiveIntensity:.25,metalness:.3,roughness:.4});
+      var m=bx(.5,.12,.5,sm,0,0,0);g2.add(m);slices.push(m);
+    }
+    var g3=grp(bx(2.4,.1,2.4,MAT.metal,0,0,0));
+    var upd=function(e){
+      slices[0].position.set(0,0,0);
+      for(var k=1;k<7;k++){var an=(k-1)/6*Math.PI*2,r=.56+1.05*e;slices[k].position.set(Math.cos(an)*r,0,Math.sin(an)*r)}
+    };
+    return {gap:1.15,tick:function(e){upd(e)},layers:[
+      Lr('SXM4 module substrate','Substrate and SXM4 connector for NVLink-attached HGX baseboards.',g0,0),
+      Lr('5 HBM2e stacks · 80GB','Five active HBM2e stacks supply the memory bandwidth the die needs.',g1,.14),
+      Lr('MIG partitions · 7 slices','Multi-Instance GPU splits the die into up to seven isolated instances, each with its own compute and memory slice.',g2,.26),
+      Lr('Heat spreader','Lid and cold-plate interface above the die.',g3,.4)
+    ],spec:'80GB HBM2e · up to 7 MIG instances'};
+  }
+  function sceneB200(){
+    var g0=grp(bx(4.4,.1,3.6,MAT.body,0,0,0));
+    var g1=grp(bx(1.15,.14,1.7,MAT.die,-.62,0,0),bx(1.15,.14,1.7,MAT.die,.62,0,0),bx(.1,.05,1.2,MAT.glow,0,.09,0,true));
+    var g2=new T.Group(),zs=[-1.05,-.35,.35,1.05];
+    for(var i=0;i<4;i++){g2.add(bx(.5,.16,.6,MAT.hbm,-1.75,0,zs[i]));g2.add(bx(.5,.16,.6,MAT.hbm,1.75,0,zs[i]))}
+    var g3=grp(bx(4.2,.08,3.4,MAT.metal,0,0,0));
+    for(var p=0;p<5;p++)g3.add(cyl(.07,4.0,MAT.pipe,0,.1,-1.3+p*.65,0,Math.PI/2));
+    var g4=new T.Group();
+    g4.add(bx(4.2,.06,.5,MAT.copper,0,0,-1.55));g4.add(bx(4.2,.06,.5,MAT.copper,0,0,1.55));
+    for(var a=0;a<9;a++)for(var b=0;b<8;b++)g4.add(bx(.3,.05,.17,MAT.dim,-1.6+a*.4,0,-1.0+b*.29,true));
+    return {gap:1.0,layers:[
+      Lr('Package substrate','Large organic substrate routes power and the signal paths between dies, memory and the board.',g0,0),
+      Lr('Dual Blackwell dies','Two reticle-limited dies joined by a 10 TB/s chip-to-chip link so software sees one GPU.',g1,.12),
+      Lr('8 HBM3e stacks · 192GB','Eight HBM3e stacks flank the dies for 192GB of memory per GPU.',g2,.22),
+      Lr('Liquid cold plate','Cold plate with coolant channels sized for the heat load of a rack at full power.',g3,.34),
+      Lr('NVL72 · 72 GPUs + busbar','Seventy-two GPUs sit in one liquid-cooled NVLink domain, fed by copper power busbars.',g4,.46)
+    ],spec:'192GB HBM3e per GPU · 72-GPU NVLink domain'};
+  }
+  function sceneRubin(){
+    var g0=grp(bx(4.6,.1,3.2,MAT.dark,0,0,0));
+    for(var i=0;i<9;i++)g0.add(bx(4.4,.02,.03,MAT.glow,0,.07,-1.3+i*.325,true));
+    for(var j=0;j<8;j++)g0.add(bx(.03,.02,3.0,MAT.dim,-2.0+j*.57,.07,0,true));
+    var g1=new T.Group();
+    for(var k=0;k<5;k++)g1.add(cyl(.07,4.4,MAT.pipe,0,0,-1.0+k*.5,0,Math.PI/2));
+    g1.add(cyl(.1,2.4,MAT.pipe,-2.1,0,0,Math.PI/2,0));g1.add(cyl(.1,2.4,MAT.pipe,2.1,0,0,Math.PI/2,0));
+    var g2=grp(bx(4.0,.16,2.6,MAT.body,0,0,0));
+    [[-1,-.6],[1,-.6],[-1,.6],[1,.6]].forEach(function(p){g2.add(bx(.9,.12,.9,MAT.die,p[0],.14,p[1]))});
+    var g3=new T.Group();
+    [[-1.65,-1.0],[0,-1.0],[1.65,-1.0],[-1.65,1.0],[0,1.0],[1.65,1.0]].forEach(function(p){
+      for(var d=0;d<8;d++)g3.add(bx(.42,.05,.6,MAT.hbm,p[0],d*.075,p[1]));
+    });
+    var g4=new T.Group();
+    for(var o=0;o<6;o++)g4.add(cyl(.12,.3,MAT.glow,-1.9+o*.76,0,1.45,0,0,12));
+    return {gap:1.0,layers:[
+      Lr('Optical backplane','Rack backplane carrying optical links between compute trays.',g0,0),
+      Lr('Liquid-cooling manifold','Supply and return headers with branch lines to every cold plate.',g1,.14),
+      Lr('Compute tray · Rubin GPUs','Tray carrying the GPU packages.',g2,.26),
+      Lr('HBM4 stacked memory dies','Stacked HBM4 dies drawn plate by plate beside the compute packages.',g3,.4),
+      Lr('Optical I/O modules','Optical transceivers that take the tray off-board at light speed.',g4,.6)
+    ],spec:'HBM4 · optical backplane · liquid cooled'};
+  }
+  function sceneL40S(){
+    var g0=grp(bx(4.4,.08,1.7,MAT.body,0,0,0));
+    for(var c=0;c<12;c++)g0.add(bx(.3,.05,.3,MAT.hbm,-1.7+(c%6)*.34,.07,c<6?-.6:.6));
+    g0.add(bx(.2,.1,1.5,MAT.glow,2.2,.0,0,true));
+    var g1=grp(bx(.9,.1,.9,MAT.die,.4,0,0));
+    var g2=new T.Group();
+    for(var f=0;f<16;f++)g2.add(bx(.04,.45,1.5,MAT.metal,-1.9+f*.25,.25,0));
+    g2.add(bx(4.2,.06,1.5,MAT.metal,0,0,0));
+    var g3=grp(bx(4.4,.05,1.8,MAT.dark,0,0,0));
+    g3.add(bx(4.4,.4,.05,MAT.dark,0,.2,.88));g3.add(bx(4.4,.4,.05,MAT.dark,0,.2,-.88));
+    var g4=new T.Group(),arrows=[];
+    for(var r=0;r<2;r++)for(var k=0;k<5;k++){
+      var cn=new T.Mesh(new T.ConeGeometry(.11,.4,10),MAT.glow);cn.rotation.z=-Math.PI/2;cn.position.set(0,0,-.35+r*.7);g4.add(cn);arrows.push({m:cn,k:k});
+    }
+    return {gap:.95,tick:function(e,t){arrows.forEach(function(a){a.m.position.x=-2.1+(((a.k*.9)+t*(.5+e))%4.5)})},layers:[
+      Lr('PCB + 48GB GDDR6','Printed board with twelve GDDR6 packages around the GPU and a PCIe Gen4 x16 edge connector.',g0,0),
+      Lr('AD102-class Ada die','The Ada Lovelace GPU die, the part that does the graphics and tensor work.',g1,.1),
+      Lr('Heatsink fin block','Dense fin stack running the card length. The card is passively cooled.',g2,.2),
+      Lr('Dual-slot shroud','Ducting shroud that forces chassis airflow through the fins.',g3,.42),
+      Lr('Chassis airflow channels','Two front-to-back airflow channels carry heat out. Fans live in the server, not the card.',g4,.6)
+    ],spec:'48GB GDDR6 · PCIe · dual-slot passive'};
+  }
+  var BUILDERS=[sceneRubin,sceneB200,sceneH100,sceneA100,sceneL40S];
+
+  function disposeGroup(g){
+    g.traverse(function(o){
+      if(o.geometry)o.geometry.dispose();
+      if(o.isLineSegments&&o.material)o.material.dispose();
+    });
+  }
+  function setCaption(){
+    if(!cur&&!SC)return;
+    var sc=SC||cur,n=sc.layers.length,a=clamp(Math.floor(P*n),0,n-1);
+    var key=curIdx+':'+a;if(key===lastKey)return;lastKey=key;
+    var l=sc.layers[a];
+    $('capKicker').textContent=GPUS[curIdx].short+' · layer '+(a+1)+' of '+n;
+    $('capTitle').textContent=l.name;$('capBody').textContent=l.desc;$('capSpec').textContent=sc.spec;
+    [].forEach.call($('rail').children,function(el,i){el.className=i===a?'on':''});
+  }
+  function buildRail(sc){
+    var r=$('rail');r.textContent='';
+    sc.layers.slice().forEach(function(l){var s=document.createElement('span');s.textContent=l.name;r.appendChild(s)});
+    // rail is shown top-to-bottom in layer order
+  }
+  function setScene(idx){
+    if(idx===curIdx)return;
+    curIdx=idx;lastKey='';
+    var sc=BUILDERS[idx]();
+    if(glOK){
+      if(cur){root.remove(cur.group);disposeGroup(cur.group)}
+      var group=new T.Group(),sy=0;
+      sc.layers.forEach(function(l){group.add(l.group);sy+=l.y});
+      group.position.y=-(sy/sc.layers.length)-.1;
+      root.add(group);sc.group=group;sc.base=group.position.y;
+    }
+    cur=sc;SC=sc;buildRail(sc);setCaption();frame(performance.now()/1000);
+  }
+  stage.set=setScene;
+
+  function sizeGL(){
+    var r=cv.getBoundingClientRect();if(!r.width)return;
+    var dpr=Math.min(window.devicePixelRatio||1,MOBILE?1.25:2);
+    if(glOK){
+      R.setPixelRatio(dpr);R.setSize(r.width,r.height,false);
+      camera.aspect=r.width/r.height;
+      var narrow=r.width<640;
+      camera.position.set(5.2,3.8,narrow?12.5:9.6);camera.lookAt(0,0,0);
+      root.position.x=narrow?0:1.5;root.position.y=narrow?1.0:0;
+      camera.updateProjectionMatrix();
+    }else{cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);ctx2.setTransform(dpr,0,0,dpr,0,0)}
+  }
+  function draw2d(){
+    var r=cv.getBoundingClientRect(),W=r.width,H=r.height;ctx2.clearRect(0,0,W,H);
+    if(!SC)return;var n=SC.layers.length,w=Math.min(W*.5,420),dh=w*.2,cx=W<640?W/2:W*.62,e=ease(P),a=clamp(Math.floor(P*n),0,n-1);
+    for(var i=0;i<n;i++){
+      var y=H*.45+(i-(n-1)/2)*(14+e*58),act=i===a;
+      ctx2.beginPath();ctx2.moveTo(cx,y-dh);ctx2.lineTo(cx+w/2,y);ctx2.lineTo(cx,y+dh);ctx2.lineTo(cx-w/2,y);ctx2.closePath();
+      ctx2.fillStyle=act?'#0E2A42':'#0A1A2C';ctx2.fill();ctx2.strokeStyle=act?'#00F0FF':'rgba(0,240,255,.4)';ctx2.lineWidth=act?1.6:1;ctx2.stroke();
+    }
+  }
+  function ease(p){var x=clamp((p-.04)/.8,0,1);return x*x*(3-2*x)}
+  var pointerYaw=0;
+  function frame(t){
+    if(!SC)return;
+    var e=ease(P),n=SC.layers.length,a=clamp(Math.floor(P*n),0,n-1);
+    if(glOK){
+      SC.layers.forEach(function(l,i){
+        l.group.position.y=l.y+(i-(n-1)/2)*SC.gap*e;
+        var on=i===a;
+        l.group.traverse(function(o){if(o.isLineSegments){o.material.opacity=on?1:.32}});
+      });
+      if(SC.tick)SC.tick(e,t);
+      yaw+=(pointerYaw-yaw)*.06;
+      root.rotation.y=-.5+P*1.15+yaw+(reduce?0:t*.1);
+      root.rotation.x=.05;
+      R.render(scene,camera);
+    }else{draw2d()}
+  }
+  function onScroll(){
+    var r=scrub.getBoundingClientRect(),span=r.height-window.innerHeight;
+    P=clamp(-r.top/Math.max(1,span),0,1);
+    var wi=P*3;
+    words.forEach(function(el,i){el.style.opacity=clamp(1-Math.abs(wi-(i+.5))*1.5,0,1)});
+    bar.style.width=(P*100)+'%';
+    setCaption();
+    if(reduce)frame(0);
+  }
+  var tick=false;
+  window.addEventListener('scroll',function(){if(!tick){tick=true;requestAnimationFrame(function(){tick=false;onScroll()})}},{passive:true});
+  window.addEventListener('resize',function(){sizeGL();onScroll();if(reduce)frame(0)});
+  var stageEl=scrub.querySelector('.stage');
+  stageEl.addEventListener('pointermove',function(ev){var r=stageEl.getBoundingClientRect();pointerYaw=((ev.clientX-r.left)/r.width-.5)*1.0});
+  var visible=true;
+  if('IntersectionObserver' in window)new IntersectionObserver(function(en){visible=en[0].isIntersecting},{threshold:0}).observe(scrub);
+  function loop(ts){requestAnimationFrame(loop);if(!visible||document.hidden||reduce)return;frame(ts/1000)}
+  sizeGL();calc();onScroll();
+  if(!reduce)requestAnimationFrame(loop);
+
+  /* ---------- mesh globe ---------- */
+  (function(){
+    var list=$('meshList'),rows=[],sel=0,vals=NODES.map(function(n){return n.rtt});
+    NODES.forEach(function(n,i){
+      var b=document.createElement('button');b.type='button';b.className='mrow'+(i===0?' on':'');
+      b.innerHTML='<span><strong>'+n.city+'</strong><br><small>'+n.id+'</small></span><span class="ms"></span><span class="tr"><i></i></span>';
+      b.addEventListener('click',function(){pick(i)});list.appendChild(b);rows.push(b);
+    });
+    function paint(){
+      rows.forEach(function(b,i){
+        b.querySelector('.ms').textContent=vals[i].toFixed(1)+' ms';
+        var bar=b.querySelector('.tr i');bar.style.width=clamp(vals[i]/24*100,8,100)+'%';
+        bar.style.background=vals[i]<18?'var(--emerald)':'var(--amber)';
+      });
+    }
+    function pick(i){sel=i;rows.forEach(function(b,k){b.classList.toggle('on',k===i)});if(mesh.mark)mesh.mark(i)}
+    var mesh={mark:null};
+    paint();
+    if(!reduce)setInterval(function(){NODES.forEach(function(n,i){vals[i]=n.rtt+(Math.random()-.5)*1.6});paint()},1600);
+    var mc=$('meshCanvas');
+    if(!T||!testGL()){mc.style.display='none';return}
+    var mr;try{mr=new T.WebGLRenderer({canvas:mc,antialias:!MOBILE,alpha:true})}catch(e){mc.style.display='none';return}
+    var ms=new T.Scene(),mcam=new T.PerspectiveCamera(38,1,.1,50);mcam.position.set(0,.25,3.7);mcam.lookAt(0,0,0);
+    var globe=new T.Group();ms.add(globe);globe.rotation.y=-1.22;
+    globe.add(new T.Mesh(new T.SphereGeometry(.985,40,26),new T.MeshBasicMaterial({color:0x04080f})));
+    globe.add(new T.Mesh(new T.SphereGeometry(1,32,20),new T.MeshBasicMaterial({color:0x0a5a6b,wireframe:true,transparent:true,opacity:.28})));
+    function ll(lat,lon,r){var ph=(90-lat)*Math.PI/180,th=(lon+180)*Math.PI/180;return new T.Vector3(-r*Math.sin(ph)*Math.cos(th),r*Math.cos(ph),r*Math.sin(ph)*Math.sin(th))}
+    var pts=NODES.map(function(n){return ll(n.lat,n.lon,1)}),dots=[],pulses=[];
+    NODES.forEach(function(n,i){
+      var d=new T.Mesh(new T.SphereGeometry(.03,14,14),new T.MeshBasicMaterial({color:0x10b981}));d.position.copy(pts[i]);globe.add(d);dots.push(d);
+      if(i>0){
+        var a=pts[0],b=pts[i],mid=a.clone().add(b).multiplyScalar(.5),lift=1+a.distanceTo(b)*.35;
+        mid.normalize().multiplyScalar(lift);
+        var curve=new T.QuadraticBezierCurve3(a,mid,b);
+        var geo=new T.BufferGeometry().setFromPoints(curve.getPoints(48));
+        globe.add(new T.Line(geo,new T.LineBasicMaterial({color:0x00f0ff,transparent:true,opacity:.45})));
+        var p=new T.Mesh(new T.SphereGeometry(.022,10,10),new T.MeshBasicMaterial({color:0xffffff}));globe.add(p);
+        pulses.push({m:p,c:curve,o:i*.17});
+      }
+    });
+    mesh.mark=function(i){dots.forEach(function(d,k){d.scale.setScalar(k===i?2:1);d.material.color.setHex(k===i?0x00f0ff:0x10b981)})};
+    mesh.mark(0);
+    var drag=false,lx=0,ly=0,vy=0;
+    mc.addEventListener('pointerdown',function(e){drag=true;lx=e.clientX;ly=e.clientY;mc.setPointerCapture(e.pointerId);mc.style.cursor='grabbing'});
+    mc.addEventListener('pointerup',function(){drag=false;mc.style.cursor='grab'});
+    mc.addEventListener('pointermove',function(e){if(!drag)return;globe.rotation.y+=(e.clientX-lx)*.008;globe.rotation.x=clamp(globe.rotation.x+(e.clientY-ly)*.005,-.9,.9);lx=e.clientX;ly=e.clientY});
+    function msize(){var r=mc.getBoundingClientRect();if(!r.width)return;mr.setPixelRatio(Math.min(window.devicePixelRatio||1,MOBILE?1.25:2));mr.setSize(r.width,r.height,false);mcam.aspect=r.width/r.height;mcam.position.z=r.width<420?4.8:3.7;mcam.updateProjectionMatrix()}
+    window.addEventListener('resize',msize);msize();
+    var vis=true;
+    if('IntersectionObserver' in window)new IntersectionObserver(function(en){vis=en[0].isIntersecting},{threshold:0}).observe(mc);
+    var t0=performance.now();
+    function mloop(){
+      requestAnimationFrame(mloop);
+      if(!vis||document.hidden)return;
+      var t=(performance.now()-t0)/1000;
+      if(!reduce&&!drag)globe.rotation.y+=.0022;
+      pulses.forEach(function(p){var u=((t*.35)+p.o)%1;p.m.position.copy(p.c.getPoint(u))});
+      mr.render(ms,mcam);
+    }
+    if(reduce){pulses.forEach(function(p){p.m.position.copy(p.c.getPoint(.5))});mr.render(ms,mcam)}else mloop();
+  })();
+
+  /* ---------- CLI ---------- */
+  var term=$('term'),inp=$('cliIn'),hist=[],hi=0;
+  function line(txt,cls){var d=document.createElement('div');d.className='ln '+(cls||'');d.textContent=txt;term.appendChild(d);term.scrollTop=term.scrollHeight}
+  function json(o){line(JSON.stringify(o,null,2))}
+  function find(q){
+    q=(q||'').toLowerCase().replace(/[^a-z0-9]/g,'');if(q==='nvl72')q='b200';
+    for(var i=0;i<GPUS.length;i++){if(GPUS[i].id===q||GPUS[i].short.toLowerCase().replace(/[^a-z0-9]/g,'')===q)return GPUS[i]}
+    return null;
+  }
+  var CMDS={
+    help:function(){line('commands: status, quote <gpu> <count> <hours>, nodes, orderbook [gpu], clear, help','dim');line('gpus: rubin, b200, h100, a100, l40s','dim')},
+    status:function(){json({service:'ApexSovereign exchange',session:'simulated',price_source:'reference',latency_target_ms:18,ledger_rule:'$1.00 = 100 CU',nodes:NODES.length})},
+    nodes:function(){json({price_source:'reference',probes:'simulated',nodes:NODES.map(function(n){return{id:n.id,city:n.city,reference_rtt_ms:n.rtt,within_target:n.rtt<18}})})},
+    orderbook:function(a){
+      var g=find(a[0])||GPUS[2],sizes=[16,32,64,128,256],asks=[],bids=[];
+      for(var i=0;i<5;i++){
+        asks.push({price_usd_hr:+(g.spot*(1+.004*(i+1))).toFixed(3),gpus:sizes[i]});
+        bids.push({price_usd_hr:+(g.spot*(1-.004*(i+1))).toFixed(3),gpus:sizes[4-i]});
+      }
+      json({price_source:'reference',book:'simulated',gpu:g.short,unit:'usd_per_gpu_hour',asks:asks,bids:bids});
+    },
+    quote:function(a){
+      var g=find(a[0]);
+      if(!g){line('usage: quote <rubin|b200|h100|a100|l40s> <gpus> <hours>','err');return}
+      var n=parseInt(a[1],10)||8,h=parseInt(a[2],10)||24;
+      if(n<1||n>4096||h<1||h>8760){line('gpus must be 1-4096 and hours 1-8760','err');return}
+      var spot=g.spot*n*h,base=g.base*n*h;
+      json({price_source:'reference',gpu:g.short,gpus:n,hours:h,apex_usd:+spot.toFixed(2),baseline_usd:+base.toFixed(2),compute_units:Math.round(spot*100),capital_retained_usd:+(base-spot).toFixed(2),saving_pct:+((1-spot/base)*100).toFixed(1)});
+    },
+    clear:function(){term.textContent=''}
+  };
+  function run(raw){
+    var t=raw.trim();if(!t)return;
+    line('apex> '+t,'cmd');hist.push(t);hi=hist.length;
+    var p=t.split(/\s+/),c=p.shift().toLowerCase();
+    if(CMDS[c])CMDS[c](p);else line('unknown command: '+c+'. type help','err');
+  }
+  $('cliForm').addEventListener('submit',function(e){e.preventDefault();run(inp.value);inp.value=''});
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='ArrowUp'&&hist.length){e.preventDefault();hi=Math.max(0,hi-1);inp.value=hist[hi]||''}
+    if(e.key==='ArrowDown'&&hist.length){e.preventDefault();hi=Math.min(hist.length,hi+1);inp.value=hist[hi]||''}
+  });
+  ['status','quote h100 32 720','quote b200 8 168','nodes','orderbook h100','clear'].forEach(function(c){
+    var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=c;
+    b.addEventListener('click',function(){run(c)});$('hints').appendChild(b);
+  });
+  line('ApexSovereign CLI (simulated). type help','dim');
+  run('quote h100 32 720');
+})();
+</script>
+</body>
+</html>
