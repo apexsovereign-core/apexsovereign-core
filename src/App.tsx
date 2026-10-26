@@ -64,9 +64,11 @@ export function App() {
       <header className="sticky top-0 z-50 w-full border-b border-[#00F0FF]/20 bg-[#080D16]/85 backdrop-blur-2xl transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
           {/* Brand Logo & Delta Emblem */}
-          <div
+          <button
+            type="button"
             onClick={() => navigateTo('landing')}
-            className="flex items-center gap-3 cursor-pointer group"
+            aria-label="ApexSovereign.ai home"
+            className="flex items-center gap-3 cursor-pointer group text-left"
           >
             <CyanFacetedJewelEmblem className="w-8 h-8" />
             <div className="flex flex-col">
@@ -74,10 +76,10 @@ export function App() {
                 APEXSOVEREIGN<span className="text-[#00F0FF]">.AI</span>
               </span>
               <span className="text-[9px] font-mono text-slate-400 tracking-widest uppercase">
-                TIER-6 SOVEREIGN INSTITUTIONAL NETWORK
+                SOVEREIGN COMPUTE EXCHANGE
               </span>
             </div>
-          </div>
+          </button>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-1 lg:gap-2">
@@ -89,6 +91,8 @@ export function App() {
             ].map((item) => (
               <button
                 key={item.id}
+                type="button"
+                aria-current={activePage === item.id ? 'page' : undefined}
                 onClick={() => navigateTo(item.id as ActivePage)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-mono tracking-wider transition ${
                   activePage === item.id
@@ -104,15 +108,16 @@ export function App() {
           {/* Right Header Controls / SLA Badge & CTA */}
           <div className="flex items-center gap-3">
             <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-[#030508] border border-slate-800 text-[10px] font-mono">
-              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-              <span className="text-slate-300">10.4ms SLA</span>
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-slate-300">TARGET 10.4ms P99</span>
               <span className="text-slate-600">|</span>
-              <span className="text-emerald-400 font-bold">AMD SEV-SNP & CC</span>
+              <span className="text-emerald-400 font-bold">SEV-SNP / CC TARGET</span>
               <span className="text-slate-600">|</span>
               <span className="text-[#00F0FF]">$1.00 = 100 CU</span>
             </div>
 
             <button
+              type="button"
               onClick={() => navigateTo('terminal')}
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00F0FF] hover:bg-[#38BDF8] text-[#020305] font-mono font-bold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(0,240,255,0.4)] transition active:scale-95"
             >
@@ -123,19 +128,20 @@ export function App() {
         </div>
       </header>
 
-      {/* 2. Global Live Telemetry Banner */}
-      <div className="w-full bg-[#030508] border-b border-[#00F0FF]/15 px-4 py-2 text-center overflow-x-auto whitespace-nowrap">
+      {/* 2. Reference Targets Banner (not live telemetry) */}
+      <div
+        className="w-full bg-[#030508] border-b border-[#00F0FF]/15 px-4 py-2 text-center overflow-x-auto whitespace-nowrap"
+        aria-label="Reference engineering targets and implemented ledger invariant"
+      >
         <div className="inline-flex items-center gap-4 text-[10px] sm:text-[11px] font-mono tracking-wider text-slate-300">
-          <span className="flex items-center gap-1.5 text-[#00F0FF] font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF] animate-ping" />
-            10.4ms SLA LATENCY
-          </span>
+          <span className="text-amber-300 font-bold">REFERENCE TARGETS:</span>
+          <span className="text-[#00F0FF] font-bold">10.4ms P99</span>
           <span className="text-slate-600">•</span>
-          <span className="text-[#10B981] font-bold">99.999% MESH UPTIME</span>
+          <span className="text-[#10B981] font-bold">99.999% UPTIME TARGET</span>
           <span className="text-slate-600">•</span>
-          <span className="text-white">$1.00 USD = 100 CU ATOMIC LEDGER</span>
+          <span className="text-white">IMPLEMENTED: $1.00 USD = 100 CU ATOMIC LEDGER</span>
           <span className="text-slate-600">•</span>
-          <span className="text-[#38BDF8] font-bold">1.44 EXAFLOPS AGGREGATE POOL</span>
+          <span className="text-[#38BDF8] font-bold">1.44 EXAFLOPS TARGET POOL</span>
           <span className="text-slate-600">•</span>
           <span className="text-slate-400">RUBIN · B200 · H100 · A100 · L40S</span>
         </div>
@@ -160,8 +166,11 @@ export function App() {
               </h1>
 
               <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                Spot compute arbitrage, line-rate eBPF routing, and disaggregated inference memory.
-                Retain <strong className="text-[#10B981]">32% to 52% margin savings</strong> over AWS, Azure, and Google Cloud with atomic Supabase settlement.
+                Spot compute arbitrage, line-rate eBPF routing, and disaggregated
+                inference memory. The <strong className="text-[#10B981]">32% to 52%</strong>{' '}
+                range is a REFERENCE planning estimate against hyperscaler
+                on-demand rates, not a measured or guaranteed saving. CU
+                settlement is implemented as an atomic ledger at $1.00 = 100 CU.
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
@@ -205,10 +214,10 @@ export function App() {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-mono text-[#00F0FF] uppercase tracking-wider">
-                    MODULE 02 // REAL-TIME SPOT ARBITRAGE
+                    MODULE 02 // REFERENCE SPOT ARBITRAGE MODEL
                   </span>
                   <h2 className="text-2xl font-bold text-white tracking-tight">
-                    Spot Arbitrage Stepper Calculator
+                    Reference Spot Arbitrage Calculator
                   </h2>
                 </div>
                 <span className="text-xs font-mono text-slate-500 hidden sm:inline">
@@ -228,10 +237,10 @@ export function App() {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-mono text-[#00F0FF] uppercase tracking-wider">
-                    MODULE 04 // VECTOR ROUTING MESH
+                    MODULE 04 // VECTOR ROUTING MESH PREVIEW
                   </span>
                   <h2 className="text-2xl font-bold text-white tracking-tight">
-                    Global Ingress Mesh & Real-Time Pulses
+                    Global Ingress Mesh Preview & Simulated Pulses
                   </h2>
                 </div>
                 <span className="text-xs font-mono text-slate-500 hidden sm:inline">
@@ -308,10 +317,10 @@ export function App() {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs font-mono text-[#00F0FF] uppercase tracking-wider">
-                  CRYPTOGRAPHIC TREASURY & ONBOARDING
+                  CRYPTOGRAPHIC TREASURY & SETTLEMENT
                 </span>
                 <h2 className="text-2xl font-bold text-white tracking-tight">
-                  Atomic Ledger, PayPal Settlement & Bearer Keys
+                  Atomic Ledger &amp; Webhook-Verified PayPal Settlement
                 </h2>
               </div>
               <button
@@ -334,23 +343,32 @@ export function App() {
             <span>APEXSOVEREIGN.AI // CRYPTOGRAPHIC CONTROL PLANE · V3.2.0</span>
           </div>
 
-          <div className="flex items-center gap-6 text-[11px]">
-            <button onClick={() => navigateTo('landing')} className="hover:text-white">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px]">
+            <button type="button" onClick={() => navigateTo('landing')} className="hover:text-white">
               EXCHANGES
             </button>
-            <button onClick={() => navigateTo('terminal')} className="hover:text-white">
+            <button type="button" onClick={() => navigateTo('terminal')} className="hover:text-white">
               TERMINAL
             </button>
-            <button onClick={() => navigateTo('futures')} className="hover:text-white">
+            <button type="button" onClick={() => navigateTo('futures')} className="hover:text-white">
               FUTURES
             </button>
-            <button onClick={() => navigateTo('billing')} className="hover:text-white">
+            <button type="button" onClick={() => navigateTo('billing')} className="hover:text-white">
               BILLING
             </button>
+            <a href="/legal/terms.html" className="hover:text-white">
+              TERMS
+            </a>
+            <a href="/legal/privacy.html" className="hover:text-white">
+              PRIVACY
+            </a>
+            <a href="/legal/acceptable-use.html" className="hover:text-white">
+              ACCEPTABLE USE
+            </a>
           </div>
 
-          <div className="text-[10px] text-slate-600">
-            ALL SYSTEMS NOMINAL · 10.4ms P99 SLA
+          <div className="text-[10px] text-slate-600 text-center sm:text-right">
+            TARGET 10.4ms P99 · $1.00 = 100 CU · Status is not asserted here
           </div>
         </div>
       </footer>

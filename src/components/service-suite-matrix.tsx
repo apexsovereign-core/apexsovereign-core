@@ -32,12 +32,12 @@ export const APEX_SERVICES: ServiceItem[] = [
   {
     id: 'spot-arbitrage',
     number: '01',
-    title: 'Real-Time GPU Spot Arbitrage',
-    tagline: 'Sub-18ms Routing · Bare-Metal Lowest Cost',
+    title: 'GPU Spot Arbitrage',
+    tagline: 'TARGET: Sub-18ms Routing · Bare-Metal Lowest Cost',
     description:
-      'Continuous spot arbitrage dynamically rerouting training & inference jobs to lowest-cost bare-metal capacity with 32% to 41% verified savings against hyperscaler on-demand rates.',
-    metric: '32% - 52%',
-    metricLabel: 'Net Margin Savings vs AWS/GCP',
+      'Spot arbitrage is designed to reroute training and inference jobs toward lower-cost bare-metal capacity. The 32% to 52% range is a REFERENCE planning range, not a verified saving or live quote.',
+    metric: 'REFERENCE 32% - 52%',
+    metricLabel: 'Reference savings range vs hyperscaler on-demand',
     accent: '#00F0FF',
     href: '/terminal',
     icon: TrendingDown,
@@ -46,11 +46,11 @@ export const APEX_SERVICES: ServiceItem[] = [
     id: 'capacity-futures',
     number: '02',
     title: 'Capacity Futures Clearing',
-    tagline: 'Locked-Rate 30/60/90-Day Forward Contracts',
+    tagline: '30/60/90-Day Forward Reservation Model',
     description:
-      'Institutional forward reservation contracts locking GPU clusters weeks or months in advance with double-entry escrow clearing and 100% hardware SLA guarantee.',
-    metric: '$1.88 / hr',
-    metricLabel: '30-Day Forward Rubin Contract',
+      'Forward reservation contracts are modeled around double-entry escrow clearing. Availability, rate locks, and service levels are contract terms and are not asserted by this page.',
+    metric: 'REFERENCE $1.88 / hr',
+    metricLabel: 'Reference 30-day forward Rubin rate',
     accent: '#38BDF8',
     href: '/futures',
     icon: Calendar,
@@ -59,11 +59,11 @@ export const APEX_SERVICES: ServiceItem[] = [
     id: 'token-production-futures',
     number: '03',
     title: 'Token Production Futures',
-    tagline: 'Fixed-Cost Guaranteed Token Throughput',
+    tagline: 'Fixed-Cost Token Throughput Model',
     description:
-      'Derivative token supply contracts hedging volatility by fixing inference costs per 1M tokens across DeepSeek-V3, Llama-3.1 70B, and custom MoE architectures.',
-    metric: '$0.065 / 1M',
-    metricLabel: 'Fixed Throughput Guarantee',
+      'Token supply contracts are modeled to reduce inference-cost volatility by fixing a reference cost per 1M tokens across DeepSeek-V3, Llama-3.1 70B, and custom MoE architectures.',
+    metric: 'REFERENCE $0.065 / 1M',
+    metricLabel: 'Reference throughput rate',
     accent: '#10B981',
     href: '/futures',
     icon: Coins,
@@ -74,9 +74,9 @@ export const APEX_SERVICES: ServiceItem[] = [
     title: 'Confidential Compute Enclaves',
     tagline: 'AMD SEV-SNP & NVIDIA CC Memory Isolation',
     description:
-      'Hardware-encrypted memory partitions ensuring zero-leak confidential computing for proprietary enterprise models, weights, and private customer training data.',
-    metric: 'AES-256-XTS',
-    metricLabel: 'On-Die Cryptographic RoT',
+      'Hardware-isolated memory partitions are designed to protect proprietary enterprise models, weights, and private training data. Actual guarantees depend on the selected hardware and attestation configuration.',
+    metric: 'REFERENCE AES-256-XTS',
+    metricLabel: 'Reference on-die cryptographic RoT',
     accent: '#EC4899',
     href: '/terminal',
     icon: Lock,
@@ -87,9 +87,9 @@ export const APEX_SERVICES: ServiceItem[] = [
     title: 'Atomic Ledger Settlement',
     tagline: 'Double-Entry PayPal Webhooks ($1.00 = 100 CU)',
     description:
-      'Instant financial clearing via verified cryptographic PayPal webhooks (/v1/webhooks/paypal) executing atomic Supabase PostgreSQL double-entry credit minting.',
-    metric: '$1.00 = 100 CU',
-    metricLabel: 'Fixed Parity Instant Minting',
+      'Webhook-verified PayPal settlement (/v1/webhooks/paypal) calls an atomic Supabase PostgreSQL credit RPC. CU is minted only after signature verification and is idempotent per capture.',
+    metric: 'IMPLEMENTED $1.00 = 100 CU',
+    metricLabel: 'Fixed parity · webhook-only minting',
     accent: '#A78BFA',
     href: '/billing',
     icon: CreditCard,
@@ -100,9 +100,9 @@ export const APEX_SERVICES: ServiceItem[] = [
     title: 'Disaggregated Prefill/Decode Mesh',
     tagline: 'Split-Phase Inference Memory Architecture',
     description:
-      'Disaggregated pipeline separating compute-heavy prompt prefilling on high-bandwidth optical nodes from token generation nodes for maximum FLOP efficiency and sub-15ms TTFT.',
-    metric: '10.4ms P99',
-    metricLabel: 'Split-Phase Median RTT',
+      'Disaggregated pipeline design separating compute-heavy prompt prefilling on high-bandwidth optical nodes from token generation nodes. TARGET: sub-15ms TTFT; this figure is not a measured production value.',
+    metric: 'TARGET 10.4ms P99',
+    metricLabel: 'Target split-phase RTT',
     accent: '#F59E0B',
     href: '/terminal',
     icon: Zap,
@@ -122,9 +122,16 @@ export const ServiceSuiteMatrix: React.FC = () => {
             Six Sovereign Enterprise Capabilities
           </h2>
         </div>
-        <p className="text-xs font-mono text-slate-400 max-w-md">
-          Hardware-level cryptographic security, bare-metal spot arbitrage, and forward derivative clearing.
-        </p>
+        <div className="text-xs font-mono text-slate-400 max-w-md space-y-1">
+          <p>
+            Hardware-level cryptographic security, bare-metal spot arbitrage,
+            and forward reservation clearing.
+          </p>
+          <p className="text-[10px] text-amber-300">
+            REFERENCE and TARGET figures are planning estimates. They are not
+            measured production results or binding offers.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

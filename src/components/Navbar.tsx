@@ -39,6 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           ].map((item) => (
             <button
               key={item.id}
+              type="button"
+              aria-current={activePage === item.id ? 'page' : undefined}
               onClick={() => onNavigate?.(item.id as any)}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono tracking-wider transition ${
                 activePage === item.id
@@ -54,10 +56,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Right SLA & CTA Controls */}
         <div className="flex items-center gap-3">
           <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-[#030508] border border-slate-800 text-[10px] font-mono">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-            <span className="text-slate-300">10.4ms SLA</span>
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="text-slate-300">TARGET 10.4ms P99</span>
             <span className="text-slate-600">|</span>
-            <span className="text-emerald-400 font-bold">AMD SEV-SNP & CC</span>
+            <span className="text-emerald-400 font-bold">SEV-SNP / CC TARGET</span>
             <span className="text-slate-600">|</span>
             <span className="text-[#00F0FF]">$1.00 = 100 CU</span>
           </div>

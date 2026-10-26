@@ -385,6 +385,26 @@ function apexSovereignApiPlugin(): Plugin {
 
         const url = req.url ? req.url.split('?')[0] : '';
 
+        // Billing, payment webhooks, API keys, health, and public runtime
+        // configuration must always come from the real backend. Never serve
+        // fabricated balances, receipts, keys, or security status in dev.
+        const backendOwnedPrefixes = [
+          '/v1/billing',
+          '/v1/webhooks/paypal',
+          '/api/webhooks/paypal',
+          '/v1/keys',
+          '/v1/config/public',
+        ];
+        const isBackendOwned =
+          url === '/health' ||
+          url === '/api/health' ||
+          backendOwnedPrefixes.some(
+            (prefix) => url === prefix || url.startsWith(`${prefix}/`),
+          );
+        if (isBackendOwned) {
+          return next();
+        }
+
         // Dedicated Static Favicon & Web Manifest Middleware Guard
         if (
           url.endsWith('.ico') ||
@@ -3073,6 +3093,18 @@ export default defineConfig(() => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // Financial, auth, and health routes bypass the dev mocks and reach the
+      // FastAPI backend. Set VITE_DEV_API_PROXY for a different backend host.
+      proxy: {
+        '/v1': {
+          target: process.env.VITE_DEV_API_PROXY || 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/health': {
+          target: process.env.VITE_DEV_API_PROXY || 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+      },
     },
     preview: {
       port: 3000,

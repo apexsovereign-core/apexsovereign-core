@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Notice (Draft) | ApexSovereign.ai</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; background: #020305; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; line-height: 1.65; }
+    main { max-width: 820px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+    h1, h2 { color: #fff; line-height: 1.25; }
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.15rem; margin-top: 2rem; }
+    a { color: #00f0ff; }
+    .draft { border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.12); color: #fcd34d; padding: 0.9rem 1rem; border-radius: 0.75rem; font-size: 0.9rem; }
+    .muted { color: #94a3b8; font-size: 0.85rem; }
+    code { color: #00f0ff; }
+  </style>
+</head>
+<body>
+<main>
+  <p class="draft"><strong>DRAFT — NOT LEGAL ADVICE.</strong> This page is a product-engineering placeholder. It must be reviewed and finalized by qualified counsel before publication.</p>
+  <h1>Privacy Notice</h1>
+  <p class="muted">Draft revision: 2026-10-27</p>
+
+  <h2>1. Data we process</h2>
+  <p>Account identifiers, email addresses, authentication claims, billing-order identifiers, ledger entries, and technical logs needed to operate and secure the service. Payment card data is handled by PayPal and is not stored by this application.</p>
+
+  <h2>2. Why we process it</h2>
+  <p>To authenticate users, create and capture PayPal orders, verify webhooks, mint CU idempotently, prevent fraud, maintain audit integrity, and comply with legal obligations.</p>
+
+  <h2>3. Access tokens and secrets</h2>
+  <p>The billing interface accepts a Supabase access token for the current browser session and stores it in <code>sessionStorage</code>. Server secrets such as <code>PAYPAL_CLIENT_SECRET</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code>, and <code>LEDGER_HMAC_KEYS_JSON</code> must never be shipped to the browser.</p>
+
+  <h2>4. Retention</h2>
+  <p>Ledger and payment records are retained according to accounting, tax, and dispute-resolution requirements. Retention periods must be finalized by counsel and the operator.</p>
+
+  <h2>5. Processors</h2>
+  <p>PayPal processes payments. Supabase/PostgreSQL hosts the ledger. Hosting and observability providers may process logs. A current subprocessor list must be maintained before launch.</p>
+
+  <h2>6. Your rights</h2>
+  <p>Depending on your jurisdiction, you may have rights to access, correct, delete, restrict, or port personal data. A verified request channel must be established before launch.</p>
+
+  <h2>7. Contact</h2>
+  <p>Privacy contact placeholder: <code>privacy@apexsovereign.ai</code> (to be verified before publication).</p>
+
+  <p class="muted"><a href="/">Return to ApexSovereign.ai</a></p>
+</main>
+</body>
+</html>

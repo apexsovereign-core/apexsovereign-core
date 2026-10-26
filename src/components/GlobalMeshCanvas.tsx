@@ -7,9 +7,11 @@ interface MeshNode {
   region: string;
   xPct: number;
   yPct: number;
+  /** Reference RTT for the topology illustration. Not a live measurement. */
   latencyMs: number;
+  /** Reference capacity for the topology illustration. Not live inventory. */
   activeGpus: number;
-  status: 'OPTIMAL' | 'ACTIVE';
+  status: 'SIMULATED';
   tier: string;
   hardwareEnclave: string;
 }
@@ -23,7 +25,7 @@ const NODES: MeshNode[] = [
     yPct: 0.38,
     latencyMs: 9.8,
     activeGpus: 1120,
-    status: 'OPTIMAL',
+    status: 'SIMULATED',
     tier: 'Tier 4 Liquid',
     hardwareEnclave: 'AMD SEV-SNP + NVIDIA CC Dual Enclave',
   },
@@ -35,7 +37,7 @@ const NODES: MeshNode[] = [
     yPct: 0.32,
     latencyMs: 11.2,
     activeGpus: 890,
-    status: 'OPTIMAL',
+    status: 'SIMULATED',
     tier: 'GDPR Sovereign',
     hardwareEnclave: 'AMD SEV-SNP On-Die Attestation',
   },
@@ -47,7 +49,7 @@ const NODES: MeshNode[] = [
     yPct: 0.58,
     latencyMs: 10.4,
     activeGpus: 1440,
-    status: 'OPTIMAL',
+    status: 'SIMULATED',
     tier: 'Subsea Interconnect',
     hardwareEnclave: 'NVIDIA Confidential Computing Root-of-Trust',
   },
@@ -207,19 +209,27 @@ export const GlobalMeshCanvas: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-[#00F0FF] animate-ping" />
           <span className="text-xs font-mono font-bold text-white tracking-wider uppercase">
-            TIER-6 VECTOR MESH TOPOLOGY & CONFIDENTIAL ENCLAVES
+            VECTOR MESH TOPOLOGY PREVIEW &amp; ENCLAVE CONCEPTS
+          </span>
+          <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            SIMULATED
           </span>
         </div>
 
         <div className="flex items-center gap-4 text-xs font-mono">
-          <span className="text-slate-400">P99 SLA LATENCY: <strong className="text-[#00F0FF]">10.4ms</strong></span>
-          <span className="text-slate-400">HARDWARE ENCLAVES: <strong className="text-emerald-400">AMD SEV-SNP & CC</strong></span>
+          <span className="text-slate-400">REFERENCE RTT: <strong className="text-[#00F0FF]">10.4ms</strong></span>
+          <span className="text-slate-400">ENCLAVE TARGET: <strong className="text-emerald-400">AMD SEV-SNP &amp; CC</strong></span>
         </div>
       </div>
 
       {/* Main Canvas Area */}
       <div className="relative min-h-[360px] sm:min-h-[420px] bg-gradient-to-b from-[#020305] via-[#040813] to-[#020305]">
-        <canvas ref={canvasRef} className="w-full h-[400px] cursor-pointer" />
+        <canvas
+          ref={canvasRef}
+          className="w-full h-[400px] cursor-pointer"
+          role="img"
+          aria-label="Simulated global mesh topology with three reference regions. Use the region buttons below to switch the selected preview."
+        />
 
         {/* Floating Active Cluster HUD Info with Hardware Security */}
         <div className="absolute top-4 left-4 p-4 rounded-xl bg-[#080D16]/90 border border-[#00F0FF]/30 backdrop-blur-xl max-w-sm shadow-xl space-y-2 pointer-events-none">
@@ -227,9 +237,9 @@ export const GlobalMeshCanvas: React.FC = () => {
             <span className="text-[10px] font-mono font-bold text-[#00F0FF] uppercase">
               SELECTED VECTOR ROUTE
             </span>
-            <span className="text-[10px] font-mono text-[#10B981] flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              {selectedNode.status}
+            <span className="text-[10px] font-mono text-amber-300 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+              {selectedNode.status} PREVIEW
             </span>
           </div>
 
@@ -243,11 +253,11 @@ export const GlobalMeshCanvas: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs font-mono">
             <div>
-              <span className="text-[10px] text-slate-500 block">MEASURED RTT</span>
+              <span className="text-[10px] text-slate-500 block">REFERENCE RTT</span>
               <span className="text-[#00F0FF] font-bold">{selectedNode.latencyMs}ms</span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-500 block">ACTIVE CAPACITY</span>
+              <span className="text-[10px] text-slate-500 block">REFERENCE CAPACITY</span>
               <span className="text-white font-bold">{selectedNode.activeGpus} GPUs</span>
             </div>
           </div>
@@ -262,8 +272,10 @@ export const GlobalMeshCanvas: React.FC = () => {
             {NODES.map((node) => (
               <button
                 key={node.id}
+                type="button"
+                aria-pressed={selectedNode.id === node.id}
                 onClick={() => setSelectedNode(node)}
-                className={`px-3 py-1 rounded text-xs font-mono font-bold transition border ${
+                className={`px-3 py-1 rounded text-xs font-mono font-bold transition border focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F0FF] ${
                   selectedNode.id === node.id
                     ? 'bg-[#00F0FF]/20 border-[#00F0FF] text-[#00F0FF] shadow-[0_0_12px_rgba(0,240,255,0.3)]'
                     : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'

@@ -60,6 +60,15 @@ export const Footer: React.FC = () => {
           <Link href="/billing" className="hover:text-white transition">
             BILLING & LEDGER
           </Link>
+          <Link href="/legal/terms.html" className="hover:text-white transition">
+            TERMS
+          </Link>
+          <Link href="/legal/privacy.html" className="hover:text-white transition">
+            PRIVACY
+          </Link>
+          <Link href="/legal/acceptable-use.html" className="hover:text-white transition">
+            ACCEPTABLE USE
+          </Link>
           <a
             href="https://apexsovereign-agency.onrender.com/health"
             target="_blank"
@@ -72,7 +81,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="text-[10px] text-slate-600 text-center md:text-right">
-          ALL SYSTEMS NOMINAL · 10.4ms P99 SLA · $1.00 = 100 CU · AMD SEV-SNP & NVIDIA CC
+          TARGET 10.4ms P99 · $1.00 = 100 CU · SEV-SNP / CC TARGET · Status is not asserted here
         </div>
       </div>
     </footer>
