@@ -1,0 +1,299 @@
+     raw_body = (await request.body()).decode("utf-8")
+     headers = request.headers
+ 
+-    # Extract verification transmission headers
+     transmission_id = headers.get("paypal-transmission-id", "")
+     transmission_time = headers.get("paypal-transmission-time", "")
+     cert_url = headers.get("paypal-cert-url", "")
+     auth_algo = headers.get("paypal-auth-algo", "")
+     transmission_sig = headers.get("paypal-transmission-sig", "")
+ 
+-    # Server-Side Cryptographic Signature Verification. PayPal's official
+-    # verification API is authoritative; missing configuration never bypasses it.
+-    required_headers = (transmission_id, transmission_time, cert_url, auth_algo, transmission_sig)
++    required_headers = (
++        transmission_id,
++        transmission_time,
++        cert_url,
++        auth_algo,
++        transmission_sig,
++    )
+     if not settings.PAYPAL_WEBHOOK_ID or not all(required_headers):
+-        raise HTTPException(
+-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+-            detail={"error": {"code": "webhook_verification_unavailable", "message": "PayPal webhook verification is not fully configured."}}
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "webhook_verification_unavailable",
++            "PayPal webhook verification is not fully configured.",
+         )
++
+     is_valid = await paypal.verify_webhook_signature(
+         transmission_id=transmission_id,
+         transmission_time=transmission_time,
+         cert_url=cert_url,
+         auth_algo=auth_algo,
+         transmission_sig=transmission_sig,
+-        raw_body=raw_body
++        raw_body=raw_body,
+     )
+     if not is_valid:
+-        raise HTTPException(
+-            status_code=status.HTTP_400_BAD_REQUEST,
+-            detail={"error": {"code": "invalid_webhook_signature", "message": "PayPal webhook signature validation failed."}}
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_webhook_signature",
++            "PayPal webhook signature validation failed.",
+         )
+ 
+     try:
+         event = json.loads(raw_body)
+-    except Exception:
+-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": {"code": "bad_json", "message": "Invalid JSON payload"}})
++    except ValueError:
++        raise _error(status.HTTP_400_BAD_REQUEST, "bad_json", "Invalid JSON payload.")
+ 
+     event_id = event.get("id")
+     event_type = event.get("event_type")
+-    resource = event.get("resource", {})
++    resource = event.get("resource") or {}
++    if not event_id or not event_type:
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_event",
++            "Webhook event id and type are required.",
++        )
++
++    capture_id = resource.get("id") if isinstance(resource, dict) else None
++    logger.info(
++        "PayPal webhook received event_id=%s event_type=%s capture_id=%s",
++        event_id,
++        event_type,
++        capture_id,
++    )
+ 
+-    # Record event idempotently in apex.paypal_events
+     try:
+         await db.execute(
+             """
+@@ -427,45 +700,173 @@ async def paypal_webhook_handler(request: Request) -> Dict[str, Any]:
+             VALUES (%s, %s, %s, %s::jsonb)
+             ON CONFLICT (event_id) DO NOTHING;
+             """,
+-            (event_id, event_type, event.get("summary"), json.dumps(resource))
+-        )
+-    except Exception:
+-        pass
+-
+-    # Handle Specific Lifecycle Events
+-    if event_type == "PAYMENT.CAPTURE.COMPLETED":
+-        capture_id = resource.get("id")
+-        custom_id = resource.get("custom_id")
+-        amount_val = resource.get("amount", {}).get("value", "0.00")
+-        cents = int(round(float(amount_val) * 100))
+-
+-        if custom_id and cents > 0:
+-            try:
+-                wallet_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE owner_id = %s AND kind = 'user_wallet';", (custom_id,))
+-                clearing_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE code = 'paypal_clearing';")
+-                if wallet_row and clearing_row:
+-                    lines = [
+-                        {"account_id": str(clearing_row["id"]), "direction": "debit", "amount_cu": cents},
+-                        {"account_id": str(wallet_row["id"]), "direction": "credit", "amount_cu": cents}
+-                    ]
+-                    await ledger.post_ledger_transaction(
+-                        tx_type="TOPUP",
+-                        reference=f"webhook_capture:{capture_id}",
+-                        lines=lines,
+-                        idempotency_key=f"paypal:capture:{capture_id}"
+-                    )
+-            except Exception:
+-                pass
+-
+-    elif event_type in ("PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"):
+-        # Handle reversal: post REFUND transaction, clamp wallet
+-        pass
+-
+-    elif event_type == "CUSTOMER.DISPUTE.CREATED":
+-        # Disputed CU frozen
+-        pass
+-
+-    return {"status": "received", "event_id": event_id, "event_type": event_type}
++            (event_id, event_type, event.get("summary"), json.dumps(resource)),
++        )
++    except Exception as exc:
++        logger.error(
++            "Webhook event persistence failed event_id=%s error=%s",
++            event_id,
++            exc.__class__.__name__,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "webhook_persist_failed",
++            "Webhook event could not be recorded.",
++        ) from exc
++
++    if event_type != "PAYMENT.CAPTURE.COMPLETED":
++        return {"status": "received", "event_id": event_id, "event_type": event_type}
++
++    # ---- Credit path: verified webhook only --------------------------------
++    if not isinstance(resource, dict):
++        raise _error(status.HTTP_400_BAD_REQUEST, "invalid_capture", "Capture resource is invalid.")
++
++    capture_id = _capture_id_from_resource(resource)
++    custom_id = resource.get("custom_id")
++    try:
++        user_id = str(uuid.UUID(str(custom_id)))
++    except (ValueError, TypeError):
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_custom_id",
++            "Capture custom_id is not a valid user id.",
++        )
++
++    if resource.get("status") != "COMPLETED":
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "capture_not_completed",
++            "Webhook capture status is not COMPLETED.",
++        )
++
++    cu_amount, amount_usd = _parse_capture_amount(resource)
++
++    # Validate the tenant and both accounts before minting anything.
++    try:
++        wallet = await db.fetch_one(
++            "SELECT id, code FROM apex.accounts "
++            "WHERE owner_id = %s AND kind = 'user_wallet';",
++            (user_id,),
++        )
++        clearing = await db.fetch_one(
++            "SELECT id, code FROM apex.accounts WHERE code = 'paypal_clearing';"
++        )
++    except Exception as exc:
++        logger.error(
++            "Webhook account validation failed event_id=%s capture_id=%s error=%s",
++            event_id,
++            capture_id,
++            exc.__class__.__name__,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_validation_failed",
++            "Capture accounts could not be validated.",
++        ) from exc
++
++    if not wallet or not clearing:
++        logger.error(
++            "Webhook account missing event_id=%s capture_id=%s wallet=%s clearing=%s",
++            event_id,
++            capture_id,
++            bool(wallet),
++            bool(clearing),
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_account_missing",
++            "Capture cannot be credited because a ledger account is missing.",
++        )
++
++    tx_id = str(uuid.uuid4())
++    signed_at = datetime.now(timezone.utc).isoformat(timespec="microseconds")
++    reference = f"paypal:capture:{capture_id}"
++    lines = [
++        {
++            "account_id": str(clearing["id"]),
++            "account_code": clearing["code"],
++            "direction": "debit",
++            "amount_cu": cu_amount,
++        },
++        {
++            "account_id": str(wallet["id"]),
++            "account_code": wallet["code"],
++            "direction": "credit",
++            "amount_cu": cu_amount,
++        },
++    ]
++
++    try:
++        signature, kid = ledger.sign_transaction(
++            tx_id, "TOPUP", reference, signed_at, lines
++        )
++    except ValueError as exc:
++        logger.error("Webhook signing failed event_id=%s reason=%s", event_id, exc)
++        raise _error(
++            status.HTTP_500_INTERNAL_SERVER_ERROR,
++            "credit_signing_failed",
++            "Capture could not be signed for the ledger.",
++        ) from exc
++
++    rpc_sql = """
++        SELECT apex.increment_user_credits(
++            %s::uuid, %s::numeric, %s::integer, %s::text,
++            %s::uuid, %s::text, %s::text, %s::timestamptz
++        ) AS status;
++    """
++    try:
++        row = await db.fetch_one(
++            rpc_sql,
++            (
++                user_id,
++                amount_usd,
++                cu_amount,
++                capture_id,
++                tx_id,
++                signature,
++                kid,
++                signed_at,
++            ),
++        )
++        result = row.get("status") if row else None
++    except Exception as exc:
++        logger.error(
++            "Webhook credit RPC failed event_id=%s capture_id=%s error=%s",
++            event_id,
++            capture_id,
++            exc.__class__.__name__,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_failed",
++            "Capture could not be credited. PayPal will retry.",
++        ) from exc
++
++    if result not in ("CREDITED", "DUPLICATE"):
++        logger.error(
++            "Webhook credit RPC returned invalid status event_id=%s capture_id=%s status=%s",
++            event_id,
++            capture_id,
++            result,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_failed",
++            "Capture could not be credited. PayPal will retry.",
++        )
++
++    logger.info(
++        "PayPal capture settled event_id=%s capture_id=%s result=%s",
++        event_id,
++        capture_id,
++        result,
++    )
++    return {
++        "status": result.lower(),
++        "event_id": event_id,
++        "event_type": event_type,
++        "capture_id": capture_id,
++    }
+ 
+ 
+ @router.get("/webhooks/paypal/status")
+@@ -473,5 +874,5 @@ async def get_webhook_status() -> Dict[str, Any]:
+     return {
+         "configured": bool(settings.PAYPAL_WEBHOOK_ID),
+         "env": settings.PAYPAL_ENV,
+-        "endpoint": "/v1/webhooks/paypal"
++        "endpoint": "/v1/webhooks/paypal",
+     }

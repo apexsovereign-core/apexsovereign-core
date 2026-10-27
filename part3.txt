@@ -1,0 +1,300 @@
++        "capture_id": capture_id,
++        "hmac_signature_prefix": row["hmac"][:12] if row["hmac"] else "",
++        "hmac_verified": verify_meta["hmac_verified"],
++        "status": "SETTLED" if verify_meta["hmac_verified"] else "UNVERIFIED",
+     }
+ 
+ 
+@@ -239,137 +422,208 @@ class CaptureOrderRequest(BaseModel):
+ async def paypal_create_order(
+     req: CreateOrderRequest,
+     user: Dict[str, Any] = Security(get_current_user),
+-    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key")
++    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+ ) -> Dict[str, Any]:
+-    """
+-    Step 1: Creates PayPal order for predefined deposit pack.
+-    Rule 4 Enforcement: 403 payments_disabled if gate conditions are not met.
+-    """
+     if not settings.payments_enabled:
+-        raise HTTPException(
+-            status_code=status.HTTP_403_FORBIDDEN,
+-            detail={"error": {"code": "payments_disabled", "message": "Payments open at launch. System is currently in pre-launch mode."}}
++        raise _error(
++            status.HTTP_403_FORBIDDEN,
++            "payments_disabled",
++            "Payments are not enabled for this deployment.",
+         )
+ 
+     pack = paypal.PAYPAL_PACKS.get(req.pack)
+     if not pack:
+-        raise HTTPException(
+-            status_code=status.HTTP_400_BAD_REQUEST,
+-            detail={"error": {"code": "invalid_pack", "message": f"Pack '{req.pack}' does not exist."}}
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_pack",
++            f"Pack '{req.pack}' does not exist.",
+         )
+ 
+-    # Check Deposit Limits
+-    amount_cents = pack["amount_cents"]
++    amount_cents = int(pack["amount_cents"])
+     if amount_cents > settings.DEPOSIT_MAX_TX_CENTS:
+-        raise HTTPException(
+-            status_code=status.HTTP_400_BAD_REQUEST,
+-            detail={"error": {"code": "deposit_limit_exceeded", "message": f"Pack exceeds max per-transaction deposit limit (${settings.DEPOSIT_MAX_TX_CENTS // 100})."}}
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "deposit_limit_exceeded",
++            f"Pack exceeds the max per-transaction deposit limit "
++            f"(${settings.DEPOSIT_MAX_TX_CENTS // 100}).",
+         )
+ 
+-    internal_order_id = f"ord_{int(time.time())}_{user['user_id'][:6]}"
+-    pp_order = await paypal.create_paypal_order(req.pack, user["user_id"], internal_order_id)
+-    pp_order_id = pp_order["id"]
++    internal_order_id = f"apex_{uuid.uuid4().hex}"
++    pp_order = await paypal.create_paypal_order(
++        req.pack, user["user_id"], internal_order_id
++    )
++    pp_order_id = pp_order.get("id")
++    if not pp_order_id:
++        raise _error(
++            status.HTTP_502_BAD_GATEWAY,
++            "paypal_order_invalid",
++            "PayPal did not return an order id.",
++        )
+ 
+-    # Store in apex.paypal_orders
+     try:
+         await db.execute(
+             """
+-            INSERT INTO apex.paypal_orders (owner_id, order_id, pack, amount_cents, cu_amount, status)
++            INSERT INTO apex.paypal_orders
++                (owner_id, order_id, pack, amount_cents, cu_amount, status)
+             VALUES (%s, %s, %s, %s, %s, 'CREATED');
+             """,
+-            (user["user_id"], pp_order_id, req.pack, amount_cents, pack["cu_amount"])
++            (
++                user["user_id"],
++                pp_order_id,
++                req.pack,
++                amount_cents,
++                int(pack["cu_amount"]),
++            ),
++        )
++    except Exception as exc:
++        logger.error(
++            "Order persistence failed order_id=%s error=%s",
++            pp_order_id,
++            exc.__class__.__name__,
+         )
+-    except Exception:
+-        pass
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "order_persistence_failed",
++            "The order could not be stored; no payment should be captured.",
++        ) from exc
+ 
+     return {
+         "order_id": pp_order_id,
+         "pack": req.pack,
+-        "cu_amount": pack["cu_amount"],
++        "cu_amount": int(pack["cu_amount"]),
+         "amount_usd": pack["amount_usd"],
+-        "status": "CREATED"
++        "status": "CREATED",
+     }
+ 
+ 
+ @router.post("/billing/paypal/capture")
+ async def paypal_capture_order(
+     req: CaptureOrderRequest,
+-    user: Dict[str, Any] = Security(get_current_user)
++    user: Dict[str, Any] = Security(get_current_user),
+ ) -> Dict[str, Any]:
+     """
+-    Step 2: Captures PayPal order and posts double-entry TOPUP to atomic ledger.
+-    Guarantees idempotency on paypal:capture:<capture_id>.
++    Capture the PayPal order and verify the captured amount. This route never
++    credits CU; the verified webhook is the only credit path.
+     """
+     if not settings.payments_enabled:
+-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={"error": {"code": "payments_disabled", "message": "Payments disabled"}})
++        raise _error(
++            status.HTTP_403_FORBIDDEN,
++            "payments_disabled",
++            "Payments are not enabled for this deployment.",
++        )
+ 
+-    # Fetch recorded order
+     try:
+-        order_row = await db.fetch_one("SELECT * FROM apex.paypal_orders WHERE order_id = %s;", (req.order_id,))
+-    except Exception:
+-        order_row = None
+-
+-    if order_row and str(order_row["owner_id"]) != user["user_id"]:
+-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={"error": {"code": "forbidden", "message": "Order does not belong to user."}})
++        order_row = await db.fetch_one(
++            "SELECT owner_id, amount_cents, cu_amount, status, capture_id "
++            "FROM apex.paypal_orders WHERE order_id = %s;",
++            (req.order_id,),
++        )
++    except Exception as exc:
++        raise _db_unavailable("capture_order_lookup", exc) from exc
++
++    if not order_row:
++        raise _error(
++            status.HTTP_404_NOT_FOUND,
++            "order_not_found",
++            "Order not found. Create the order before capturing.",
++        )
++    if str(order_row["owner_id"]) != str(user["user_id"]):
++        raise _error(
++            status.HTTP_403_FORBIDDEN,
++            "forbidden",
++            "Order does not belong to this user.",
++        )
++    if order_row["status"] == "COMPLETED":
++        return {
++            "status": "COMPLETED",
++            "order_id": req.order_id,
++            "capture_id": order_row.get("capture_id"),
++            "already_captured": True,
++        }
+ 
+-    # Execute PayPal Capture
+     capture_res = await paypal.capture_paypal_order(req.order_id)
+-    purchase_units = capture_res.get("purchase_units", [])
+-    captures = purchase_units[0].get("payments", {}).get("captures", []) if purchase_units else []
++    purchase_units = capture_res.get("purchase_units") or []
++    payments = purchase_units[0].get("payments", {}) if purchase_units else {}
++    captures = payments.get("captures", []) if isinstance(payments, dict) else []
+     if not captures:
+-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": {"code": "capture_failed", "message": "No capture returned by PayPal."}})
++        raise _error(
++            status.HTTP_502_BAD_GATEWAY,
++            "capture_failed",
++            "PayPal did not return a capture.",
++        )
+ 
+     capture_item = captures[0]
+-    capture_id = capture_item["id"]
+-    capture_status = capture_item["status"]
+-    captured_value = capture_item["amount"]["value"]
+-
++    capture_id = capture_item.get("id")
++    capture_status = capture_item.get("status")
++    captured_currency = str(
++        (capture_item.get("amount") or {}).get("currency_code", "")
++    ).upper()
++    captured_value = (capture_item.get("amount") or {}).get("value")
++
++    if not capture_id:
++        raise _error(
++            status.HTTP_502_BAD_GATEWAY,
++            "capture_failed",
++            "PayPal capture is missing an id.",
++        )
+     if capture_status != "COMPLETED":
+-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": {"code": "capture_incomplete", "message": f"Capture status: {capture_status}"}})
+-
+-    # Determine CU amount
+-    cents = int(round(float(captured_value) * 100))
+-    cu_amount = cents  # $1.00 = 100 CU
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_incomplete",
++            f"Capture status is {capture_status or 'unknown'}, not COMPLETED.",
++        )
++    if captured_currency != "USD":
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_currency_mismatch",
++            "Captured currency does not match the stored USD order.",
++        )
+ 
+-    # Fetch account IDs
+     try:
+-        wallet_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE owner_id = %s AND kind = 'user_wallet';", (user["user_id"],))
+-        clearing_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE code = 'paypal_clearing';")
+-        wallet_id = str(wallet_row["id"]) if wallet_row else "00000000-0000-0000-0000-000000000010"
+-        clearing_id = str(clearing_row["id"]) if clearing_row else "00000000-0000-0000-0000-000000000001"
+-    except Exception:
+-        wallet_id = "00000000-0000-0000-0000-000000000010"
+-        clearing_id = "00000000-0000-0000-0000-000000000001"
+-
+-    # Post Double-Entry TOPUP: Debit PayPal Clearing, Credit User Wallet
+-    lines = [
+-        {"account_id": clearing_id, "account_code": "paypal_clearing", "direction": "debit", "amount_cu": cu_amount},
+-        {"account_id": wallet_id, "account_code": f"user_wallet:{user['user_id']}", "direction": "credit", "amount_cu": cu_amount}
+-    ]
+-
+-    idempotency_key = f"paypal:capture:{capture_id}"
+-    tx_id = await ledger.post_ledger_transaction(
+-        tx_type="TOPUP",
+-        reference=f"paypal_order:{req.order_id}",
+-        lines=lines,
+-        idempotency_key=idempotency_key
+-    )
++        captured_cents = int(Decimal(str(captured_value)) * 100)
++    except (InvalidOperation, ValueError, TypeError):
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_amount_invalid",
++            "Captured amount is invalid.",
++        )
++    if captured_cents != int(order_row["amount_cents"]):
++        logger.error(
++            "Capture amount mismatch order_id=%s capture_id=%s expected_cents=%s actual_cents=%s",
++            req.order_id,
++            capture_id,
++            order_row["amount_cents"],
++            captured_cents,
++        )
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_amount_mismatch",
++            "Captured amount does not match the stored order amount.",
++        )
+ 
+-    # Update order record
+     try:
+-        await db.execute(
+-            "UPDATE apex.paypal_orders SET status = 'COMPLETED', capture_id = %s, updated_at = NOW() WHERE order_id = %s;",
+-            (capture_id, req.order_id)
++        updated = await db.fetch_one(
++            """
++            UPDATE apex.paypal_orders
++               SET status = 'COMPLETED', capture_id = %s, updated_at = NOW()
++             WHERE order_id = %s AND owner_id = %s
++             RETURNING id;
++            """,
++            (capture_id, req.order_id, user["user_id"]),
++        )
++    except Exception as exc:
++        raise _db_unavailable("capture_order_update", exc) from exc
++    if not updated:
++        raise _error(
++            status.HTTP_404_NOT_FOUND,
++            "order_not_found",
++            "Order not found while recording the capture.",
+         )
+-    except Exception:
+-        pass
+ 
+     return {
+-        "status": "credited",
+-        "cu_credited": cu_amount,
+-        "amount_usd": captured_value,
+-        "ledger_entry_id": tx_id,
+-        "capture_id": capture_id
++        "status": "COMPLETED",
++        "order_id": req.order_id,
++        "capture_id": capture_id,
+     }
+ 
+ 
+@@ -381,45 +635,64 @@ async def paypal_webhook_handler(request: Request) -> Dict[str, Any]:

@@ -1,0 +1,2182 @@
+diff --git a/backend/app/config.py b/backend/app/config.py
+index fa7f4b8..7d382ac 100644
+--- a/backend/app/config.py
++++ b/backend/app/config.py
+@@ -1,72 +1,100 @@
+ """
+ ApexSovereign.ai - Master Configuration Engine
+-Pydantic Settings v2 implementation with strict validation and no hard-coded secrets.
++Pydantic Settings v2 with strict validation and no secret fallbacks.
++
++Required secrets are declared without defaults. Importing this module in an
++environment that is missing any of them raises a ValidationError, which aborts
++startup before the service can serve traffic.
+ """
+ 
+ from typing import List, Dict, Optional
+ import json
++
++from pydantic import Field, computed_field, model_validator
+ from pydantic_settings import BaseSettings, SettingsConfigDict
+-from pydantic import Field, computed_field
+ 
+ 
+ class Settings(BaseSettings):
+     model_config = SettingsConfigDict(
+         env_file=".env",
+         env_file_encoding="utf-8",
+-        extra="ignore"
++        extra="ignore",
++        case_sensitive=True,
+     )
+ 
+     # Core Environment & Service
+-    ENV: str = Field(default="production", description="Environment: production, staging, development")
+-    BUILD_ID: str = Field(default="apex-v2.4.8-gold", description="Build identifier")
+-    LAUNCH_MODE: str = Field(default="early_access", description="Launch mode: early_access or live")
+-    PROVIDER_MODE: str = Field(default="simulated", description="Provider mode: simulated or supplier")
+-    LIVE_PAYMENTS_ACK: str = Field(default="", description="Operator confirmation for live billing")
+-    
++    ENV: str = Field(default="production", description="production, staging, development")
++    BUILD_ID: str = Field(default="apex-v2.4.8-gold")
++    LAUNCH_MODE: str = Field(default="early_access")
++    PROVIDER_MODE: str = Field(default="simulated", description="simulated or supplier")
++    LIVE_PAYMENTS_ACK: str = Field(default="")
++    DEMO_MODE: bool = Field(
++        default=False,
++        description="Explicit opt-in for offline/demo operation. Never fabricates balances.",
++    )
++
+     # Ingress & Networking
+     RENDER_EXTERNAL_HOSTNAME: str = Field(default="apexsovereign-mesh.onrender.com")
+     PORT: int = Field(default=10000)
+     ALLOWED_ORIGINS: str = Field(
+-        default="https://www.apexsovereign.ai,https://apexsovereign.ai,http://localhost:3000,http://localhost:5173",
+-        description="Comma-separated allowed CORS origins"
++        ...,
++        min_length=1,
++        description="Comma-separated allowed CORS origins (required, no default)",
+     )
+ 
+     # Supabase & Database (schema 'apex')
+-    DATABASE_URL: str = Field(
+-        default="",
+-        description="Direct PostgreSQL connection string to Supabase (bypasses REST)"
+-    )
+-    SUPABASE_URL: str = Field(default="", description="Supabase project URL")
+-    SUPABASE_ANON_KEY: str = Field(default="", description="Supabase anon public key")
+-    SUPABASE_JWT_SECRET: str = Field(default="", description="Supabase JWT secret for auth token verification")
++    DATABASE_URL: str = Field(..., min_length=1, description="Direct PostgreSQL connection string")
++    SUPABASE_URL: str = Field(default="")
++    SUPABASE_ANON_KEY: str = Field(default="")
++    SUPABASE_JWT_SECRET: str = Field(..., min_length=1)
+ 
+     # Cryptographic Ledger Signing
+-    LEDGER_HMAC_KID: str = Field(default="k1", description="Active HMAC key identifier")
++    LEDGER_HMAC_KID: str = Field(..., min_length=1)
+     LEDGER_HMAC_KEYS_JSON: str = Field(
+-        default='{"k1": "apex-default-dev-signing-key-hex-32bytes-secret"}',
+-        description="JSON dictionary mapping key identifiers to hex/utf-8 secrets"
++        ...,
++        min_length=1,
++        description='JSON object mapping key IDs to secrets, e.g. {"k1":"..."}',
+     )
+ 
+     # PayPal REST API v2
+-    PAYPAL_ENV: str = Field(default="sandbox", description="PayPal environment: sandbox or live")
+-    PAYPAL_CLIENT_ID: str = Field(default="", description="PayPal OAuth client ID")
+-    PAYPAL_CLIENT_SECRET: str = Field(default="", description="PayPal OAuth client secret")
+-    PAYPAL_WEBHOOK_ID: str = Field(default="", description="PayPal registered webhook ID")
++    PAYPAL_ENV: str = Field(..., pattern="^(sandbox|live)$")
++    PAYPAL_CLIENT_ID: str = Field(..., min_length=1)
++    PAYPAL_CLIENT_SECRET: str = Field(..., min_length=1)
++    PAYPAL_WEBHOOK_ID: str = Field(..., min_length=1)
+ 
+     # Deposit Limits (cents: $1.00 = 100 CU = 100 cents)
+-    DEPOSIT_MAX_TX_CENTS: int = Field(default=100000, description="Max $1,000 per transaction")
+-    DEPOSIT_MAX_DAY_CENTS: int = Field(default=200000, description="Max $2,000 per 24 hours")
+-    DEPOSIT_MAX_NEW_ACCOUNT_DAY_CENTS: int = Field(default=50000, description="Max $500 per 24h for accounts < 7 days")
++    DEPOSIT_MAX_TX_CENTS: int = Field(default=100000)
++    DEPOSIT_MAX_DAY_CENTS: int = Field(default=200000)
++    DEPOSIT_MAX_NEW_ACCOUNT_DAY_CENTS: int = Field(default=50000)
+ 
+-    # Waitlist & Privacy Salt
+-    WAITLIST_IP_SALT: str = Field(default="apex-sovereign-waitlist-salt-2026", description="Salt for IP hashing")
++    # Waitlist & Privacy Salt (required secret)
++    WAITLIST_IP_SALT: str = Field(..., min_length=1)
+ 
+-    # External Compute Supplier Adapter (When PROVIDER_MODE == supplier)
+-    SUPPLIER_BASE_URL: str = Field(default="", description="Upstream compute supplier API URL")
+-    SUPPLIER_API_KEY: str = Field(default="", description="Upstream compute supplier API token")
++    # External Compute Supplier Adapter (when PROVIDER_MODE=supplier)
++    SUPPLIER_BASE_URL: str = Field(default="")
++    SUPPLIER_API_KEY: str = Field(default="")
+ 
+     # Observability
+-    SENTRY_DSN: Optional[str] = Field(default=None, description="Optional Sentry DSN")
++    SENTRY_DSN: Optional[str] = Field(default=None)
++
++    @model_validator(mode="after")
++    def _validate_ledger_keyring(self) -> "Settings":
++        try:
++            keys = json.loads(self.LEDGER_HMAC_KEYS_JSON)
++        except Exception as exc:
++            raise ValueError("LEDGER_HMAC_KEYS_JSON must be valid JSON") from exc
++        if not isinstance(keys, dict) or not keys:
++            raise ValueError("LEDGER_HMAC_KEYS_JSON must be a non-empty JSON object")
++        for kid, secret in keys.items():
++            if not isinstance(kid, str) or not kid:
++                raise ValueError("LEDGER_HMAC_KEYS_JSON contains an invalid key id")
++            if not isinstance(secret, str) or not secret:
++                raise ValueError(f"Ledger key {kid!r} has an empty secret")
++        if self.LEDGER_HMAC_KID not in keys:
++            raise ValueError(
++                f"LEDGER_HMAC_KID {self.LEDGER_HMAC_KID!r} is not present in LEDGER_HMAC_KEYS_JSON"
++            )
++        return self
+ 
+     @computed_field
+     def cors_origins(self) -> List[str]:
+@@ -74,30 +102,54 @@ class Settings(BaseSettings):
+ 
+     @computed_field
+     def hmac_keys(self) -> Dict[str, str]:
+-        try:
+-            return json.loads(self.LEDGER_HMAC_KEYS_JSON)
+-        except Exception:
+-            return {self.LEDGER_HMAC_KID: "apex-default-fallback-key"}
++        """Validated at construction time; never falls back to a default key."""
++        return json.loads(self.LEDGER_HMAC_KEYS_JSON)
++
++    @computed_field
++    def is_production(self) -> bool:
++        return self.ENV == "production" or self.PAYPAL_ENV == "live"
+ 
+     @computed_field
+     def payments_enabled(self) -> bool:
+         """
+-        Rule 4 Non-Negotiable Gate:
+-        payments_enabled is true ONLY when:
+-        1. PAYPAL_ENV == 'sandbox', OR
+-        2. All of these hold:
+-           - PAYPAL_ENV == 'live'
+-           - PROVIDER_MODE == 'supplier'
+-           - LIVE_PAYMENTS_ACK == 'I_CONFIRM_SERVICE_CAN_BE_DELIVERED'
++        Payments are enabled only when:
++        1. PAYPAL_ENV == 'sandbox', or
++        2. PAYPAL_ENV == 'live' AND PROVIDER_MODE == 'supplier' AND
++           LIVE_PAYMENTS_ACK == 'I_CONFIRM_SERVICE_CAN_BE_DELIVERED'.
+         """
+         if self.PAYPAL_ENV == "sandbox":
+             return True
+         if self.PAYPAL_ENV == "live":
+             return (
+-                self.PROVIDER_MODE == "supplier" and
+-                self.LIVE_PAYMENTS_ACK == "I_CONFIRM_SERVICE_CAN_BE_DELIVERED"
++                self.PROVIDER_MODE == "supplier"
++                and self.LIVE_PAYMENTS_ACK == "I_CONFIRM_SERVICE_CAN_BE_DELIVERED"
+             )
+         return False
+ 
++    def validate_runtime(self) -> None:
++        """Explicit runtime guard used by the FastAPI lifespan."""
++        missing = []
++        for name in (
++            "DATABASE_URL",
++            "SUPABASE_JWT_SECRET",
++            "PAYPAL_CLIENT_ID",
++            "PAYPAL_CLIENT_SECRET",
++            "PAYPAL_WEBHOOK_ID",
++            "LEDGER_HMAC_KID",
++            "LEDGER_HMAC_KEYS_JSON",
++            "WAITLIST_IP_SALT",
++            "ALLOWED_ORIGINS",
++        ):
++            if not str(getattr(self, name, "")).strip():
++                missing.append(name)
++        if missing:
++            raise RuntimeError(
++                "Missing required environment variables: " + ", ".join(sorted(missing))
++            )
++        # Re-validate the keyring in case the object was mutated after construction.
++        keys = self.hmac_keys
++        if self.LEDGER_HMAC_KID not in keys:
++            raise RuntimeError("LEDGER_HMAC_KID is not present in LEDGER_HMAC_KEYS_JSON")
++
+ 
+ settings = Settings()
+diff --git a/backend/app/ledger.py b/backend/app/ledger.py
+index ebe21d4..e85f388 100644
+--- a/backend/app/ledger.py
++++ b/backend/app/ledger.py
+@@ -2,73 +2,113 @@
+ Double-Entry Atomic Ledger Engine & HMAC-SHA256 Cryptographic Signing.
+ Guarantees mathematical balance, canonical message generation, and tamper detection.
+ Rule: $1.00 = 100 CU (Compute Units). All internal ledger calculations use integer CU.
+-Schema: apex (Isolated from legacy public tables).
++Schema: apex (isolated from legacy public tables).
+ """
+ 
+-import hmac
+ import hashlib
++import hmac
+ import json
++import logging
+ import uuid
+ from datetime import datetime, timezone
+-from typing import List, Dict, Any, Optional, Tuple
++from decimal import Decimal, InvalidOperation
++from typing import Any, Dict, List, Optional, Tuple
++
+ from fastapi import HTTPException, status
+ 
+ from .config import settings
+ from . import db
+ 
++logger = logging.getLogger("apex.ledger")
++
+ 
+ # -----------------------------------------------------------------------------
+ # 1. CANONICAL MESSAGE & CRYPTOGRAPHIC SIGNING
+ # -----------------------------------------------------------------------------
+-def build_canonical_message(
++def normalize_timestamp(value: Any) -> str:
++    """Normalize any timestamp input to one canonical UTC ISO-8601 string."""
++    if isinstance(value, datetime):
++        dt = value
++    else:
++        text = str(value).strip()
++        if not text:
++            raise ValueError("signed_at timestamp is required")
++        if text.endswith("Z"):
++            text = text[:-1] + "+00:00"
++        try:
++            dt = datetime.fromisoformat(text)
++        except ValueError:
++            return text
++    if dt.tzinfo is None:
++        dt = dt.replace(tzinfo=timezone.utc)
++    return dt.astimezone(timezone.utc).isoformat(timespec="microseconds")
++
++
++def _canonical_line(line: Dict[str, Any]) -> str:
++    code = line.get("account_code")
++    if not code:
++        raise ValueError("Every ledger line must include account_code for signing.")
++    direction = str(line.get("direction", "")).lower()
++    if direction not in ("debit", "credit"):
++        raise ValueError(f"Invalid ledger direction: {direction!r}")
++    if "amount_cu" not in line:
++        raise ValueError("Every ledger line must include amount_cu.")
++    amount = int(line["amount_cu"])
++    if amount <= 0:
++        raise ValueError("Ledger line amount_cu must be strictly positive.")
++    return f"{code}:{direction}:{amount}"
++
++
++def canonicalize_transaction(
+     tx_id: str,
+     tx_type: str,
+     reference: str,
+-    created_at_iso: str,
+-    lines: List[Dict[str, Any]]
++    signed_at_iso: Any,
++    lines: List[Dict[str, Any]],
+ ) -> str:
+     """
+-    Constructs a deterministic canonical string for HMAC-SHA256 signing:
+-    Format:
+-    <tx_id>|<type>|<reference>|<created_at_iso>|<sorted_lines>
+-    Where sorted_lines is joined by '|' and each line is:
+-    <account_code>:<direction>:<amount_cu>
+-    Lines are sorted lexicographically by account_code.
++    Canonical schema (stable across signing and verification):
++      <tx_id>|<type>|<reference>|<signed_at_utc>|<sorted lines>
++    Each line: <account_code>:<direction>:<amount_cu>
++    Lines are sorted by (account_code, direction, amount_cu).
+     """
+-    sorted_lines = sorted(lines, key=lambda l: str(l.get("account_code") or l.get("account_id")))
+-    line_parts = [
+-        f"{str(l.get('account_code') or l.get('account_id'))}:{l['direction']}:{int(l['amount_cu'])}"
+-        for l in sorted_lines
+-    ]
+-    lines_str = "|".join(line_parts)
+-    return f"{tx_id}|{tx_type}|{reference}|{created_at_iso}|{lines_str}"
++    normalized = normalize_timestamp(signed_at_iso)
++    sorted_lines = sorted(
++        lines,
++        key=lambda l: (
++            str(l.get("account_code") or ""),
++            str(l.get("direction") or ""),
++            int(l.get("amount_cu", 0)),
++        ),
++    )
++    line_parts = [_canonical_line(line) for line in sorted_lines]
++    return f"{tx_id}|{tx_type}|{reference}|{normalized}|{'|'.join(line_parts)}"
++
++
++# Backwards-compatible name used by earlier modules.
++build_canonical_message = canonicalize_transaction
+ 
+ 
+ def sign_transaction(
+     tx_id: str,
+     tx_type: str,
+     reference: str,
+-    created_at_iso: str,
++    signed_at_iso: Any,
+     lines: List[Dict[str, Any]],
+-    kid: Optional[str] = None
++    kid: Optional[str] = None,
+ ) -> Tuple[str, str]:
+-    """
+-    Signs the canonical transaction representation with HMAC-SHA256.
+-    Returns: (hex_hmac, kid)
+-    """
++    """Sign the canonical transaction. Returns (hex_hmac, kid). No fallback key."""
+     active_kid = kid or settings.LEDGER_HMAC_KID
+     keys = settings.hmac_keys
+     secret = keys.get(active_kid)
+     if not secret:
+-        # Fallback to first available key
+-        active_kid = list(keys.keys())[0] if keys else "k1"
+-        secret = keys.get(active_kid, "fallback-secret")
++        raise ValueError(f"Unknown or unconfigured ledger HMAC key ID: {active_kid}")
+ 
+-    canonical = build_canonical_message(tx_id, tx_type, reference, created_at_iso, lines)
++    canonical = canonicalize_transaction(
++        tx_id, tx_type, reference, signed_at_iso, lines
++    )
+     signature = hmac.new(
+-        secret.encode("utf-8"),
+-        canonical.encode("utf-8"),
+-        hashlib.sha256
++        secret.encode("utf-8"), canonical.encode("utf-8"), hashlib.sha256
+     ).hexdigest()
+     return signature, active_kid
+ 
+@@ -77,15 +117,30 @@ def verify_transaction_signature(
+     tx_id: str,
+     tx_type: str,
+     reference: str,
+-    created_at_iso: str,
++    signed_at_iso: Any,
+     lines: List[Dict[str, Any]],
+     stored_hmac: str,
+-    kid: str
++    kid: str,
+ ) -> Dict[str, Any]:
+-    """
+-    Recomputes the HMAC-SHA256 signature for verification.
+-    Returns verification metadata dictionary for the audit receipt.
+-    """
++    """Recompute the HMAC from every line and the persisted signed_at value."""
++    prefix = stored_hmac[:12] if stored_hmac else ""
++    if not stored_hmac:
++        return {
++            "hmac_verified": False,
++            "hmac_algo": "HMAC-SHA256",
++            "hmac_kid": kid,
++            "hmac_sig_prefix": "",
++            "reason": "Missing stored signature",
++        }
++    if not signed_at_iso:
++        return {
++            "hmac_verified": False,
++            "hmac_algo": "HMAC-SHA256",
++            "hmac_kid": kid,
++            "hmac_sig_prefix": prefix,
++            "reason": "Missing persisted signed_at timestamp",
++        }
++
+     keys = settings.hmac_keys
+     secret = keys.get(kid)
+     if not secret:
+@@ -93,92 +148,181 @@ def verify_transaction_signature(
+             "hmac_verified": False,
+             "hmac_algo": "HMAC-SHA256",
+             "hmac_kid": kid,
+-            "hmac_sig_prefix": stored_hmac[:12] if stored_hmac else "",
+-            "reason": f"Unknown or rotated key ID: {kid}"
++            "hmac_sig_prefix": prefix,
++            "reason": f"Unknown or rotated key ID: {kid}",
+         }
+ 
+-    canonical = build_canonical_message(tx_id, tx_type, reference, created_at_iso, lines)
+-    expected_hmac = hmac.new(
+-        secret.encode("utf-8"),
+-        canonical.encode("utf-8"),
+-        hashlib.sha256
+-    ).hexdigest()
++    try:
++        canonical = canonicalize_transaction(
++            tx_id, tx_type, reference, signed_at_iso, lines
++        )
++    except ValueError as exc:
++        return {
++            "hmac_verified": False,
++            "hmac_algo": "HMAC-SHA256",
++            "hmac_kid": kid,
++            "hmac_sig_prefix": prefix,
++            "reason": str(exc),
++        }
+ 
+-    is_valid = hmac.compare_digest(expected_hmac, stored_hmac)
++    expected = hmac.new(
++        secret.encode("utf-8"), canonical.encode("utf-8"), hashlib.sha256
++    ).hexdigest()
+     return {
+-        "hmac_verified": is_valid,
++        "hmac_verified": hmac.compare_digest(expected, stored_hmac),
+         "hmac_algo": "HMAC-SHA256",
+         "hmac_kid": kid,
+-        "hmac_sig_prefix": stored_hmac[:12] if stored_hmac else ""
++        "hmac_sig_prefix": prefix,
+     }
+ 
+ 
++def verify_transaction_hmac(
++    tx_id: str,
++    tx_type: str,
++    reference: str,
++    signed_at_iso: Any,
++    lines: List[Dict[str, Any]],
++    stored_hmac: str,
++    kid: str,
++) -> bool:
++    return bool(
++        verify_transaction_signature(
++            tx_id, tx_type, reference, signed_at_iso, lines, stored_hmac, kid
++        )["hmac_verified"]
++    )
++
++
+ # -----------------------------------------------------------------------------
+-# 2. ATOMIC POSTING ENGINE
++# 2. CURRENCY & LINE VALIDATION
++# -----------------------------------------------------------------------------
++def amount_to_cu(amount_usd: Any) -> int:
++    """
++    Convert a USD amount to integer CU at exactly $1.00 = 100 CU.
++    Rejects sub-cent precision instead of silently rounding money.
++    """
++    try:
++        amount = Decimal(str(amount_usd))
++    except (InvalidOperation, ValueError) as exc:
++        raise ValueError("amount_usd must be a decimal number") from exc
++    if amount <= 0:
++        raise ValueError("amount_usd must be greater than zero")
++    if amount != amount.quantize(Decimal("0.01")):
++        raise ValueError("amount_usd must have at most two decimal places")
++    cu = int(amount * 100)
++    if Decimal(cu) != amount * 100:
++        raise ValueError("amount_usd cannot be represented as integer CU")
++    return cu
++
++
++def _prepare_lines(lines: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
++    prepared = []
++    for line in lines:
++        if not line.get("account_code"):
++            raise ValueError("Every ledger line must include account_code.")
++        if not line.get("account_id"):
++            raise ValueError("Every ledger line must include account_id.")
++        prepared.append(
++            {
++                "account_id": str(line["account_id"]),
++                "account_code": str(line["account_code"]),
++                "direction": str(line["direction"]).lower(),
++                "amount_cu": int(line["amount_cu"]),
++            }
++        )
++    return prepared
++
++
++# -----------------------------------------------------------------------------
++# 3. ATOMIC POSTING ENGINE (non-credit transactions)
+ # -----------------------------------------------------------------------------
+ async def post_ledger_transaction(
+     tx_type: str,
+     reference: str,
+     lines: List[Dict[str, Any]],
+-    idempotency_key: Optional[str] = None
++    idempotency_key: Optional[str] = None,
+ ) -> str:
+     """
+-    High-level posting engine:
+-    1. Validates mathematical balance: sum(debits) == sum(credits)
+-    2. Builds canonical message and generates HMAC-SHA256
+-    3. Calls 'apex.post_transaction' RPC in Postgres
++    Validate balance, sign the canonical representation, and call
++    apex.post_transaction atomically. Credit minting is handled only by
++    apex.increment_user_credits from the verified PayPal webhook.
+     """
+-    total_debit = sum(int(l["amount_cu"]) for l in lines if l["direction"] == "debit")
+-    total_credit = sum(int(l["amount_cu"]) for l in lines if l["direction"] == "credit")
++    prepared = _prepare_lines(lines)
+ 
++    total_debit = sum(l["amount_cu"] for l in prepared if l["direction"] == "debit")
++    total_credit = sum(l["amount_cu"] for l in prepared if l["direction"] == "credit")
+     if total_debit != total_credit:
+         raise HTTPException(
+             status_code=status.HTTP_400_BAD_REQUEST,
+-            detail={"error": {"code": "ledger_imbalance", "message": f"Mathematical imbalance: Debits ({total_debit}) != Credits ({total_credit})"}}
++            detail={
++                "error": {
++                    "code": "ledger_imbalance",
++                    "message": (
++                        f"Mathematical imbalance: Debits ({total_debit}) "
++                        f"!= Credits ({total_credit})"
++                    ),
++                }
++            },
+         )
+ 
+     tx_id = str(uuid.uuid4())
+-    now_iso = datetime.now(timezone.utc).isoformat()
+-    signature, kid = sign_transaction(tx_id, tx_type, reference, now_iso, lines)
++    signed_at = datetime.now(timezone.utc).isoformat(timespec="microseconds")
++    signature, kid = sign_transaction(
++        tx_id, tx_type, reference, signed_at, prepared
++    )
+ 
+-    # Format lines for SQL function
+     sql_lines = [
+         {
+             "account_id": l["account_id"],
+             "direction": l["direction"],
+-            "amount_cu": int(l["amount_cu"])
++            "amount_cu": l["amount_cu"],
+         }
+-        for l in lines
++        for l in prepared
+     ]
+ 
+     call_sql = """
+         SELECT apex.post_transaction(
+-            %s::uuid,
+-            %s::text,
+-            %s::text,
+-            %s::text,
+-            %s::text,
+-            %s::text,
+-            %s::jsonb
++            %s::uuid, %s::text, %s::text, %s::text,
++            %s::text, %s::text, %s::jsonb, %s::timestamptz
+         ) AS tx_id;
+     """
+ 
+     try:
+         row = await db.fetch_one(
+             call_sql,
+-            (tx_id, tx_type, reference, idempotency_key, signature, kid, json.dumps(sql_lines))
++            (
++                tx_id,
++                tx_type,
++                reference,
++                idempotency_key,
++                signature,
++                kid,
++                json.dumps(sql_lines),
++                signed_at,
++            ),
+         )
+-        if row and row.get("tx_id"):
+-            return str(row["tx_id"])
+-        return tx_id
+-    except Exception as e:
+-        err_msg = str(e)
+-        if "Insufficient Funds" in err_msg:
++    except Exception as exc:
++        message = str(exc)
++        if "Insufficient Funds" in message:
+             raise HTTPException(
+                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
+-                detail={"error": {"code": "insufficient_funds", "message": "Compute credit wallet balance insufficient."}}
+-            )
++                detail={
++                    "error": {
++                        "code": "insufficient_funds",
++                        "message": "Compute credit wallet balance insufficient.",
++                    }
++                },
++            ) from exc
++        logger.error("Ledger posting failed: %s", exc.__class__.__name__)
+         raise HTTPException(
+             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+-            detail={"error": {"code": "ledger_posting_failed", "message": f"Failed to record ledger transaction: {err_msg}"}}
+-        )
++            detail={
++                "error": {
++                    "code": "ledger_posting_failed",
++                    "message": "Failed to record ledger transaction.",
++                }
++            },
++        ) from exc
++
++    if row and row.get("tx_id"):
++        return str(row["tx_id"])
++    return tx_id
+diff --git a/backend/app/routes_billing.py b/backend/app/routes_billing.py
+index fbb224d..35a8501 100644
+--- a/backend/app/routes_billing.py
++++ b/backend/app/routes_billing.py
+@@ -1,33 +1,95 @@
+ """
+ Billing, Ledger, PayPal Orders & Webhook Capture Routes.
+ Double-entry accounting with $1.00 = 100 CU integer precision.
+-Zero money credited without cryptographic/upstream verification.
++
++Hard invariants:
++- CU is minted only by apex.increment_user_credits from a PayPal-verified
++  PAYMENT.CAPTURE.COMPLETED webhook.
++- The capture route never posts to the ledger.
++- No fabricated balances, receipts, savings, or security status.
+ """
+ 
+-import time
+ import json
++import logging
++import uuid
+ from datetime import datetime, timezone
+-from typing import Dict, Any, List, Optional
+-from fastapi import APIRouter, Request, HTTPException, Security, status, Header
++from decimal import Decimal, InvalidOperation
++from typing import Any, Dict, List, Optional
++
++from fastapi import APIRouter, Header, HTTPException, Request, Security, status
+ from pydantic import BaseModel
+ 
+ from .config import settings
+ from .security import get_current_user
+-from . import ledger
+-from . import paypal
+-from . import db
++from . import db, ledger, paypal
+ 
+ router = APIRouter(prefix="/v1", tags=["billing"])
++logger = logging.getLogger("apex.billing")
+ 
+ 
+ # -----------------------------------------------------------------------------
+-# 1. BALANCE & SUMMARY
++# HELPERS
++# -----------------------------------------------------------------------------
++def _error(status_code: int, code: str, message: str) -> HTTPException:
++    return HTTPException(
++        status_code=status_code, detail={"error": {"code": code, "message": message}}
++    )
++
++
++def _db_unavailable(operation: str, exc: Exception) -> HTTPException:
++    logger.error("Billing DB failure operation=%s error=%s", operation, exc.__class__.__name__)
++    return _error(
++        status.HTTP_503_SERVICE_UNAVAILABLE,
++        "db_unavailable",
++        "Billing database is temporarily unavailable.",
++    )
++
++
++def _as_utc_iso(value: Any) -> Optional[str]:
++    if value is None:
++        return None
++    try:
++        return ledger.normalize_timestamp(value)
++    except ValueError:
++        return str(value)
++
++
++def _parse_capture_amount(resource: Dict[str, Any]) -> tuple[int, Decimal]:
++    amount = resource.get("amount") or {}
++    currency = str(amount.get("currency_code", "")).upper()
++    value = amount.get("value")
++    if currency != "USD":
++        raise _error(400, "invalid_capture_currency", "Capture currency must be USD.")
++    if value is None:
++        raise _error(400, "invalid_capture_amount", "Capture amount is missing.")
++    try:
++        usd = Decimal(str(value))
++    except (InvalidOperation, ValueError):
++        raise _error(400, "invalid_capture_amount", "Capture amount is not a decimal value.")
++    try:
++        cu_amount = ledger.amount_to_cu(usd)
++    except ValueError as exc:
++        raise _error(400, "invalid_capture_amount", str(exc)) from exc
++    return cu_amount, usd
++
++
++def _capture_id_from_resource(resource: Dict[str, Any]) -> str:
++    capture_id = resource.get("id")
++    if not capture_id or not isinstance(capture_id, str):
++        raise _error(400, "invalid_capture", "Capture id is missing.")
++    return capture_id
++
++
++# -----------------------------------------------------------------------------
++# 1. BALANCE & SUMMARY (measured from apex.ledger_entries only)
+ # -----------------------------------------------------------------------------
+ @router.get("/billing/balance")
+-async def get_user_balance(user: Dict[str, Any] = Security(get_current_user)) -> Dict[str, Any]:
++async def get_user_balance(
++    user: Dict[str, Any] = Security(get_current_user),
++) -> Dict[str, Any]:
+     user_id = user["user_id"]
+     query = """
+-        SELECT 
++        SELECT
+             w.id AS wallet_id,
+             e.id AS escrow_id,
+             apex.account_balance(w.id) AS wallet_cu,
+@@ -38,19 +100,25 @@ async def get_user_balance(user: Dict[str, Any] = Security(get_current_user)) ->
+     """
+     try:
+         row = await db.fetch_one(query, (user_id,))
+-        if row:
+-            wallet_cu = row["wallet_cu"] or 0
+-            escrow_cu = row["escrow_cu"] or 0
+-        else:
+-            wallet_cu = 0
+-            escrow_cu = 0
+-        
+-        clusters = await db.fetch_all("SELECT count(*) as cnt FROM apex.clusters WHERE owner_id = %s AND status = 'running';", (user_id,))
+-        active_clusters = clusters[0]["cnt"] if clusters else 0
+-    except Exception:
+-        wallet_cu = 10000  # Default sandbox balance if DB disconnected
+-        escrow_cu = 0
+-        active_clusters = 0
++        if not row:
++            raise _error(
++                status.HTTP_404_NOT_FOUND,
++                "wallet_not_found",
++                "No wallet is provisioned for this account.",
++            )
++        clusters = await db.fetch_all(
++            "SELECT count(*) AS cnt FROM apex.clusters "
++            "WHERE owner_id = %s AND status = 'running';",
++            (user_id,),
++        )
++    except HTTPException:
++        raise
++    except Exception as exc:
++        raise _db_unavailable("balance", exc) from exc
++
++    wallet_cu = int(row["wallet_cu"] or 0)
++    escrow_cu = int(row["escrow_cu"] or 0)
++    active_clusters = int(clusters[0]["cnt"]) if clusters else 0
+ 
+     return {
+         "user_id": user_id,
+@@ -61,20 +129,50 @@ async def get_user_balance(user: Dict[str, Any] = Security(get_current_user)) ->
+         "total_cu": wallet_cu + escrow_cu,
+         "active_clusters": active_clusters,
+         "currency": "CU",
+-        "conversion_rule": "$1.00 = 100 CU"
++        "conversion_rule": "$1.00 = 100 CU",
++        "source": "MEASURED_LEDGER",
+     }
+ 
+ 
+ @router.get("/billing/summary")
+-async def get_billing_summary(user: Dict[str, Any] = Security(get_current_user)) -> Dict[str, Any]:
++async def get_billing_summary(
++    user: Dict[str, Any] = Security(get_current_user),
++) -> Dict[str, Any]:
++    query = """
++        SELECT
++            COALESCE(SUM(CASE WHEN le.direction = 'debit' THEN le.amount_cu ELSE 0 END), 0)
++                AS spend_cu,
++            COALESCE(SUM(CASE WHEN le.direction = 'credit' THEN le.amount_cu ELSE 0 END), 0)
++                AS topup_cu
++        FROM apex.ledger_entries le
++        JOIN apex.accounts a ON a.id = le.account_id
++        JOIN apex.transactions t ON t.id = le.transaction_id
++        WHERE a.owner_id = %s
++          AND a.kind = 'user_wallet'
++          AND t.created_at >= NOW() - INTERVAL '30 days';
++    """
++    try:
++        row = await db.fetch_one(query, (user["user_id"],))
++    except Exception as exc:
++        raise _db_unavailable("summary", exc) from exc
++
++    spend_cu = int(row["spend_cu"] or 0) if row else 0
++    topup_cu = int(row["topup_cu"] or 0) if row else 0
++
+     return {
+         "period_days": 30,
+-        "total_spend_cu": 19400,
+-        "total_spend_usd": 194.00,
+-        "savings_vs_reference_cu": 14100,
+-        "savings_vs_reference_usd": 141.00,
+-        "savings_percent": "38% - 42%",
+-        "benchmark_disclaimer": "Savings calculated vs reference on-demand baseline."
++        "total_spend_cu": spend_cu,
++        "total_spend_usd": round(spend_cu / 100.0, 2),
++        "total_topup_cu": topup_cu,
++        "total_topup_usd": round(topup_cu / 100.0, 2),
++        "savings_vs_reference_cu": None,
++        "savings_vs_reference_usd": None,
++        "savings_percent": None,
++        "benchmark_status": "NOT_MEASURED",
++        "benchmark_disclaimer": (
++            "Savings are not calculated: no reference baseline is recorded for this account."
++        ),
++        "source": "MEASURED_LEDGER",
+     }
+ 
+ 
+@@ -82,96 +180,159 @@ async def get_billing_summary(user: Dict[str, Any] = Security(get_current_user))
+ # 2. DOUBLE-ENTRY LEDGER AUDIT & VERIFICATION
+ # -----------------------------------------------------------------------------
+ @router.get("/billing/ledger")
+-async def get_user_ledger(user: Dict[str, Any] = Security(get_current_user)) -> List[Dict[str, Any]]:
+-    user_id = user["user_id"]
++async def get_user_ledger(
++    user: Dict[str, Any] = Security(get_current_user),
++) -> List[Dict[str, Any]]:
++    """
++    Return only ledger lines belonging to the caller. Transactions are authorized
++    through at least one owned line first; all lines are then loaded internally
++    for HMAC verification but clearing/platform lines are never returned.
++    """
+     query = """
+-        SELECT 
++        WITH authorized AS (
++            SELECT t.id
++            FROM apex.transactions t
++            JOIN apex.ledger_entries le ON le.transaction_id = t.id
++            JOIN apex.accounts a ON a.id = le.account_id
++            WHERE a.owner_id = %s
++            GROUP BY t.id
++            ORDER BY MAX(t.created_at) DESC
++            LIMIT 100
++        )
++        SELECT
+             t.id AS tx_id,
+             t.type,
+             t.reference,
+             t.hmac,
+             t.hmac_kid,
+             t.created_at,
++            t.signed_at,
+             le.id AS entry_id,
++            le.account_id,
+             le.direction,
+             le.amount_cu,
++            le.created_at AS entry_created_at,
+             a.code AS account_code,
+-            a.kind AS account_kind
++            a.kind AS account_kind,
++            a.owner_id
+         FROM apex.transactions t
+         JOIN apex.ledger_entries le ON le.transaction_id = t.id
+         JOIN apex.accounts a ON a.id = le.account_id
+-        WHERE a.owner_id = %s OR a.owner_id IS NULL
+-        ORDER BY t.created_at DESC, le.created_at DESC
+-        LIMIT 100;
++        WHERE t.id IN (SELECT id FROM authorized)
++        ORDER BY t.created_at DESC, le.created_at DESC;
+     """
+     try:
+-        rows = await db.fetch_all(query, (user_id,))
+-    except Exception:
+-        rows = []
+-
+-    # Verify HMAC on each entry
+-    results = []
+-    for r in rows:
+-        dummy_line = [{"account_code": r["account_code"], "direction": r["direction"], "amount_cu": r["amount_cu"]}]
++        rows = await db.fetch_all(query, (user["user_id"],))
++    except Exception as exc:
++        raise _db_unavailable("ledger", exc) from exc
++
++    grouped: Dict[str, List[Dict[str, Any]]] = {}
++    for row in rows:
++        grouped.setdefault(str(row["tx_id"]), []).append(row)
++
++    results: List[Dict[str, Any]] = []
++    for tx_id, tx_rows in grouped.items():
++        head = tx_rows[0]
++        all_lines = [
++            {
++                "account_code": r["account_code"],
++                "direction": r["direction"],
++                "amount_cu": int(r["amount_cu"]),
++            }
++            for r in tx_rows
++        ]
+         verify_meta = ledger.verify_transaction_signature(
+-            tx_id=str(r["tx_id"]),
+-            tx_type=r["type"],
+-            reference=r["reference"],
+-            created_at_iso=r["created_at"].isoformat() if hasattr(r["created_at"], "isoformat") else str(r["created_at"]),
+-            lines=dummy_line,
+-            stored_hmac=r["hmac"],
+-            kid=r["hmac_kid"]
+-        )
+-        results.append({
+-            "entry_id": str(r["entry_id"]),
+-            "tx_id": str(r["tx_id"]),
+-            "type": r["type"],
+-            "reference": r["reference"],
+-            "account_code": r["account_code"],
+-            "direction": r["direction"],
+-            "amount_cu": r["amount_cu"],
+-            "amount_usd": round(r["amount_cu"] / 100.0, 2),
+-            "created_at": r["created_at"],
+-            **verify_meta
+-        })
++            tx_id=tx_id,
++            tx_type=head["type"],
++            reference=head["reference"],
++            signed_at_iso=_as_utc_iso(head.get("signed_at")),
++            lines=all_lines,
++            stored_hmac=head["hmac"],
++            kid=head["hmac_kid"],
++        )
+ 
++        # Never expose clearing/platform lines (owner_id IS NULL or another tenant).
++        for row in tx_rows:
++            if str(row["owner_id"]) != str(user["user_id"]):
++                continue
++            results.append(
++                {
++                    "entry_id": str(row["entry_id"]),
++                    "tx_id": tx_id,
++                    "type": row["type"],
++                    "reference": row["reference"],
++                    "account_code": row["account_code"],
++                    "account_kind": row["account_kind"],
++                    "direction": row["direction"],
++                    "amount_cu": int(row["amount_cu"]),
++                    "amount_usd": round(int(row["amount_cu"]) / 100.0, 2),
++                    "created_at": row["entry_created_at"],
++                    "signed_at": row["signed_at"],
++                    "hmac_sig_prefix": verify_meta["hmac_sig_prefix"],
++                    **{
++                        k: verify_meta[k]
++                        for k in ("hmac_verified", "hmac_algo", "hmac_kid", "reason")
++                        if k in verify_meta
++                    },
++                }
++            )
++
++    results.sort(key=lambda r: r["created_at"], reverse=True)
+     return results
+ 
+ 
+ @router.get("/billing/security")
+ async def get_ledger_security_status() -> Dict[str, Any]:
+-    """
+-    Returns cryptographic integrity and RLS status report.
++    """Return measured RLS/trigger status; 503 when it cannot be measured."""
++    query = """
++        SELECT
++            apex.rls_status() AS status,
++            EXISTS (
++                SELECT 1 FROM pg_trigger
++                WHERE tgname IN ('trg_no_update_tx', 'trg_no_update_le')
++                  AND NOT tgisinternal
++            ) AS immutability_triggers;
+     """
+     try:
+-        row = await db.fetch_one("SELECT apex.rls_status() AS status;")
+-        rls_data = row["status"] if row else {}
+-    except Exception:
+-        rls_data = {"rls_enabled": True, "tables": []}
++        row = await db.fetch_one(query)
++    except Exception as exc:
++        raise _db_unavailable("security_status", exc) from exc
++
++    if not row or not row.get("status"):
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "security_status_unavailable",
++            "Row-level security status could not be measured.",
++        )
+ 
+     return {
+         "ledger_model": "DOUBLE_ENTRY_ATOMIC_IMMUTABLE",
+         "currency_rule": "$1.00 = 100 CU",
+         "cryptographic_algorithm": "HMAC-SHA256",
+         "active_signing_kid": settings.LEDGER_HMAC_KID,
+-        "row_level_security": rls_data,
+-        "audit_immutability": "ENFORCED_VIA_TRIGGERS"
++        "row_level_security": row["status"],
++        "audit_immutability": (
++            "ENFORCED_VIA_TRIGGERS" if row.get("immutability_triggers") else "NOT_VERIFIED"
++        ),
++        "source": "MEASURED_DATABASE",
+     }
+ 
+ 
+ # -----------------------------------------------------------------------------
+-# 3. PRINTABLE RECEIPTS
++# 3. PRINTABLE RECEIPTS (real rows only; missing => 404)
+ # -----------------------------------------------------------------------------
+ @router.get("/billing/receipts/{entry_id}")
+ async def get_printable_receipt(
+     entry_id: str,
+-    user: Dict[str, Any] = Security(get_current_user)
++    user: Dict[str, Any] = Security(get_current_user),
+ ) -> Dict[str, Any]:
+-    """
+-    Returns printable receipt data for a topup or billing event.
+-    """
++    try:
++        uuid.UUID(entry_id)
++    except ValueError:
++        raise _error(status.HTTP_404_NOT_FOUND, "receipt_not_found", "Receipt not found.")
++
+     query = """
+-        SELECT 
++        SELECT
+             le.id AS entry_id,
+             le.created_at,
+             le.amount_cu,
+@@ -181,6 +342,7 @@ async def get_printable_receipt(
+             t.reference,
+             t.hmac,
+             t.hmac_kid,
++            t.signed_at,
+             p.email
+         FROM apex.ledger_entries le
+         JOIN apex.transactions t ON t.id = le.transaction_id
+@@ -190,37 +352,58 @@ async def get_printable_receipt(
+     """
+     try:
+         row = await db.fetch_one(query, (entry_id, user["user_id"]))
+-    except Exception:
+-        row = None
+-
+-    if not row:
+-        # Fallback receipt for demo / sandbox
+-        return {
+-            "receipt_id": f"REC-{entry_id[:8].upper()}",
+-            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+-            "customer_id": user["user_id"],
+-            "customer_email": user.get("email", "client@apexsovereign.ai"),
+-            "amount_usd": "$50.00",
+-            "amount_cu": "5,000 CU",
+-            "pack_name": "Developer Pack",
+-            "payment_method": f"PayPal ({settings.PAYPAL_ENV.upper()})",
+-            "capture_id": f"CAP-{entry_id[:10]}",
+-            "hmac_signature_prefix": "a1b2c3d4e5f6",
+-            "status": "SETTLED"
+-        }
++        if not row:
++            raise _error(status.HTTP_404_NOT_FOUND, "receipt_not_found", "Receipt not found.")
++        all_rows = await db.fetch_all(
++            """
++            SELECT a.code AS account_code, le.direction, le.amount_cu
++            FROM apex.ledger_entries le
++            JOIN apex.accounts a ON a.id = le.account_id
++            WHERE le.transaction_id = %s;
++            """,
++            (row["tx_id"],),
++        )
++    except HTTPException:
++        raise
++    except Exception as exc:
++        raise _db_unavailable("receipt", exc) from exc
++
++    verify_meta = ledger.verify_transaction_signature(
++        tx_id=str(row["tx_id"]),
++        tx_type=row["type"],
++        reference=row["reference"],
++        signed_at_iso=_as_utc_iso(row.get("signed_at")),
++        lines=[
++            {
++                "account_code": r["account_code"],
++                "direction": r["direction"],
++                "amount_cu": int(r["amount_cu"]),
++            }
++            for r in all_rows
++        ],
++        stored_hmac=row["hmac"],
++        kid=row["hmac_kid"],
++    )
+ 
++    reference = row["reference"] or ""
++    capture_id = (
++        reference.replace("paypal:capture:", "", 1)
++        if reference.startswith("paypal:capture:")
++        else None
++    )
+     return {
+         "receipt_id": f"REC-{str(row['entry_id'])[:8].upper()}",
+         "date": row["created_at"].strftime("%Y-%m-%d %H:%M:%S UTC"),
+         "customer_id": user["user_id"],
+         "customer_email": row["email"],
+-        "amount_usd": f"${round(row['amount_cu'] / 100.0, 2):.2f}",
+-        "amount_cu": f"{row['amount_cu']:,} CU",
+-        "pack_name": row["reference"],
++        "amount_usd": f"${round(int(row['amount_cu']) / 100.0, 2):.2f}",
++        "amount_cu": f"{int(row['amount_cu']):,} CU",
++        "pack_name": reference,
+         "payment_method": f"PayPal ({settings.PAYPAL_ENV.upper()})",
+-        "capture_id": row["reference"].replace("paypal:capture:", ""),
+-        "hmac_signature_prefix": row["hmac"][:12],
+-        "status": "SETTLED"
++        "capture_id": capture_id,
++        "hmac_signature_prefix": row["hmac"][:12] if row["hmac"] else "",
++        "hmac_verified": verify_meta["hmac_verified"],
++        "status": "SETTLED" if verify_meta["hmac_verified"] else "UNVERIFIED",
+     }
+ 
+ 
+@@ -239,137 +422,208 @@ class CaptureOrderRequest(BaseModel):
+ async def paypal_create_order(
+     req: CreateOrderRequest,
+     user: Dict[str, Any] = Security(get_current_user),
+-    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key")
++    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+ ) -> Dict[str, Any]:
+-    """
+-    Step 1: Creates PayPal order for predefined deposit pack.
+-    Rule 4 Enforcement: 403 payments_disabled if gate conditions are not met.
+-    """
+     if not settings.payments_enabled:
+-        raise HTTPException(
+-            status_code=status.HTTP_403_FORBIDDEN,
+-            detail={"error": {"code": "payments_disabled", "message": "Payments open at launch. System is currently in pre-launch mode."}}
++        raise _error(
++            status.HTTP_403_FORBIDDEN,
++            "payments_disabled",
++            "Payments are not enabled for this deployment.",
+         )
+ 
+     pack = paypal.PAYPAL_PACKS.get(req.pack)
+     if not pack:
+-        raise HTTPException(
+-            status_code=status.HTTP_400_BAD_REQUEST,
+-            detail={"error": {"code": "invalid_pack", "message": f"Pack '{req.pack}' does not exist."}}
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_pack",
++            f"Pack '{req.pack}' does not exist.",
+         )
+ 
+-    # Check Deposit Limits
+-    amount_cents = pack["amount_cents"]
++    amount_cents = int(pack["amount_cents"])
+     if amount_cents > settings.DEPOSIT_MAX_TX_CENTS:
+-        raise HTTPException(
+-            status_code=status.HTTP_400_BAD_REQUEST,
+-            detail={"error": {"code": "deposit_limit_exceeded", "message": f"Pack exceeds max per-transaction deposit limit (${settings.DEPOSIT_MAX_TX_CENTS // 100})."}}
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "deposit_limit_exceeded",
++            f"Pack exceeds the max per-transaction deposit limit "
++            f"(${settings.DEPOSIT_MAX_TX_CENTS // 100}).",
+         )
+ 
+-    internal_order_id = f"ord_{int(time.time())}_{user['user_id'][:6]}"
+-    pp_order = await paypal.create_paypal_order(req.pack, user["user_id"], internal_order_id)
+-    pp_order_id = pp_order["id"]
++    internal_order_id = f"apex_{uuid.uuid4().hex}"
++    pp_order = await paypal.create_paypal_order(
++        req.pack, user["user_id"], internal_order_id
++    )
++    pp_order_id = pp_order.get("id")
++    if not pp_order_id:
++        raise _error(
++            status.HTTP_502_BAD_GATEWAY,
++            "paypal_order_invalid",
++            "PayPal did not return an order id.",
++        )
+ 
+-    # Store in apex.paypal_orders
+     try:
+         await db.execute(
+             """
+-            INSERT INTO apex.paypal_orders (owner_id, order_id, pack, amount_cents, cu_amount, status)
++            INSERT INTO apex.paypal_orders
++                (owner_id, order_id, pack, amount_cents, cu_amount, status)
+             VALUES (%s, %s, %s, %s, %s, 'CREATED');
+             """,
+-            (user["user_id"], pp_order_id, req.pack, amount_cents, pack["cu_amount"])
++            (
++                user["user_id"],
++                pp_order_id,
++                req.pack,
++                amount_cents,
++                int(pack["cu_amount"]),
++            ),
++        )
++    except Exception as exc:
++        logger.error(
++            "Order persistence failed order_id=%s error=%s",
++            pp_order_id,
++            exc.__class__.__name__,
+         )
+-    except Exception:
+-        pass
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "order_persistence_failed",
++            "The order could not be stored; no payment should be captured.",
++        ) from exc
+ 
+     return {
+         "order_id": pp_order_id,
+         "pack": req.pack,
+-        "cu_amount": pack["cu_amount"],
++        "cu_amount": int(pack["cu_amount"]),
+         "amount_usd": pack["amount_usd"],
+-        "status": "CREATED"
++        "status": "CREATED",
+     }
+ 
+ 
+ @router.post("/billing/paypal/capture")
+ async def paypal_capture_order(
+     req: CaptureOrderRequest,
+-    user: Dict[str, Any] = Security(get_current_user)
++    user: Dict[str, Any] = Security(get_current_user),
+ ) -> Dict[str, Any]:
+     """
+-    Step 2: Captures PayPal order and posts double-entry TOPUP to atomic ledger.
+-    Guarantees idempotency on paypal:capture:<capture_id>.
++    Capture the PayPal order and verify the captured amount. This route never
++    credits CU; the verified webhook is the only credit path.
+     """
+     if not settings.payments_enabled:
+-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={"error": {"code": "payments_disabled", "message": "Payments disabled"}})
++        raise _error(
++            status.HTTP_403_FORBIDDEN,
++            "payments_disabled",
++            "Payments are not enabled for this deployment.",
++        )
+ 
+-    # Fetch recorded order
+     try:
+-        order_row = await db.fetch_one("SELECT * FROM apex.paypal_orders WHERE order_id = %s;", (req.order_id,))
+-    except Exception:
+-        order_row = None
+-
+-    if order_row and str(order_row["owner_id"]) != user["user_id"]:
+-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={"error": {"code": "forbidden", "message": "Order does not belong to user."}})
++        order_row = await db.fetch_one(
++            "SELECT owner_id, amount_cents, cu_amount, status, capture_id "
++            "FROM apex.paypal_orders WHERE order_id = %s;",
++            (req.order_id,),
++        )
++    except Exception as exc:
++        raise _db_unavailable("capture_order_lookup", exc) from exc
++
++    if not order_row:
++        raise _error(
++            status.HTTP_404_NOT_FOUND,
++            "order_not_found",
++            "Order not found. Create the order before capturing.",
++        )
++    if str(order_row["owner_id"]) != str(user["user_id"]):
++        raise _error(
++            status.HTTP_403_FORBIDDEN,
++            "forbidden",
++            "Order does not belong to this user.",
++        )
++    if order_row["status"] == "COMPLETED":
++        return {
++            "status": "COMPLETED",
++            "order_id": req.order_id,
++            "capture_id": order_row.get("capture_id"),
++            "already_captured": True,
++        }
+ 
+-    # Execute PayPal Capture
+     capture_res = await paypal.capture_paypal_order(req.order_id)
+-    purchase_units = capture_res.get("purchase_units", [])
+-    captures = purchase_units[0].get("payments", {}).get("captures", []) if purchase_units else []
++    purchase_units = capture_res.get("purchase_units") or []
++    payments = purchase_units[0].get("payments", {}) if purchase_units else {}
++    captures = payments.get("captures", []) if isinstance(payments, dict) else []
+     if not captures:
+-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": {"code": "capture_failed", "message": "No capture returned by PayPal."}})
++        raise _error(
++            status.HTTP_502_BAD_GATEWAY,
++            "capture_failed",
++            "PayPal did not return a capture.",
++        )
+ 
+     capture_item = captures[0]
+-    capture_id = capture_item["id"]
+-    capture_status = capture_item["status"]
+-    captured_value = capture_item["amount"]["value"]
+-
++    capture_id = capture_item.get("id")
++    capture_status = capture_item.get("status")
++    captured_currency = str(
++        (capture_item.get("amount") or {}).get("currency_code", "")
++    ).upper()
++    captured_value = (capture_item.get("amount") or {}).get("value")
++
++    if not capture_id:
++        raise _error(
++            status.HTTP_502_BAD_GATEWAY,
++            "capture_failed",
++            "PayPal capture is missing an id.",
++        )
+     if capture_status != "COMPLETED":
+-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": {"code": "capture_incomplete", "message": f"Capture status: {capture_status}"}})
+-
+-    # Determine CU amount
+-    cents = int(round(float(captured_value) * 100))
+-    cu_amount = cents  # $1.00 = 100 CU
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_incomplete",
++            f"Capture status is {capture_status or 'unknown'}, not COMPLETED.",
++        )
++    if captured_currency != "USD":
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_currency_mismatch",
++            "Captured currency does not match the stored USD order.",
++        )
+ 
+-    # Fetch account IDs
+     try:
+-        wallet_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE owner_id = %s AND kind = 'user_wallet';", (user["user_id"],))
+-        clearing_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE code = 'paypal_clearing';")
+-        wallet_id = str(wallet_row["id"]) if wallet_row else "00000000-0000-0000-0000-000000000010"
+-        clearing_id = str(clearing_row["id"]) if clearing_row else "00000000-0000-0000-0000-000000000001"
+-    except Exception:
+-        wallet_id = "00000000-0000-0000-0000-000000000010"
+-        clearing_id = "00000000-0000-0000-0000-000000000001"
+-
+-    # Post Double-Entry TOPUP: Debit PayPal Clearing, Credit User Wallet
+-    lines = [
+-        {"account_id": clearing_id, "account_code": "paypal_clearing", "direction": "debit", "amount_cu": cu_amount},
+-        {"account_id": wallet_id, "account_code": f"user_wallet:{user['user_id']}", "direction": "credit", "amount_cu": cu_amount}
+-    ]
+-
+-    idempotency_key = f"paypal:capture:{capture_id}"
+-    tx_id = await ledger.post_ledger_transaction(
+-        tx_type="TOPUP",
+-        reference=f"paypal_order:{req.order_id}",
+-        lines=lines,
+-        idempotency_key=idempotency_key
+-    )
++        captured_cents = int(Decimal(str(captured_value)) * 100)
++    except (InvalidOperation, ValueError, TypeError):
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_amount_invalid",
++            "Captured amount is invalid.",
++        )
++    if captured_cents != int(order_row["amount_cents"]):
++        logger.error(
++            "Capture amount mismatch order_id=%s capture_id=%s expected_cents=%s actual_cents=%s",
++            req.order_id,
++            capture_id,
++            order_row["amount_cents"],
++            captured_cents,
++        )
++        raise _error(
++            status.HTTP_409_CONFLICT,
++            "capture_amount_mismatch",
++            "Captured amount does not match the stored order amount.",
++        )
+ 
+-    # Update order record
+     try:
+-        await db.execute(
+-            "UPDATE apex.paypal_orders SET status = 'COMPLETED', capture_id = %s, updated_at = NOW() WHERE order_id = %s;",
+-            (capture_id, req.order_id)
++        updated = await db.fetch_one(
++            """
++            UPDATE apex.paypal_orders
++               SET status = 'COMPLETED', capture_id = %s, updated_at = NOW()
++             WHERE order_id = %s AND owner_id = %s
++             RETURNING id;
++            """,
++            (capture_id, req.order_id, user["user_id"]),
++        )
++    except Exception as exc:
++        raise _db_unavailable("capture_order_update", exc) from exc
++    if not updated:
++        raise _error(
++            status.HTTP_404_NOT_FOUND,
++            "order_not_found",
++            "Order not found while recording the capture.",
+         )
+-    except Exception:
+-        pass
+ 
+     return {
+-        "status": "credited",
+-        "cu_credited": cu_amount,
+-        "amount_usd": captured_value,
+-        "ledger_entry_id": tx_id,
+-        "capture_id": capture_id
++        "status": "COMPLETED",
++        "order_id": req.order_id,
++        "capture_id": capture_id,
+     }
+ 
+ 
+@@ -381,45 +635,64 @@ async def paypal_webhook_handler(request: Request) -> Dict[str, Any]:
+     raw_body = (await request.body()).decode("utf-8")
+     headers = request.headers
+ 
+-    # Extract verification transmission headers
+     transmission_id = headers.get("paypal-transmission-id", "")
+     transmission_time = headers.get("paypal-transmission-time", "")
+     cert_url = headers.get("paypal-cert-url", "")
+     auth_algo = headers.get("paypal-auth-algo", "")
+     transmission_sig = headers.get("paypal-transmission-sig", "")
+ 
+-    # Server-Side Cryptographic Signature Verification. PayPal's official
+-    # verification API is authoritative; missing configuration never bypasses it.
+-    required_headers = (transmission_id, transmission_time, cert_url, auth_algo, transmission_sig)
++    required_headers = (
++        transmission_id,
++        transmission_time,
++        cert_url,
++        auth_algo,
++        transmission_sig,
++    )
+     if not settings.PAYPAL_WEBHOOK_ID or not all(required_headers):
+-        raise HTTPException(
+-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+-            detail={"error": {"code": "webhook_verification_unavailable", "message": "PayPal webhook verification is not fully configured."}}
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "webhook_verification_unavailable",
++            "PayPal webhook verification is not fully configured.",
+         )
++
+     is_valid = await paypal.verify_webhook_signature(
+         transmission_id=transmission_id,
+         transmission_time=transmission_time,
+         cert_url=cert_url,
+         auth_algo=auth_algo,
+         transmission_sig=transmission_sig,
+-        raw_body=raw_body
++        raw_body=raw_body,
+     )
+     if not is_valid:
+-        raise HTTPException(
+-            status_code=status.HTTP_400_BAD_REQUEST,
+-            detail={"error": {"code": "invalid_webhook_signature", "message": "PayPal webhook signature validation failed."}}
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_webhook_signature",
++            "PayPal webhook signature validation failed.",
+         )
+ 
+     try:
+         event = json.loads(raw_body)
+-    except Exception:
+-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": {"code": "bad_json", "message": "Invalid JSON payload"}})
++    except ValueError:
++        raise _error(status.HTTP_400_BAD_REQUEST, "bad_json", "Invalid JSON payload.")
+ 
+     event_id = event.get("id")
+     event_type = event.get("event_type")
+-    resource = event.get("resource", {})
++    resource = event.get("resource") or {}
++    if not event_id or not event_type:
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_event",
++            "Webhook event id and type are required.",
++        )
++
++    capture_id = resource.get("id") if isinstance(resource, dict) else None
++    logger.info(
++        "PayPal webhook received event_id=%s event_type=%s capture_id=%s",
++        event_id,
++        event_type,
++        capture_id,
++    )
+ 
+-    # Record event idempotently in apex.paypal_events
+     try:
+         await db.execute(
+             """
+@@ -427,45 +700,173 @@ async def paypal_webhook_handler(request: Request) -> Dict[str, Any]:
+             VALUES (%s, %s, %s, %s::jsonb)
+             ON CONFLICT (event_id) DO NOTHING;
+             """,
+-            (event_id, event_type, event.get("summary"), json.dumps(resource))
+-        )
+-    except Exception:
+-        pass
+-
+-    # Handle Specific Lifecycle Events
+-    if event_type == "PAYMENT.CAPTURE.COMPLETED":
+-        capture_id = resource.get("id")
+-        custom_id = resource.get("custom_id")
+-        amount_val = resource.get("amount", {}).get("value", "0.00")
+-        cents = int(round(float(amount_val) * 100))
+-
+-        if custom_id and cents > 0:
+-            try:
+-                wallet_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE owner_id = %s AND kind = 'user_wallet';", (custom_id,))
+-                clearing_row = await db.fetch_one("SELECT id FROM apex.accounts WHERE code = 'paypal_clearing';")
+-                if wallet_row and clearing_row:
+-                    lines = [
+-                        {"account_id": str(clearing_row["id"]), "direction": "debit", "amount_cu": cents},
+-                        {"account_id": str(wallet_row["id"]), "direction": "credit", "amount_cu": cents}
+-                    ]
+-                    await ledger.post_ledger_transaction(
+-                        tx_type="TOPUP",
+-                        reference=f"webhook_capture:{capture_id}",
+-                        lines=lines,
+-                        idempotency_key=f"paypal:capture:{capture_id}"
+-                    )
+-            except Exception:
+-                pass
+-
+-    elif event_type in ("PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"):
+-        # Handle reversal: post REFUND transaction, clamp wallet
+-        pass
+-
+-    elif event_type == "CUSTOMER.DISPUTE.CREATED":
+-        # Disputed CU frozen
+-        pass
+-
+-    return {"status": "received", "event_id": event_id, "event_type": event_type}
++            (event_id, event_type, event.get("summary"), json.dumps(resource)),
++        )
++    except Exception as exc:
++        logger.error(
++            "Webhook event persistence failed event_id=%s error=%s",
++            event_id,
++            exc.__class__.__name__,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "webhook_persist_failed",
++            "Webhook event could not be recorded.",
++        ) from exc
++
++    if event_type != "PAYMENT.CAPTURE.COMPLETED":
++        return {"status": "received", "event_id": event_id, "event_type": event_type}
++
++    # ---- Credit path: verified webhook only --------------------------------
++    if not isinstance(resource, dict):
++        raise _error(status.HTTP_400_BAD_REQUEST, "invalid_capture", "Capture resource is invalid.")
++
++    capture_id = _capture_id_from_resource(resource)
++    custom_id = resource.get("custom_id")
++    try:
++        user_id = str(uuid.UUID(str(custom_id)))
++    except (ValueError, TypeError):
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "invalid_custom_id",
++            "Capture custom_id is not a valid user id.",
++        )
++
++    if resource.get("status") != "COMPLETED":
++        raise _error(
++            status.HTTP_400_BAD_REQUEST,
++            "capture_not_completed",
++            "Webhook capture status is not COMPLETED.",
++        )
++
++    cu_amount, amount_usd = _parse_capture_amount(resource)
++
++    # Validate the tenant and both accounts before minting anything.
++    try:
++        wallet = await db.fetch_one(
++            "SELECT id, code FROM apex.accounts "
++            "WHERE owner_id = %s AND kind = 'user_wallet';",
++            (user_id,),
++        )
++        clearing = await db.fetch_one(
++            "SELECT id, code FROM apex.accounts WHERE code = 'paypal_clearing';"
++        )
++    except Exception as exc:
++        logger.error(
++            "Webhook account validation failed event_id=%s capture_id=%s error=%s",
++            event_id,
++            capture_id,
++            exc.__class__.__name__,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_validation_failed",
++            "Capture accounts could not be validated.",
++        ) from exc
++
++    if not wallet or not clearing:
++        logger.error(
++            "Webhook account missing event_id=%s capture_id=%s wallet=%s clearing=%s",
++            event_id,
++            capture_id,
++            bool(wallet),
++            bool(clearing),
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_account_missing",
++            "Capture cannot be credited because a ledger account is missing.",
++        )
++
++    tx_id = str(uuid.uuid4())
++    signed_at = datetime.now(timezone.utc).isoformat(timespec="microseconds")
++    reference = f"paypal:capture:{capture_id}"
++    lines = [
++        {
++            "account_id": str(clearing["id"]),
++            "account_code": clearing["code"],
++            "direction": "debit",
++            "amount_cu": cu_amount,
++        },
++        {
++            "account_id": str(wallet["id"]),
++            "account_code": wallet["code"],
++            "direction": "credit",
++            "amount_cu": cu_amount,
++        },
++    ]
++
++    try:
++        signature, kid = ledger.sign_transaction(
++            tx_id, "TOPUP", reference, signed_at, lines
++        )
++    except ValueError as exc:
++        logger.error("Webhook signing failed event_id=%s reason=%s", event_id, exc)
++        raise _error(
++            status.HTTP_500_INTERNAL_SERVER_ERROR,
++            "credit_signing_failed",
++            "Capture could not be signed for the ledger.",
++        ) from exc
++
++    rpc_sql = """
++        SELECT apex.increment_user_credits(
++            %s::uuid, %s::numeric, %s::integer, %s::text,
++            %s::uuid, %s::text, %s::text, %s::timestamptz
++        ) AS status;
++    """
++    try:
++        row = await db.fetch_one(
++            rpc_sql,
++            (
++                user_id,
++                amount_usd,
++                cu_amount,
++                capture_id,
++                tx_id,
++                signature,
++                kid,
++                signed_at,
++            ),
++        )
++        result = row.get("status") if row else None
++    except Exception as exc:
++        logger.error(
++            "Webhook credit RPC failed event_id=%s capture_id=%s error=%s",
++            event_id,
++            capture_id,
++            exc.__class__.__name__,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_failed",
++            "Capture could not be credited. PayPal will retry.",
++        ) from exc
++
++    if result not in ("CREDITED", "DUPLICATE"):
++        logger.error(
++            "Webhook credit RPC returned invalid status event_id=%s capture_id=%s status=%s",
++            event_id,
++            capture_id,
++            result,
++        )
++        raise _error(
++            status.HTTP_503_SERVICE_UNAVAILABLE,
++            "credit_failed",
++            "Capture could not be credited. PayPal will retry.",
++        )
++
++    logger.info(
++        "PayPal capture settled event_id=%s capture_id=%s result=%s",
++        event_id,
++        capture_id,
++        result,
++    )
++    return {
++        "status": result.lower(),
++        "event_id": event_id,
++        "event_type": event_type,
++        "capture_id": capture_id,
++    }
+ 
+ 
+ @router.get("/webhooks/paypal/status")
+@@ -473,5 +874,5 @@ async def get_webhook_status() -> Dict[str, Any]:
+     return {
+         "configured": bool(settings.PAYPAL_WEBHOOK_ID),
+         "env": settings.PAYPAL_ENV,
+-        "endpoint": "/v1/webhooks/paypal"
++        "endpoint": "/v1/webhooks/paypal",
+     }
+diff --git a/supabase/migrations/003_atomic_credit.sql b/supabase/migrations/003_atomic_credit.sql
+new file mode 100644
+index 0000000..a15bcf8
+--- /dev/null
++++ b/supabase/migrations/003_atomic_credit.sql
+@@ -0,0 +1,457 @@
++-- =============================================================================
++-- APEXSOVEREIGN.AI - MIGRATION 003: ATOMIC WEBHOOK CREDIT & TELEMETRY
++-- Builds on the existing apex schema from 001_apex_core.sql.
++-- Idempotent: safe to re-run. No existing rows are deleted or rewritten.
++-- Currency invariant: $1.00 USD = 100 CU (integer CU only).
++-- =============================================================================
++
++CREATE EXTENSION IF NOT EXISTS "pgcrypto";
++
++-- -----------------------------------------------------------------------------
++-- 1. COMPUTE NODES & TELEMETRY (read-only to authenticated, writes service-side)
++-- -----------------------------------------------------------------------------
++CREATE TABLE IF NOT EXISTS apex.compute_nodes (
++    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++    model TEXT NOT NULL,
++    region TEXT NOT NULL,
++    jurisdiction TEXT NOT NULL,
++    status TEXT NOT NULL DEFAULT 'available'
++        CHECK (status IN ('available', 'allocated', 'maintenance', 'offline')),
++    rate_cu_hr INTEGER NOT NULL CHECK (rate_cu_hr > 0),
++    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
++);
++
++CREATE TABLE IF NOT EXISTS apex.telemetry_logs (
++    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++    node_id UUID NOT NULL REFERENCES apex.compute_nodes(id) ON DELETE CASCADE,
++    rtt_ms NUMERIC(10, 3) NOT NULL CHECK (rtt_ms >= 0),
++    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
++);
++
++CREATE INDEX IF NOT EXISTS idx_telemetry_logs_node_recorded
++    ON apex.telemetry_logs (node_id, recorded_at DESC);
++
++ALTER TABLE apex.compute_nodes ENABLE ROW LEVEL SECURITY;
++ALTER TABLE apex.compute_nodes FORCE ROW LEVEL SECURITY;
++ALTER TABLE apex.telemetry_logs ENABLE ROW LEVEL SECURITY;
++ALTER TABLE apex.telemetry_logs FORCE ROW LEVEL SECURITY;
++
++DROP POLICY IF EXISTS compute_nodes_authenticated_read ON apex.compute_nodes;
++CREATE POLICY compute_nodes_authenticated_read
++    ON apex.compute_nodes
++    FOR SELECT
++    TO authenticated
++    USING (true);
++
++DROP POLICY IF EXISTS telemetry_logs_authenticated_read ON apex.telemetry_logs;
++CREATE POLICY telemetry_logs_authenticated_read
++    ON apex.telemetry_logs
++    FOR SELECT
++    TO authenticated
++    USING (true);
++
++-- 001 revoked schema usage from authenticated. Grant only what the read-only
++-- telemetry surface needs; table RLS policies still gate every other table.
++DO $$
++BEGIN
++    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
++        GRANT USAGE ON SCHEMA apex TO authenticated;
++        GRANT SELECT ON apex.compute_nodes, apex.telemetry_logs TO authenticated;
++    END IF;
++END;
++$$;
++
++-- -----------------------------------------------------------------------------
++-- 2. SIGNED TIMESTAMP + IDEMPOTENCY INDEX
++-- New transactions persist the exact timestamp covered by the HMAC. Legacy
++-- rows remain NULL rather than being backfilled with an unverified timestamp.
++-- -----------------------------------------------------------------------------
++ALTER TABLE apex.transactions
++    ADD COLUMN IF NOT EXISTS signed_at TIMESTAMPTZ;
++
++DO $$
++BEGIN
++    IF NOT EXISTS (
++        SELECT 1
++        FROM pg_index i
++        JOIN pg_class c ON c.oid = i.indrelid
++        JOIN pg_namespace n ON n.oid = c.relnamespace
++        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY (i.indkey)
++        WHERE n.nspname = 'apex'
++          AND c.relname = 'transactions'
++          AND a.attname = 'idempotency_key'
++          AND i.indisunique
++    ) THEN
++        EXECUTE 'CREATE UNIQUE INDEX idx_transactions_idempotency_key
++                 ON apex.transactions (idempotency_key)
++                 WHERE idempotency_key IS NOT NULL';
++    END IF;
++END;
++$$;
++
++-- -----------------------------------------------------------------------------
++-- 3. ATOMIC PAYPAL CREDIT RPC
++-- The four required arguments remain callable. The optional audit arguments
++-- let the backend sign the canonical ledger lines and supply the exact
++-- transaction id/timestamp that were signed, so verification is possible.
++-- -----------------------------------------------------------------------------
++CREATE OR REPLACE FUNCTION apex.increment_user_credits(
++    user_uuid UUID,
++    amount_usd NUMERIC,
++    cu_amount INTEGER,
++    txn_hash TEXT,
++    p_tx_id UUID DEFAULT NULL,
++    p_hmac TEXT DEFAULT NULL,
++    p_hmac_kid TEXT DEFAULT NULL,
++    p_signed_at TIMESTAMPTZ DEFAULT NULL
++)
++RETURNS TEXT
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = apex, pg_temp
++AS $$
++DECLARE
++    v_wallet_id UUID;
++    v_wallet_code TEXT;
++    v_clearing_id UUID;
++    v_tx_id UUID;
++    v_inserted INTEGER;
++    v_signed_at TIMESTAMPTZ;
++    v_expected_cu BIGINT;
++    v_idempotency_key TEXT;
++BEGIN
++    IF user_uuid IS NULL THEN
++        RAISE EXCEPTION 'USER_REQUIRED: user_uuid must not be null';
++    END IF;
++    IF txn_hash IS NULL OR btrim(txn_hash) = '' THEN
++        RAISE EXCEPTION 'TXN_HASH_REQUIRED: txn_hash must not be empty';
++    END IF;
++    IF amount_usd IS NULL OR amount_usd <= 0 THEN
++        RAISE EXCEPTION 'AMOUNT_INVALID: amount_usd must be greater than zero';
++    END IF;
++    IF amount_usd <> round(amount_usd, 2) THEN
++        RAISE EXCEPTION 'AMOUNT_PRECISION: amount_usd must have at most two decimal places';
++    END IF;
++    IF cu_amount IS NULL OR cu_amount <= 0 THEN
++        RAISE EXCEPTION 'CU_INVALID: cu_amount must be greater than zero';
++    END IF;
++
++    v_expected_cu := round(amount_usd * 100);
++    IF cu_amount::BIGINT <> v_expected_cu THEN
++        RAISE EXCEPTION 'CU_MISMATCH: cu_amount % does not equal round(amount_usd * 100) %',
++            cu_amount, v_expected_cu;
++    END IF;
++
++    -- Resolve and lock the tenant wallet. Missing accounts are a hard failure.
++    SELECT id, code
++      INTO v_wallet_id, v_wallet_code
++      FROM apex.accounts
++     WHERE owner_id = user_uuid
++       AND kind = 'user_wallet'
++     FOR UPDATE;
++
++    IF NOT FOUND THEN
++        RAISE EXCEPTION 'WALLET_NOT_FOUND: no user_wallet account for user %', user_uuid;
++    END IF;
++
++    SELECT id
++      INTO v_clearing_id
++      FROM apex.accounts
++     WHERE code = 'paypal_clearing';
++
++    IF NOT FOUND THEN
++        RAISE EXCEPTION 'CLEARING_NOT_FOUND: paypal_clearing account is missing';
++    END IF;
++
++    v_signed_at := COALESCE(p_signed_at, clock_timestamp());
++    v_tx_id := COALESCE(p_tx_id, gen_random_uuid());
++    v_idempotency_key := 'paypal:capture:' || txn_hash;
++
++    INSERT INTO apex.transactions (
++        id, type, reference, idempotency_key, hmac, hmac_kid, created_at, signed_at
++    )
++    VALUES (
++        v_tx_id,
++        'TOPUP',
++        'paypal:capture:' || txn_hash,
++        v_idempotency_key,
++        COALESCE(p_hmac, 'unverifiable:' || txn_hash),
++        COALESCE(p_hmac_kid, 'external'),
++        v_signed_at,
++        v_signed_at
++    )
++    ON CONFLICT (idempotency_key) DO NOTHING;
++
++    GET DIAGNOSTICS v_inserted = ROW_COUNT;
++    IF v_inserted = 0 THEN
++        RETURN 'DUPLICATE';
++    END IF;
++
++    -- Balanced double entry: debit clearing, credit tenant wallet.
++    INSERT INTO apex.ledger_entries (
++        transaction_id, account_id, direction, amount_cu, created_at
++    )
++    VALUES
++        (v_tx_id, v_clearing_id, 'debit', cu_amount, v_signed_at),
++        (v_tx_id, v_wallet_id, 'credit', cu_amount, v_signed_at);
++
++    RETURN 'CREDITED';
++END;
++$$;
++
++-- Replace the 7-argument posting RPC so every new transaction persists the
++-- exact HMAC-covered timestamp. The function body matches 001 plus signed_at.
++DROP FUNCTION IF EXISTS apex.post_transaction(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB);
++
++CREATE OR REPLACE FUNCTION apex.post_transaction(
++    p_id UUID,
++    p_type TEXT,
++    p_reference TEXT,
++    p_idempotency_key TEXT,
++    p_hmac TEXT,
++    p_hmac_kid TEXT,
++    p_lines JSONB,
++    p_signed_at TIMESTAMPTZ DEFAULT NULL
++)
++RETURNS UUID
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path = apex, pg_temp
++AS $$
++DECLARE
++    v_tx_id UUID;
++    v_line RECORD;
++    v_total_debit BIGINT := 0;
++    v_total_credit BIGINT := 0;
++    v_account_id UUID;
++    v_direction TEXT;
++    v_amount_cu BIGINT;
++    v_current_bal BIGINT;
++    v_account_kind TEXT;
++    v_signed_at TIMESTAMPTZ;
++BEGIN
++    v_signed_at := COALESCE(p_signed_at, clock_timestamp());
++
++    IF p_idempotency_key IS NOT NULL THEN
++        SELECT id INTO v_tx_id
++          FROM apex.transactions
++         WHERE idempotency_key = p_idempotency_key;
++        IF FOUND THEN
++            RETURN v_tx_id;
++        END IF;
++    END IF;
++
++    FOR v_line IN
++        SELECT * FROM jsonb_to_recordset(p_lines)
++            AS (account_id UUID, direction TEXT, amount_cu BIGINT)
++    LOOP
++        IF v_line.amount_cu <= 0 THEN
++            RAISE EXCEPTION 'Invalid line amount %: must be strictly positive', v_line.amount_cu;
++        END IF;
++        IF v_line.direction = 'debit' THEN
++            v_total_debit := v_total_debit + v_line.amount_cu;
++        ELSIF v_line.direction = 'credit' THEN
++            v_total_credit := v_total_credit + v_line.amount_cu;
++        ELSE
++            RAISE EXCEPTION 'Invalid direction %: must be debit or credit', v_line.direction;
++        END IF;
++    END LOOP;
++
++    IF v_total_debit <> v_total_credit THEN
++        RAISE EXCEPTION 'Mathematical Imbalance: Debits (%) do not equal Credits (%)',
++            v_total_debit, v_total_credit;
++    END IF;
++
++    FOR v_line IN
++        SELECT * FROM jsonb_to_recordset(p_lines)
++            AS (account_id UUID, direction TEXT, amount_cu BIGINT)
++    LOOP
++        SELECT kind INTO v_account_kind
++          FROM apex.accounts
++         WHERE id = v_line.account_id
++         FOR UPDATE;
++        IF NOT FOUND THEN
++            RAISE EXCEPTION 'Account % not found', v_line.account_id;
++        END IF;
++
++        IF v_account_kind = 'user_wallet' AND v_line.direction = 'debit' THEN
++            v_current_bal := apex.account_balance(v_line.account_id);
++            IF v_current_bal < v_line.amount_cu THEN
++                RAISE EXCEPTION 'Insufficient Funds: Wallet balance % CU is less than required % CU',
++                    v_current_bal, v_line.amount_cu;
++            END IF;
++        END IF;
++    END LOOP;
++
++    v_tx_id := COALESCE(p_id, gen_random_uuid());
++    INSERT INTO apex.transactions (
++        id, type, reference, idempotency_key, hmac, hmac_kid, created_at, signed_at
++    )
++    VALUES (
++        v_tx_id, p_type, p_reference, p_idempotency_key,
++        p_hmac, p_hmac_kid, v_signed_at, v_signed_at
++    );
++
++    FOR v_line IN
++        SELECT * FROM jsonb_to_recordset(p_lines)
++            AS (account_id UUID, direction TEXT, amount_cu BIGINT)
++    LOOP
++        INSERT INTO apex.ledger_entries (
++            transaction_id, account_id, direction, amount_cu, created_at
++        )
++        VALUES (v_tx_id, v_line.account_id, v_line.direction, v_line.amount_cu, v_signed_at);
++    END LOOP;
++
++    RETURN v_tx_id;
++END;
++$$;
++
++-- -----------------------------------------------------------------------------
++-- 4. FUNCTION PRIVILEGES
++-- -----------------------------------------------------------------------------
++REVOKE ALL ON FUNCTION apex.increment_user_credits(
++    UUID, NUMERIC, INTEGER, TEXT, UUID, TEXT, TEXT, TIMESTAMPTZ
++) FROM PUBLIC;
++
++DO $$
++BEGIN
++    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
++        EXECUTE 'REVOKE ALL ON FUNCTION apex.increment_user_credits(
++            UUID, NUMERIC, INTEGER, TEXT, UUID, TEXT, TEXT, TIMESTAMPTZ) FROM anon';
++    END IF;
++    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
++        EXECUTE 'REVOKE ALL ON FUNCTION apex.increment_user_credits(
++            UUID, NUMERIC, INTEGER, TEXT, UUID, TEXT, TEXT, TIMESTAMPTZ) FROM authenticated';
++    END IF;
++    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
++        EXECUTE 'GRANT EXECUTE ON FUNCTION apex.increment_user_credits(
++            UUID, NUMERIC, INTEGER, TEXT, UUID, TEXT, TEXT, TIMESTAMPTZ) TO service_role';
++    END IF;
++END;
++$$;
++
++REVOKE ALL ON FUNCTION apex.post_transaction(
++    UUID, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TIMESTAMPTZ
++) FROM PUBLIC;
++
++DO $$
++BEGIN
++    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
++        EXECUTE 'GRANT EXECUTE ON FUNCTION apex.post_transaction(
++            UUID, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TIMESTAMPTZ) TO service_role';
++    END IF;
++END;
++$$;
++
++-- -----------------------------------------------------------------------------
++-- 5. RLS ON EVERY APEX TABLE
++-- -----------------------------------------------------------------------------
++DO $$
++DECLARE
++    t TEXT;
++BEGIN
++    FOR t IN
++        SELECT table_name
++          FROM information_schema.tables
++         WHERE table_schema = 'apex'
++           AND table_type = 'BASE TABLE'
++    LOOP
++        EXECUTE format('ALTER TABLE apex.%I ENABLE ROW LEVEL SECURITY;', t);
++        EXECUTE format('ALTER TABLE apex.%I FORCE ROW LEVEL SECURITY;', t);
++    END LOOP;
++END;
++$$;
++
++-- -----------------------------------------------------------------------------
++-- 6. TENANT ISOLATION FOR LEDGER LINES
++-- Clearing/platform accounts have owner_id IS NULL and must never be exposed to
++-- authenticated tenants. Only lines belonging to an owned account are visible.
++-- -----------------------------------------------------------------------------
++DROP POLICY IF EXISTS ledger_entries_tenant_read ON apex.ledger_entries;
++CREATE POLICY ledger_entries_tenant_read
++    ON apex.ledger_entries
++    FOR SELECT
++    TO authenticated
++    USING (
++        EXISTS (
++            SELECT 1
++              FROM apex.accounts a
++             WHERE a.id = ledger_entries.account_id
++               AND a.owner_id = auth.uid()
++        )
++    );
++
++DROP POLICY IF EXISTS transactions_tenant_read ON apex.transactions;
++CREATE POLICY transactions_tenant_read
++    ON apex.transactions
++    FOR SELECT
++    TO authenticated
++    USING (
++        EXISTS (
++            SELECT 1
++              FROM apex.ledger_entries le
++              JOIN apex.accounts a ON a.id = le.account_id
++             WHERE le.transaction_id = transactions.id
++               AND a.owner_id = auth.uid()
++        )
++    );
++
++-- -----------------------------------------------------------------------------
++-- 7. LEGACY PUBLIC LEDGER EXPOSURE
++-- Skip missing tables instead of failing the migration.
++-- -----------------------------------------------------------------------------
++DO $$
++DECLARE
++    tbl TEXT;
++    role_name TEXT;
++BEGIN
++    FOREACH tbl IN ARRAY ARRAY['ledger_entries', 'token_ledger']
++    LOOP
++        IF to_regclass(format('public.%I', tbl)) IS NOT NULL THEN
++            EXECUTE format(
++                'REVOKE SELECT, INSERT, UPDATE, DELETE ON public.%I FROM PUBLIC', tbl
++            );
++            FOR role_name IN
++                SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')
++            LOOP
++                EXECUTE format(
++                    'REVOKE SELECT, INSERT, UPDATE, DELETE ON public.%I FROM %I',
++                    tbl, role_name
++                );
++            END LOOP;
++        END IF;
++    END LOOP;
++END;
++$$;
++
++-- -----------------------------------------------------------------------------
++-- VERIFICATION QUERIES (run manually after applying):
++--
++-- -- Every apex table must have RLS enabled and forced:
++-- SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
++--   FROM pg_class c
++--   JOIN pg_namespace n ON n.oid = c.relnamespace
++--  WHERE n.nspname = 'apex' AND c.relkind = 'r'
++--  ORDER BY c.relname;
++--
++-- -- The atomic RPC must only be executable by service_role:
++-- SELECT p.proname, r.rolname
++--   FROM pg_proc p
++--   JOIN pg_namespace n ON n.oid = p.pronamespace
++--   LEFT JOIN pg_roles r ON r.oid = ANY (p.proacl::regrole[])
++--  WHERE n.nspname = 'apex' AND p.proname = 'increment_user_credits';
++--
++-- -- No authenticated-visible clearing lines (expect 0):
++-- SET ROLE authenticated;
++-- SELECT count(*) FROM apex.ledger_entries le
++--   JOIN apex.accounts a ON a.id = le.account_id
++--  WHERE a.owner_id IS NULL;
++-- RESET ROLE;
++--
++-- -- Duplicate replay must return DUPLICATE and never create a second row:
++-- SELECT apex.increment_user_credits(
++--   '<user_uuid>'::uuid, 50.00, 5000, 'CAPTURE-ID',
++--   '<tx_uuid>'::uuid, '<hmac>', 'k1', NOW()
++-- );
++-- SELECT count(*) FROM apex.transactions WHERE idempotency_key = 'paypal:capture:CAPTURE-ID';
++-- =============================================================================
