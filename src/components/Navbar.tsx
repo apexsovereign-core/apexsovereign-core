@@ -18,7 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-3 cursor-pointer group"
         >
           <img
-            src="/assets/logo-apex.svg"
+            src="/logo.png"
             alt=""
             aria-hidden="true"
             width={32}

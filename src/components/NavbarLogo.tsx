@@ -65,7 +65,7 @@ export const NavbarLogo: React.FC<NavbarLogoProps> = ({
     <div className={`flex items-center gap-3 ${className}`}>
       {/* Permanent Diamond Cyan Logo SVG Emblem (public/ asset) */}
       <img
-        src="/assets/logo-apex.svg"
+        src="/logo.png"
         alt=""
         aria-hidden="true"
         width={size}
