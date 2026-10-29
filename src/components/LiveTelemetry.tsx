@@ -69,6 +69,12 @@ export const LiveTelemetry: React.FC = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-8">
+      {/* Sandbox/Test Mode Indicator */}
+      <div className="mb-4 flex items-center gap-2 px-3 py-1.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono uppercase tracking-wider w-fit">
+        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+        SIMULATED TELEMETRY — NO LIVE HARDWARE CONNECTION
+      </div>
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white font-mono tracking-tight">
           <span className="text-[#00F0FF]">LIVE</span> TELEMETRY — GLOBAL MESH

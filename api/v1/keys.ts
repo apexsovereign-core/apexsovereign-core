@@ -92,6 +92,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     tier: issued.tier,
     tenant_id: tenantId,
     issued_at: issued.issuedAt,
+    environment: process.env.PAYPAL_ENV ?? 'sandbox',
+    sandbox_mode: (process.env.PAYPAL_ENV ?? 'sandbox') === 'sandbox',
     quota: {
       daily_cu_limit: quota.dailyCuLimit,
       rate_limit_per_min: quota.rateLimitPerMin,
@@ -100,5 +102,6 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     // CU deduction happens via Supabase apex.deduct_compute_units RPC.
     ledger_sync: 'supabase_apex_rpc',
     paypal_env: process.env.PAYPAL_ENV ?? 'sandbox',
+    test_mode: true,
   });
 }
