@@ -36,7 +36,7 @@ export const RequirementsEditor: React.FC = () => {
 
     return {
       DATABASE_URL: 'postgresql://postgres.[project-ref]:[password]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require',
-      APP_SECRET_API_KEY: 'apex_live_sec_7f9a12c4b8e053d6a421e90b8f3c',
+      APP_SECRET_API_KEY: '<APP_SECRET_API_KEY>',
       LEASE_HMAC_SECRET: 'hmac_sha256_k9x2p8q1m4v7t3w6y0z5b8d2f4h6j9l1',
       PAYPAL_CLIENT_ID: 'AXmX8_paypal_live_client_id_placeholder',
       PAYPAL_CLIENT_SECRET: 'ELp4_paypal_live_client_secret_placeholder',

@@ -70,7 +70,7 @@ metadata:
 type: Opaque
 stringData:
   SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.apexsovereign_production_service_role_key"
-  MESH_HMAC_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  MESH_HMAC_SECRET: "<MESH_HMAC_SECRET>"
 ---
 apiVersion: apps/v1
 kind: Deployment

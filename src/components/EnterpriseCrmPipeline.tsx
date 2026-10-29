@@ -63,7 +63,7 @@ const INITIAL_DEALS: CrmDealRecord[] = [
     zeroTouchLogs: [
       'Webhook ingested from CRM conduit: Freight optimization request',
       'Auto-calculated ROI: $412,000 annual manual drag eliminated',
-      'HMAC token lease generated: lease_tok_89a42f with 24h validity',
+      'HMAC token lease generated: <lease> with 24h validity',
       'Waiting for final PayPal billing authorization token capture'
     ],
     lastActivity: '14 mins ago',

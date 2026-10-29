@@ -42,7 +42,7 @@ GLOBAL_ENERGY_ZONES: Dict[str, Dict[str, Any]] = {
         "carbon_intensity_g_kwh": 12.0,
         "grid_frequency_hz": 50.01,
         "curtailed_excess_mw": 34.5,
-        "green_certificate_token": "REC-NORDIC-2026-991A",
+        "green_certificate_token": "REC-NORDIC-PLACEHOLDER",
         "active_dispatch_state": "MAX_COMMERCIAL_COMPUTE"
     },
     "US_WEST_SMR": {
@@ -66,7 +66,7 @@ GLOBAL_ENERGY_ZONES: Dict[str, Dict[str, Any]] = {
         "carbon_intensity_g_kwh": 18.0,
         "grid_frequency_hz": 60.02,
         "curtailed_excess_mw": 8.0,
-        "green_certificate_token": "REC-PJM-STRANDED-118C",
+        "green_certificate_token": "REC-PJM-PLACEHOLDER",
         "active_dispatch_state": "COMMERCIAL_ARBITRAGE"
     },
     "APAC_HYDRO": {
