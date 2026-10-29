@@ -9,6 +9,8 @@
     { "source": "/v1", "destination": "/api/gone" },
     { "source": "/v1/:path*", "destination": "/api/gone" },
     { "source": "/api/v1", "destination": "/api/gone" },
+    { "source": "/api/v1/keys", "destination": "/api/v1/keys" },
+    { "source": "/api/v1/keys/:path*", "destination": "/api/v1/keys" },
     { "source": "/api/v1/:path*", "destination": "/api/gone" },
     { "source": "/telemetry", "destination": "/api/gone" },
     { "source": "/telemetry/:path*", "destination": "/api/gone" },

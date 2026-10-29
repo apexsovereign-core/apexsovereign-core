@@ -6,6 +6,8 @@ import { EnterpriseBentoGrid } from './components/EnterpriseBentoGrid';
 import { TerminalCLIView } from './components/TerminalCLIView';
 import { FuturesView } from './components/FuturesView';
 import { BillingView } from './components/BillingView';
+import { EnterprisePortal } from './components/EnterprisePortal';
+import { LiveTelemetry } from './components/LiveTelemetry';
 import { ServiceSuiteMatrix } from './components/service-suite-matrix';
 import { HardwareDeconstructionStage } from './components/hardware-deconstruction-stage';
 import {
@@ -23,7 +25,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-export type ActivePage = 'landing' | 'terminal' | 'futures' | 'billing';
+export type ActivePage = 'landing' | 'terminal' | 'futures' | 'billing' | 'enterprise';
 
 export function App() {
   const [activePage, setActivePage] = useState<ActivePage>('landing');
@@ -38,6 +40,8 @@ export function App() {
         setActivePage('futures');
       } else if (path.includes('/billing')) {
         setActivePage('billing');
+      } else if (path.includes('/enterprise')) {
+        setActivePage('enterprise');
       } else {
         setActivePage('landing');
       }
@@ -269,7 +273,15 @@ export function App() {
                 }}
               />
             </section>
+
           </div>
+        )}
+
+        {/* Live Telemetry Dashboard */}
+        {activePage === 'landing' && (
+          <section className="mt-12">
+            <LiveTelemetry />
+          </section>
         )}
 
         {/* Tab 2: Live Exchange CLI Terminal */}
@@ -339,6 +351,11 @@ export function App() {
             </div>
             <BillingView />
           </div>
+        )}
+
+        {/* Tab 5: Enterprise SLA & Onboarding Portal */}
+        {activePage === 'enterprise' && (
+          <EnterprisePortal onNavigate={navigateTo} />
         )}
       </main>
 
