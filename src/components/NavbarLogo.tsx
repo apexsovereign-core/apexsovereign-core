@@ -1,5 +1,4 @@
 import React from 'react';
-import { ApexLogo } from './ApexLogo';
 
 export interface NavbarLogoProps {
   /** Size of the emblem in pixels (default: 38) */
@@ -64,12 +63,18 @@ export const NavbarLogo: React.FC<NavbarLogoProps> = ({
 
   const Content = (
     <div className={`flex items-center gap-3 ${className}`}>
-      {/* Permanent Diamond Cyan Logo SVG Emblem */}
-      <ApexLogo
-        size={size}
-        glow
-        pulse={pulse}
-        variant="icon"
+      {/* Permanent Diamond Cyan Logo SVG Emblem (public/ asset) */}
+      <img
+        src="/assets/logo-apex.svg"
+        alt=""
+        aria-hidden="true"
+        width={size}
+        height={size}
+        decoding="async"
+        style={{ width: size, height: size }}
+        className={`shrink-0 filter drop-shadow-[0_0_14px_rgba(0,240,255,0.5)] ${
+          pulse ? 'animate-pulse' : ''
+        }`}
       />
 
       {/* Brand Typography & Status Indicator */}

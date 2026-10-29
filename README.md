@@ -51,10 +51,11 @@ ApexSovereign.ai is a sovereign GPU compute exchange and spot arbitrage mesh. Cu
 
 ### Step 4: Vercel Frontend Deployment
 1. Connect GitHub repository to Vercel.
-2. Framework Preset: Other (Static HTML).
-3. Root Directory: `./`.
-4. Deploy. Vercel automatically applies rewrites from `vercel.json` routing `/health`, `/v1/*`, and `/api/*` to Render.
-5. Place a 1200×630 `og.png` social share image in the root directory.
+2. Framework Preset: Vite.
+3. Root Directory: `./`; Build Command: `npm run build`; Output Directory: `dist`.
+4. Deploy. `vercel.json` serves the Vite SPA, keeps `/api/health` and `/api/checkout` on Vercel serverless functions, and proxies `/v1/*` and `/api/v1/*` to the Render FastAPI backend.
+5. Optional: set `VITE_API_BASE_URL=https://apexsovereign-agency.onrender.com` in Vercel to call the FastAPI backend directly. Leave it empty to use the same-origin `/v1` proxy.
+6. Place a 1200×630 `og.png` social share image in the root directory.
 
 ---
 
@@ -73,7 +74,7 @@ Before enabling real live credit card or PayPal processing, the operator must co
 - [ ] **Disaster Recovery:** Automated Supabase backups verified and tested for point-in-time restore.
 - [ ] **Production Variable Cutover:** Set the following environment variables on Render:
   ```bash
-  PAYPAL_ENV=live
+  PAYPAL_ENV=sandbox
   PROVIDER_MODE=supplier
   LAUNCH_MODE=live
   LIVE_PAYMENTS_ACK=I_CONFIRM_SERVICE_CAN_BE_DELIVERED

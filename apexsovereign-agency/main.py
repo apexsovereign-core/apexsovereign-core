@@ -5,6 +5,15 @@ from typing import Dict, Any, Optional
 from fastapi import FastAPI, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+try:
+    from backend.paypal_env import resolve_paypal_env
+except ImportError:  # Executed from inside the agency directory.
+    from paypal_env import resolve_paypal_env
+
+# Sandbox is the absolute default; live mode aborts startup without the founder
+# override token.
+PAYPAL_ENV = resolve_paypal_env()
+
 # Initialize FastAPI App
 app = FastAPI(title="ApexSovereign Revenue Engine", version="21.0")
 
@@ -131,7 +140,7 @@ async def get_health_matrix() -> Dict[str, Any]:
         "environment_vault": {
             "supabase_ledger_bound": supabase_configured,
             "paypal_gateway_bound": paypal_configured,
-            "paypal_env": os.getenv("PAYPAL_ENV", "live")
+            "paypal_env": PAYPAL_ENV
         },
         "subsystems": {
             "mesh_engine": "ACTIVE",

@@ -1,5 +1,4 @@
 import React from 'react';
-import { CyanFacetedJewelEmblem } from './CyanFacetedJewelEmblem';
 
 interface NavbarProps {
   activePage?: string;
@@ -18,7 +17,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => onNavigate?.('landing')}
           className="flex items-center gap-3 cursor-pointer group"
         >
-          <CyanFacetedJewelEmblem className="w-8 h-8" />
+          <img
+            src="/assets/logo-apex.svg"
+            alt=""
+            aria-hidden="true"
+            width={32}
+            height={32}
+            decoding="async"
+            className="w-8 h-8 shrink-0 filter drop-shadow-[0_0_12px_rgba(0,240,255,0.8)] transition-transform duration-300 group-hover:scale-105"
+          />
           <div className="flex flex-col">
             <span className="text-base sm:text-lg font-extrabold tracking-wider font-mono text-white group-hover:text-[#00F0FF] transition">
               APEXSOVEREIGN<span className="text-[#00F0FF]">.AI</span>

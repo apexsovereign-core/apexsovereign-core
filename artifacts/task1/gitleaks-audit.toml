@@ -1,0 +1,13 @@
+﻿[extend]
+useDefault = true
+
+[allowlist]
+description = "Audit-only exclusions for vendored dependencies and downloaded tooling"
+paths = [
+  '''node_modules/''',
+  '''\.git/''',
+  '''artifacts/tools/''',
+  '''\.venv/''',
+  '''__pycache__/''',
+  '''\.pytest_cache/''',
+]

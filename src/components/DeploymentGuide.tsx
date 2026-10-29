@@ -118,8 +118,8 @@ export const DeploymentGuide: React.FC = () => {
       secure: false,
     },
     {
-      name: 'PAYPAL_MODE',
-      desc: 'Execution mode: "sandbox" for development or "live" for production transactions.',
+      name: 'PAYPAL_ENV',
+      desc: 'PayPal environment. Defaults to "sandbox"; live requires the explicit founder override token.',
       required: true,
       secure: false,
     },

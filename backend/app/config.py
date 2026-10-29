@@ -7,11 +7,29 @@ environment that is missing any of them raises a ValidationError, which aborts
 startup before the service can serve traffic.
 """
 
+from functools import lru_cache
 from typing import List, Dict, Optional
 import json
 
 from pydantic import Field, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+try:  # Imported as ``backend.app.config`` from the repository root.
+    from backend.paypal_env import (
+        FOUNDER_OVERRIDE_ENV,
+        FOUNDER_OVERRIDE_TOKEN,
+        LIVE,
+        SANDBOX,
+        paypal_api_base,
+    )
+except ImportError:  # Imported as ``app.config`` with ``backend`` on sys.path.
+    from paypal_env import (  # type: ignore[no-redef]
+        FOUNDER_OVERRIDE_ENV,
+        FOUNDER_OVERRIDE_TOKEN,
+        LIVE,
+        SANDBOX,
+        paypal_api_base,
+    )
 
 
 class Settings(BaseSettings):
@@ -20,6 +38,9 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=True,
+        # Never echo the full settings mapping (including secrets) in a
+        # ValidationError traceback.
+        hide_input_in_errors=True,
     )
 
     # Core Environment & Service
@@ -56,8 +77,10 @@ class Settings(BaseSettings):
         description='JSON object mapping key IDs to secrets, e.g. {"k1":"..."}',
     )
 
-    # PayPal REST API v2
-    PAYPAL_ENV: str = Field(..., pattern="^(sandbox|live)$")
+    # PayPal REST API v2. Sandbox is the absolute default: live mode requires
+    # both PAYPAL_ENV=live and the explicit founder override below.
+    PAYPAL_ENV: str = Field(default=SANDBOX, pattern="^(sandbox|live)$")
+    FOUNDER_PAYPAL_LIVE_OVERRIDE: str = Field(default="")
     PAYPAL_CLIENT_ID: str = Field(..., min_length=1)
     PAYPAL_CLIENT_SECRET: str = Field(..., min_length=1)
     PAYPAL_WEBHOOK_ID: str = Field(..., min_length=1)
@@ -96,6 +119,23 @@ class Settings(BaseSettings):
             )
         return self
 
+    @model_validator(mode="after")
+    def _enforce_paypal_sandbox_default(self) -> "Settings":
+        """Fatal startup guard for live PayPal settlement.
+
+        Sandbox is the default. Live mode is accepted only when the founder
+        override carries the exact confirmation token; any other live
+        configuration aborts construction, and therefore startup.
+        """
+        if self.PAYPAL_ENV == LIVE:
+            if self.FOUNDER_PAYPAL_LIVE_OVERRIDE.strip() != FOUNDER_OVERRIDE_TOKEN:
+                raise ValueError(
+                    "FATAL: PAYPAL_ENV=live is blocked. Live PayPal settlement "
+                    f"requires {FOUNDER_OVERRIDE_ENV} to be set to the founder "
+                    "confirmation token after a documented live-settlement review."
+                )
+        return self
+
     @computed_field
     def cors_origins(self) -> List[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
@@ -107,21 +147,32 @@ class Settings(BaseSettings):
 
     @computed_field
     def is_production(self) -> bool:
-        return self.ENV == "production" or self.PAYPAL_ENV == "live"
+        return self.ENV == "production" or self.PAYPAL_ENV == LIVE
+
+    @property
+    def paypal_base_url(self) -> str:
+        """PayPal REST base URL derived from PAYPAL_ENV only.
+
+        Keeping this derived prevents a deployment from selecting the live
+        host while PAYPAL_ENV still says sandbox.
+        """
+        return paypal_api_base(self.PAYPAL_ENV)
 
     @computed_field
     def payments_enabled(self) -> bool:
         """
         Payments are enabled only when:
         1. PAYPAL_ENV == 'sandbox', or
-        2. PAYPAL_ENV == 'live' AND PROVIDER_MODE == 'supplier' AND
+        2. PAYPAL_ENV == 'live' AND the founder override token is present AND
+           PROVIDER_MODE == 'supplier' AND
            LIVE_PAYMENTS_ACK == 'I_CONFIRM_SERVICE_CAN_BE_DELIVERED'.
         """
-        if self.PAYPAL_ENV == "sandbox":
+        if self.PAYPAL_ENV == SANDBOX:
             return True
-        if self.PAYPAL_ENV == "live":
+        if self.PAYPAL_ENV == LIVE:
             return (
-                self.PROVIDER_MODE == "supplier"
+                self.FOUNDER_PAYPAL_LIVE_OVERRIDE.strip() == FOUNDER_OVERRIDE_TOKEN
+                and self.PROVIDER_MODE == "supplier"
                 and self.LIVE_PAYMENTS_ACK == "I_CONFIRM_SERVICE_CAN_BE_DELIVERED"
             )
         return False
@@ -150,6 +201,27 @@ class Settings(BaseSettings):
         keys = self.hmac_keys
         if self.LEDGER_HMAC_KID not in keys:
             raise RuntimeError("LEDGER_HMAC_KID is not present in LEDGER_HMAC_KEYS_JSON")
+        # Re-check the PayPal mode in case the object was mutated after
+        # construction. This keeps a runtime settings patch from enabling live
+        # settlement without the founder override.
+        if self.PAYPAL_ENV == LIVE:
+            if self.FOUNDER_PAYPAL_LIVE_OVERRIDE.strip() != FOUNDER_OVERRIDE_TOKEN:
+                raise RuntimeError(
+                    "FATAL: PAYPAL_ENV=live is blocked at runtime. Live PayPal "
+                    f"settlement requires {FOUNDER_OVERRIDE_ENV} to be set to "
+                    "the founder confirmation token."
+                )
 
 
 settings = Settings()
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Return the process-wide settings instance.
+
+    Callers in ``backend.app.services`` and ``backend.app.api`` import this
+    accessor. Construction and validation already happened at import time
+    above, so this only hands back the validated singleton.
+    """
+    return settings

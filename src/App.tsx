@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { CyanFacetedJewelEmblem } from './components/CyanFacetedJewelEmblem';
 import { ThreeServerBladeStage } from './components/ThreeServerBladeStage';
 import { MultiAcceleratorCalculator } from './components/MultiAcceleratorCalculator';
 import { GlobalMeshCanvas } from './components/GlobalMeshCanvas';
@@ -70,7 +69,15 @@ export function App() {
             aria-label="ApexSovereign.ai home"
             className="flex items-center gap-3 cursor-pointer group text-left"
           >
-            <CyanFacetedJewelEmblem className="w-8 h-8" />
+            <img
+              src="/assets/logo-apex.svg"
+              alt=""
+              aria-hidden="true"
+              width={32}
+              height={32}
+              decoding="async"
+              className="w-8 h-8 shrink-0 filter drop-shadow-[0_0_12px_rgba(0,240,255,0.8)] transition-transform duration-300 group-hover:scale-105"
+            />
             <div className="flex flex-col">
               <span className="text-base sm:text-lg font-extrabold tracking-wider font-mono text-white group-hover:text-[#00F0FF] transition">
                 APEXSOVEREIGN<span className="text-[#00F0FF]">.AI</span>
@@ -339,7 +346,15 @@ export function App() {
       <footer className="w-full border-t border-slate-900 bg-[#020305] py-8 text-xs font-mono text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <CyanFacetedJewelEmblem size={24} glow={false} />
+            <img
+              src="/assets/logo-apex.svg"
+              alt=""
+              aria-hidden="true"
+              width={24}
+              height={24}
+              decoding="async"
+              className="w-6 h-6 shrink-0 filter drop-shadow-[0_0_10px_rgba(0,240,255,0.6)]"
+            />
             <span>APEXSOVEREIGN.AI // CRYPTOGRAPHIC CONTROL PLANE · V3.2.0</span>
           </div>
 

@@ -14,3 +14,10 @@ __pycache__/
 .pytest_cache/
 .vercel
 opencode.json
+playwright-report/
+test-results/
+blob-report/
+
+# Local-only purge mirrors and vendored scanner binary (not for commit)
+artifacts/history-purge/
+artifacts/tools/

@@ -11,6 +11,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENV_FILE="${ROOT_DIR}/.env.production"
 BACKUP_FILE="${ROOT_DIR}/.env.production.bak.$(date +%s)"
+FOUNDER_OVERRIDE_PHRASE="I_ACCEPT_LIVE_PAYPAL_SETTLEMENT_RISK"
+
+if [ "${FOUNDER_PAYPAL_LIVE_OVERRIDE:-}" != "${FOUNDER_OVERRIDE_PHRASE}" ]; then
+  echo "[FATAL] Refusing live cutover: FOUNDER_PAYPAL_LIVE_OVERRIDE is not set." >&2
+  echo "[FATAL] Live settlement requires a documented founder review and the" >&2
+  echo "[FATAL] exact confirmation phrase in FOUNDER_PAYPAL_LIVE_OVERRIDE." >&2
+  exit 4
+fi
 
 echo "================================================================================"
 echo "APEXSOVEREIGN.AI — INITIATING LIVE COMMERCIAL SETTLEMENT CUTOVER"
@@ -27,10 +35,11 @@ cp "${ENV_FILE}" "${BACKUP_FILE}"
 echo "[SNAPSHOT] Created emergency rollback snapshot: ${BACKUP_FILE}"
 
 # 2. Hardening and verifying live settlement parameters
-echo "[ENFORCING] Flipping PAYPAL_MODE to live and verifying HMAC signatures..."
+echo "[ENFORCING] Flipping PAYPAL_ENV to live with the founder override..."
 
 # Update or insert live parameters using sed with strict regex boundaries
-sed -i 's/^PAYPAL_MODE=.*/PAYPAL_MODE=live/' "${ENV_FILE}"
+sed -i 's/^PAYPAL_ENV=.*/PAYPAL_ENV=live/' "${ENV_FILE}"
+sed -i "s/^FOUNDER_PAYPAL_LIVE_OVERRIDE=.*/FOUNDER_PAYPAL_LIVE_OVERRIDE=${FOUNDER_OVERRIDE_PHRASE}/" "${ENV_FILE}"
 sed -i 's/^USD_TO_CU_RATIO=.*/USD_TO_CU_RATIO=100.000000/' "${ENV_FILE}"
 sed -i 's/^MIN_ESCROW_DEPOSIT_USD=.*/MIN_ESCROW_DEPOSIT_USD=10.00/' "${ENV_FILE}"
 sed -i 's/^REDIS_IDEMPOTENCY_TTL_SECONDS=.*/REDIS_IDEMPOTENCY_TTL_SECONDS=86400/' "${ENV_FILE}"
@@ -38,15 +47,21 @@ sed -i 's/^REDIS_IDEMPOTENCY_TTL_SECONDS=.*/REDIS_IDEMPOTENCY_TTL_SECONDS=86400/
 # 3. Cryptographic Invariance Assertion Patrol
 echo "[AUDITING] Verifying core atomic invariants..."
 
-PAYPAL_MODE_VAL=$(grep '^PAYPAL_MODE=' "${ENV_FILE}" | cut -d '=' -f2-)
+PAYPAL_ENV_VAL=$(grep '^PAYPAL_ENV=' "${ENV_FILE}" | cut -d '=' -f2-)
+FOUNDER_OVERRIDE_VAL=$(grep '^FOUNDER_PAYPAL_LIVE_OVERRIDE=' "${ENV_FILE}" | cut -d '=' -f2-)
 RATIO_VAL=$(grep '^USD_TO_CU_RATIO=' "${ENV_FILE}" | cut -d '=' -f2-)
 MIN_DEPOSIT_VAL=$(grep '^MIN_ESCROW_DEPOSIT_USD=' "${ENV_FILE}" | cut -d '=' -f2-)
 IDEMPOTENCY_VAL=$(grep '^REDIS_IDEMPOTENCY_TTL_SECONDS=' "${ENV_FILE}" | cut -d '=' -f2-)
 DB_URL_VAL=$(grep '^DATABASE_URL=' "${ENV_FILE}" | cut -d '=' -f2-)
 WEBHOOK_SECRET_VAL=$(grep '^PAYPAL_WEBHOOK_SECRET=' "${ENV_FILE}" | cut -d '=' -f2-)
 
-if [ "${PAYPAL_MODE_VAL}" != "live" ]; then
-  echo "[ERROR] Assertion failed: PAYPAL_MODE is ${PAYPAL_MODE_VAL}, expected 'live'." >&2
+if [ "${PAYPAL_ENV_VAL}" != "live" ]; then
+  echo "[ERROR] Assertion failed: PAYPAL_ENV is ${PAYPAL_ENV_VAL}, expected 'live'." >&2
+  exit 1
+fi
+
+if [ "${FOUNDER_OVERRIDE_VAL}" != "${FOUNDER_OVERRIDE_PHRASE}" ]; then
+  echo "[ERROR] Assertion failed: FOUNDER_PAYPAL_LIVE_OVERRIDE is not the founder phrase." >&2
   exit 1
 fi
 
@@ -80,7 +95,7 @@ chmod 0600 "${ENV_FILE}"
 
 echo "--------------------------------------------------------------------------------"
 echo "[SUCCESS] LIVE SETTLEMENT CUTOVER COMPLETE"
-echo "  * PAYPAL_MODE:                  ${PAYPAL_MODE_VAL} (Live Production Active)"
+echo "  * PAYPAL_ENV:                   ${PAYPAL_ENV_VAL} (Live Production Active)"
 echo "  * USD_TO_CU_RATIO:              ${RATIO_VAL} (\$1.00 USD = 100 CU)"
 echo "  * MIN_ESCROW_DEPOSIT_USD:       \$${MIN_DEPOSIT_VAL}"
 echo "  * REDIS_IDEMPOTENCY_TTL:        ${IDEMPOTENCY_VAL}s (24-Hour Non-Replay Window)"

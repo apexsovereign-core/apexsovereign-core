@@ -15,7 +15,7 @@
     },
     {
       "parameters": {
-        "functionCode": "// Verify Cryptographic HMAC Signature\nconst crypto = require('crypto');\nconst secret = $env.N8N_HMAC_SECRET || 'n8n-default-secret';\nconst rawBody = JSON.stringify($json.body);\nconst signature = $headers['x-apex-signature'];\n\nconst expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');\nif (signature !== expected) {\n  throw new Error('HMAC signature verification failed');\n}\n\nreturn [{\n  json: {\n    tenant_id: $json.body.tenant_id,\n    client_email: $json.body.client_email,\n    raw_api_key: $json.body.raw_api_key,\n    usd_funded: $json.body.usd_funded,\n    cu_minted: $json.body.cu_minted,\n    cluster_preference: $json.body.cluster_preference\n  }\n}];"
+        "functionCode": "// Verify Cryptographic HMAC Signature\nconst crypto = require('crypto');\nconst secret = $env.N8N_HMAC_SECRET;\nconst rawBody = JSON.stringify($json.body);\nconst signature = $headers['x-apex-signature'];\n\nconst expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');\nif (signature !== expected) {\n  throw new Error('HMAC signature verification failed');\n}\n\nreturn [{\n  json: {\n    tenant_id: $json.body.tenant_id,\n    client_email: $json.body.client_email,\n    raw_api_key: $json.body.raw_api_key,\n    usd_funded: $json.body.usd_funded,\n    cu_minted: $json.body.cu_minted,\n    cluster_preference: $json.body.cluster_preference\n  }\n}];"
       },
       "name": "Verify HMAC & Sanitize",
       "type": "n8n-nodes-base.function",

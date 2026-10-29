@@ -67,12 +67,12 @@ class Settings(BaseModel):
     PAYPAL_CLIENT_ID: str = Field(...)
     PAYPAL_CLIENT_SECRET: str = Field(...)
     PAYPAL_WEBHOOK_ID: str = Field(...)
-    PAYPAL_MODE: Literal["sandbox", "live"] = "sandbox"
+    PAYPAL_ENV: Literal["sandbox", "live"] = "sandbox"
     LEASE_HMAC_SECRET: str = Field(...)
 
     @property
     def paypal_base_url(self) -> str:
-        return "https://api-m.paypal.com" if self.PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
+        return "https://api-m.paypal.com" if self.PAYPAL_ENV == "live" else "https://api-m.sandbox.paypal.com"
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
@@ -91,7 +91,7 @@ def get_settings() -> Settings:
         PAYPAL_WEBHOOK_ID=paypal_webhook_id,
         LEASE_HMAC_SECRET=lease_secret,
         PORT=int(os.environ.get("PORT", "3000")),
-        PAYPAL_MODE="live" if os.environ.get("PAYPAL_MODE") == "live" else "sandbox",
+        PAYPAL_ENV="live" if os.environ.get("PAYPAL_ENV") == "live" else "sandbox",
     )`
   },
   {
@@ -705,8 +705,8 @@ services:
         generateValue: true
       - key: LEASE_HMAC_SECRET
         generateValue: true
-      - key: PAYPAL_MODE
-        value: "live"
+      - key: PAYPAL_ENV
+        value: "sandbox"
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_CLIENT_SECRET

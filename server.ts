@@ -329,20 +329,10 @@ const smsOtpStore = new Map<string, { otp: string; expiresAt: number; attempts: 
 
 // In-Memory Vault Perimeter Security State
 const rateLimitBuckets = new Map<string, number[]>();
-const activeVaultKeys = new Map<string, { alias: string; token: string; tokenHash: string; expiresAt: string }>([
-  ['tenant-sovereign-01', {
-    alias: 'primary-institutional-key',
-    token: 'apex_sk_live_9941a8b1c4e7f302d8e6a1b2c3d4e5f6',
-    tokenHash: crypto.createHash('sha256').update('apex_sk_live_9941a8b1c4e7f302d8e6a1b2c3d4e5f6').digest('hex'),
-    expiresAt: new Date(Date.now() + 31536000000).toISOString(),
-  }],
-  ['tenant-admin-node01', {
-    alias: 'root-core-infrastructure-key',
-    token: 'apex_sk_live_0001ff8a29b4e5c83011a7b8c9d0e1f2',
-    tokenHash: crypto.createHash('sha256').update('apex_sk_live_0001ff8a29b4e5c83011a7b8c9d0e1f2').digest('hex'),
-    expiresAt: new Date(Date.now() + 31536000000).toISOString(),
-  }]
-]);
+// No seeded keys. Vault entries are created only by the rotation endpoint,
+// which generates a random token per request. Seeding a hardcoded token here
+// would put a usable bearer credential in source control.
+const activeVaultKeys = new Map<string, { alias: string; token: string; tokenHash: string; expiresAt: string }>();
 
 const vaultSecurityEvents: Array<{
   id: string;

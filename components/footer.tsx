@@ -5,37 +5,17 @@ export const Footer: React.FC = () => {
   return (
     <footer className="w-full border-t border-slate-900 bg-[#020305] py-10 text-xs font-mono text-slate-500 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        {/* Permanent Cyan Faceted Jewel Emblem Vector */}
+        {/* Permanent Cyan Faceted Jewel Emblem (public/ asset) */}
         <div className="flex items-center gap-3">
-          <svg
-            viewBox="0 0 100 100"
-            className="w-8 h-8 filter drop-shadow-[0_0_12px_rgba(0,240,255,0.8)]"
-            aria-label="ApexSovereign Emblem"
-          >
-            <defs>
-              <linearGradient id="apexCyanGradFooter" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#00F0FF" />
-                <stop offset="50%" stopColor="#00A8E8" />
-                <stop offset="100%" stopColor="#005580" />
-              </linearGradient>
-            </defs>
-            <polygon
-              points="50,5 92,28 92,72 50,95 8,72 8,28"
-              fill="url(#apexCyanGradFooter)"
-              stroke="#00F0FF"
-              strokeWidth="2"
-            />
-            <polygon
-              points="50,5 92,28 50,50 8,28"
-              fill="rgba(255,255,255,0.25)"
-            />
-            <polygon
-              points="50,22 68,36 50,50 32,36"
-              fill="#020305"
-              stroke="#00F0FF"
-              strokeWidth="1.5"
-            />
-          </svg>
+          <img
+            src="/assets/logo-apex.svg"
+            alt=""
+            aria-hidden="true"
+            width={32}
+            height={32}
+            decoding="async"
+            className="w-8 h-8 shrink-0 filter drop-shadow-[0_0_12px_rgba(0,240,255,0.8)]"
+          />
           <div className="flex flex-col">
             <span className="text-sm font-bold text-white tracking-wider">
               APEXSOVEREIGN<span className="text-[#00F0FF]">.AI</span>
@@ -61,9 +41,7 @@ export const Footer: React.FC = () => {
             BILLING & LEDGER
           </Link>
           <a
-            href="https://apexsovereign-agency.onrender.com/health"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/api/health"
             className="hover:text-[#10B981] transition flex items-center gap-1"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
@@ -72,7 +50,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="text-[10px] text-slate-600 text-center md:text-right">
-          ALL SYSTEMS NOMINAL · 10.4ms P99 SLA · $1.00 = 100 CU · AMD SEV-SNP & NVIDIA CC
+          TARGET 10.4ms P99 · $1.00 = 100 CU · SEV-SNP / CC TARGET · Status is not asserted here
         </div>
       </div>
     </footer>

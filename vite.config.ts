@@ -3078,13 +3078,41 @@ Provide your bespoke AI Concierge response:`;
   };
 }
 
+function serverlessBoundaryPlugin(): Plugin {
+  return {
+    name: 'apex-serverless-boundary',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      for (const fileName of Object.keys(bundle)) {
+        if (fileName === 'api' || fileName.startsWith('api/')) {
+          this.error(`Serverless directory leaked into the client bundle: ${fileName}`);
+        }
+      }
+    },
+    closeBundle() {
+      const leakedDir = path.resolve(__dirname, 'dist', 'api');
+      if (fs.existsSync(leakedDir)) {
+        this.error('api/ must stay outside dist/ so Vercel deploys it as serverless functions.');
+      }
+    },
+  };
+}
+
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), apexSovereignApiPlugin()],
+    plugins: [react(), tailwindcss(), apexSovereignApiPlugin(), serverlessBoundaryPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
         'next/link': path.resolve(__dirname, 'src/components/NextLinkShim.tsx'),
+      },
+    },
+    publicDir: 'public',
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      rollupOptions: {
+        input: path.resolve(__dirname, 'index.html'),
       },
     },
     server: {

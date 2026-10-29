@@ -1,0 +1,65 @@
+# ApexSovereign.ai — single-provider GPU proof of concept (SkyPilot)
+#
+# Scope: one AWS node, one GPU, one vLLM OpenAI-compatible server. H100 is
+# preferred; A100 is the fallback when H100 spot capacity is unavailable.
+# This is a PoC manifest, not a production inference deployment.
+#
+# Third-party licenses:
+# - SkyPilot: Apache-2.0 (https://github.com/skypilot-org/skypilot)
+# - vLLM: Apache-2.0 (https://github.com/vllm-project/vllm)
+# - Qwen2.5-7B-Instruct model weights: Apache-2.0
+# - NVIDIA CUDA base image and driver: subject to NVIDIA's license terms
+# This file is original configuration; the licenses above belong to their
+# respective projects. Verify the model license before changing MODEL_ID.
+#
+# Usage:
+#   sky launch -c apex-vllm-poc infra/skypilot/cluster.yaml
+#   sky status --endpoint 8000 apex-vllm-poc
+#   python benchmarks/vllm_test.py --base-url http://<endpoint>:8000 \
+#       --model Qwen/Qwen2.5-7B-Instruct
+#   sky down apex-vllm-poc
+#
+# The endpoint is not authenticated or TLS-terminated. Restrict the cloud
+# security group / use a private network before sending real traffic.
+
+name: apex-vllm-h100-a100-poc
+
+resources:
+  any_of:
+    - cloud: aws
+      region: us-east-1
+      accelerators: H100:1
+      use_spot: true
+      disk_size: 256
+      ports: 8000
+    - cloud: aws
+      region: us-east-1
+      accelerators: A100:1
+      use_spot: true
+      disk_size: 256
+      ports: 8000
+
+num_nodes: 1
+
+envs:
+  MODEL_ID: Qwen/Qwen2.5-7B-Instruct
+  VLLM_IMAGE: vllm/vllm-openai:v0.8.5
+  VLLM_PORT: "8000"
+  VLLM_MAX_MODEL_LEN: "8192"
+  VLLM_GPU_MEMORY_UTILIZATION: "0.90"
+
+setup: |
+  set -euo pipefail
+  docker pull "${VLLM_IMAGE}"
+
+run: |
+  set -euo pipefail
+  exec docker run --rm --gpus all --ipc=host --shm-size=16g \
+    -p "${VLLM_PORT}:8000" \
+    -v /tmp/huggingface:/root/.cache/huggingface \
+    "${VLLM_IMAGE}" \
+    --model "${MODEL_ID}" \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len "${VLLM_MAX_MODEL_LEN}" \
+    --gpu-memory-utilization "${VLLM_GPU_MEMORY_UTILIZATION}"

@@ -1,0 +1,32 @@
+# ApexSovereign.ai history-purge manifest.
+#
+# action<TAB>path
+#
+# remove = delete the path from every rewritten commit. Only permitted for
+#          secret stores and build artifacts that are absent from the current
+#          working tree. Whole-path deletion of live source would remove that
+#          source from the rewritten HEAD.
+# scrub  = keep the path and replace every credential literal found by Gitleaks
+#          with REDACTED. This is the only safe action for source and templates.
+#
+# The 19 paths below are the complete set of files flagged by the redacted
+# 76-finding history scan in artifacts/task1/git-history.json.
+remove	.env.production
+remove	dist/assets/index-CQHOAlZD.js
+scrub	.env.example
+scrub	.env.production.template
+scrub	backend/agents/lead_hunter_daemon.py
+scrub	backend/app/api/v1/autonomous_agents.py
+scrub	backend/app/api/v1/neural_chat.py
+scrub	backend/proofs/zk_attestation.py
+scrub	backend/settlement_api/static/index.html
+scrub	backend/vault_perimeter.py
+scrub	deploy/k8s/sovereign-core.yaml
+scrub	index.html
+scrub	public/index.html
+scrub	server.ts
+scrub	services/aethelgrid/global_dispatcher.py
+scrub	services/aethelpay/onboarding_router.js
+scrub	src/components/EnterpriseCrmPipeline.tsx
+scrub	src/components/RequirementsEditor.tsx
+scrub	workflows/n8n_onboarding_flow.json

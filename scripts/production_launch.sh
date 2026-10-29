@@ -32,12 +32,18 @@ if [ ! -f "${ENV_FILE}" ]; then
   exit 1
 fi
 
-PAYPAL_MODE=$(grep '^PAYPAL_MODE=' "${ENV_FILE}" | cut -d '=' -f2-)
-if [ "${PAYPAL_MODE}" != "live" ]; then
-  echo "[WARN] PAYPAL_MODE is '${PAYPAL_MODE}'. Invoking scripts/enable_live_settlement.sh..."
-  ./scripts/enable_live_settlement.sh
+PAYPAL_ENV_VALUE=$(grep '^PAYPAL_ENV=' "${ENV_FILE}" | cut -d '=' -f2-)
+FOUNDER_OVERRIDE_VALUE=$(grep '^FOUNDER_PAYPAL_LIVE_OVERRIDE=' "${ENV_FILE}" | cut -d '=' -f2-)
+if [ "${PAYPAL_ENV_VALUE}" != "live" ]; then
+  echo "[FATAL] PAYPAL_ENV is '${PAYPAL_ENV_VALUE}'. This launcher never flips live automatically." >&2
+  echo "[FATAL] Complete the documented founder review, then run scripts/enable_live_settlement.sh explicitly." >&2
+  exit 4
 fi
-echo "[VERIFIED] .env.production is active and verified in LIVE mode."
+if [ "${FOUNDER_OVERRIDE_VALUE}" != "I_ACCEPT_LIVE_PAYPAL_SETTLEMENT_RISK" ]; then
+  echo "[FATAL] FOUNDER_PAYPAL_LIVE_OVERRIDE is missing or incorrect." >&2
+  exit 4
+fi
+echo "[VERIFIED] .env.production is active and verified in LIVE mode with the founder override."
 
 # ------------------------------------------------------------------------------
 # STEP 2: RUN PATROL AND TEST SUITE

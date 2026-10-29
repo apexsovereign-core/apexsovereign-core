@@ -1,0 +1,17 @@
+# Working-tree gitleaks config for ApexSovereign.ai evidence export.
+# Generated/build/evidence directories are excluded so the scan covers source
+# and configuration, not vendored dependencies or prior redacted reports.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "generated, vendored, and evidence output"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)dist/''',
+  '''(^|/)artifacts/''',
+  '''(^|/)playwright-report/''',
+  '''(^|/)test-results/''',
+  '''(^|/)__pycache__/''',
+  '''(^|/)\.git/''',
+]

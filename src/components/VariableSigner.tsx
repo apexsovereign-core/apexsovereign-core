@@ -155,7 +155,8 @@ PAYPAL_CLIENT_SECRET="${variables.PAYPAL_CLIENT_SECRET}"
 PAYPAL_WEBHOOK_ID="${variables.PAYPAL_WEBHOOK_ID}"
 
 # Optional server configuration
-PAYPAL_MODE="sandbox"
+PAYPAL_ENV="sandbox"
+FOUNDER_PAYPAL_LIVE_OVERRIDE=""
 ENVIRONMENT="production"
 PORT="3000"`;
   };

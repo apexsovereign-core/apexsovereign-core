@@ -10,12 +10,19 @@ const { createClient } = require("@supabase/supabase-js");
 
 const router = express.Router();
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL || "https://db.apexsovereign.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "mock-service-role-key";
-const PAYPAL_WEBHOOK_SECRET =
-  process.env.PAYPAL_WEBHOOK_SECRET || "sovereign-paypal-webhook-secret";
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value || !value.trim()) {
+    throw new Error(
+      `${name} is required; refusing to start with a fallback value.`,
+    );
+  }
+  return value.trim();
+}
+
+const SUPABASE_URL = requireEnv("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+const PAYPAL_WEBHOOK_SECRET = requireEnv("PAYPAL_WEBHOOK_SECRET");
 const N8N_DISPATCH_WEBHOOK_URL =
   process.env.N8N_DISPATCH_WEBHOOK_URL ||
   "https://n8n.apexsovereign.ai/webhook/onboard";
@@ -153,7 +160,7 @@ router.post("/payment-success", async (req, res) => {
 
     const n8nRaw = JSON.stringify(n8nPayload);
     const n8nSignature = crypto
-      .createHmac("sha256", process.env.N8N_HMAC_SECRET || "n8n-default-secret")
+      .createHmac("sha256", requireEnv("N8N_HMAC_SECRET"))
       .update(n8nRaw)
       .digest("hex");
 

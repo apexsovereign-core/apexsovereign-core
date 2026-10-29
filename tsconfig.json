@@ -26,6 +26,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "api/**/*.ts", "tests/e2e/**/*.ts", "playwright.config.ts"],
   "exclude": ["node_modules", "backend", "frontend", "dist"]
 }
