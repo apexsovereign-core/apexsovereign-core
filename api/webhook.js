@@ -1,10 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -12,6 +7,15 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase Environment Variables');
+      return res.status(500).json({ error: 'Server configuration error: Missing Supabase credentials' });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
     const event = req.body;
     
     // Ingest PayPal completed payment events
