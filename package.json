@@ -4,5 +4,8 @@
   "private": true,
   "scripts": {
     "build": "mkdir -p dist && cp -r public/* dist/"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0"
   }
 }
