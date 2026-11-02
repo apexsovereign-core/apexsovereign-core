@@ -1,50 +1,36 @@
-const { createClient } = require('@supabase/supabase-js');
+﻿import { createClient } from '@supabase/supabase-js';
 
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-  try {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase Environment Variables');
-      return res.status(500).json({ error: 'Server configuration error: Missing Supabase credentials' });
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const event = req.body;
-    
-    // Ingest PayPal completed payment events
-    if (event.event_type === 'CHECKOUT.ORDER.APPROVED' || event.event_type === 'PAYMENT.SALE.COMPLETED') {
-      const resource = event.resource;
-      const amountUsd = parseFloat(resource.amount?.total || resource.gross_amount?.value || 0);
-      const userId = resource.custom_id || resource.invoice_id || 'anonymous_user';
-      const webhookId = event.id;
+    try {
+        const { event_type, resource } = req.body;
 
-      if (amountUsd > 0) {
-        // Execute atomic Supabase RPC settlement
-        const { data, error } = await supabase.rpc('process_paypal_settlement', {
-          p_user_id: userId,
-          p_amount_usd: amountUsd,
-          p_webhook_id: webhookId
-        });
+        if (event_type === 'CHECKOUT.ORDER.APPROVED') {
+            const userId = resource?.custom_id;
+            const amountUsd = parseFloat(resource?.amount?.total || '0');
 
-        if (error) {
-          console.error('Supabase RPC Settlement Error:', error);
-          return res.status(500).json({ error: error.message });
+            const { data, error } = await supabase.rpc('process_paypal_settlement', {
+                p_user_id: userId,
+                p_amount_usd: amountUsd,
+                p_webhook_id: req.body.id || 'TEST_WH'
+            });
+
+            if (error) throw error;
+
+            return res.status(200).json({ status: 'success', new_balance: data });
         }
 
-        return res.status(200).json({ status: 'SETTLED', cu_balance: data });
-      }
+        return res.status(200).json({ status: 'ignored_event' });
+    } catch (err) {
+        console.error('Webhook execution failure:', err);
+        return res.status(500).json({ error: err.message });
     }
-
-    return res.status(200).json({ received: true });
-  } catch (err) {
-    console.error('Webhook Handler Exception:', err);
-    return res.status(500).json({ error: err.message });
-  }
-};
+}
