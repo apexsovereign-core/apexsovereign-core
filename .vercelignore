@@ -1,0 +1,7 @@
+﻿node_modules/
+viking/
+run-sovereign-agent.py
+*.log
+artifacts/
+.env*
+.vercel/

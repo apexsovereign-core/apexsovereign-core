@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.ledger_accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id TEXT UNIQUE NOT NULL,
     cu_balance NUMERIC(18, 4) NOT NULL DEFAULT 0.0000,
+    normal_balance TEXT NOT NULL DEFAULT 'debit',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

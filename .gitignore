@@ -5,3 +5,4 @@
 .vercel/
 supabase/.temp/
 .DS_Store
+dist/

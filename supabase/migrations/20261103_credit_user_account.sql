@@ -32,11 +32,12 @@ BEGIN
     v_cu_to_add := p_amount_usd * 100.00;
 
     -- Upsert account balance (credit side of the ledger).
-    INSERT INTO public.ledger_accounts (user_id, cu_balance)
-    VALUES (p_user_id, v_cu_to_add)
+    INSERT INTO public.ledger_accounts (user_id, cu_balance, normal_balance)
+    VALUES (p_user_id, v_cu_to_add, 'debit')
     ON CONFLICT (user_id)
     DO UPDATE SET
         cu_balance = ledger_accounts.cu_balance + v_cu_to_add,
+        normal_balance = COALESCE(ledger_accounts.normal_balance, 'debit'),
         updated_at = NOW()
     RETURNING id, cu_balance INTO v_account_id, v_new_balance;
 

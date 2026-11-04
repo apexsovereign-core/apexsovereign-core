@@ -25,18 +25,6 @@ function getExpectedToken() {
 }
 
 function extractToken(req) {
-    if (req && req.query) {
-        if (req.query.t) return String(req.query.t);
-        if (req.query.token) return String(req.query.token);
-    }
-    try {
-        const url = (req && (req.url || req.originalUrl)) || '';
-        if (url) {
-            const u = new URL(url, 'http://localhost');
-            const t = u.searchParams.get('t') || u.searchParams.get('token');
-            if (t) return t;
-        }
-    } catch (_) { /* ignore */ }
     const headers = (req && req.headers) || {};
     const direct = headers['x-webhook-token'] || headers['X-Webhook-Token'];
     if (direct) return String(direct);
@@ -106,8 +94,8 @@ function extractSettlement(event) {
     };
 }
 
-async function callSettlement(cfg, args) {
-    const r = await fetchWithTimeout(`${cfg.supabaseUrl}/rest/v1/rpc/credit_user_account`, {
+async function callSettlement(cfg, fnName, args) {
+    const r = await fetchWithTimeout(`${cfg.supabaseUrl}/rest/v1/rpc/${fnName}`, {
         method: 'POST',
         headers: {
             apikey: cfg.serviceKey,
@@ -167,17 +155,30 @@ async function handler(req, res) {
     }
 
     const cfg = getConfig();
+    const args = {
+        p_event_id: event.id,
+        p_capture_id: s.captureId,
+        p_user_id: s.customId,
+        p_tenant_id: null,
+        p_amount_usd: s.value,
+    };
     try {
-        const result = await callSettlement(cfg, {
-            p_event_id: event.id,
-            p_capture_id: s.captureId,
-            p_user_id: s.customId,
-            p_tenant_id: null,
-            p_amount_usd: s.value,
-        });
+        let result;
+        try {
+            result = await callSettlement(cfg, 'credit_user_account', args);
+        } catch (e) {
+            // Fallback to the deployed RPC name if credit_user_account is not present.
+            if (String(e.message || e).includes('PGRST202') || String(e.message || e).includes('404')) {
+                result = await callSettlement(cfg, 'process_paypal_settlement', args);
+            } else {
+                throw e;
+            }
+        }
         const status = (result && typeof result === 'object' && result.status) ? result.status : 'settled';
         return send(res, 200, { status, result });
     } catch (e) {
+        // Sanitized: never expose internal DB schema details or connection strings.
+        console.error('webhook_settlement_failed');
         return send(res, 500, { error: 'processing_failed' });
     }
 }
