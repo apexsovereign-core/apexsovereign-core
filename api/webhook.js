@@ -156,7 +156,7 @@ async function handler(req, res) {
 
     const cfg = getConfig();
     const args = {
-        p_event_id: event.id,
+        p_event_id: s.captureId,
         p_capture_id: s.captureId,
         p_user_id: s.customId,
         p_tenant_id: null,
