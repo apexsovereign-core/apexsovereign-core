@@ -1,217 +1,633 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ApexSovereign.ai — Institutional Compute Exchange</title>
-<meta name="description" content="ApexSovereign.ai sovereign compute-unit economy. Live GPU arbitrage, atomic ledger settlement, PayPal payment pipeline. Delaware C-Corp." />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ApexSovereign.ai</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
-  :root { color-scheme: dark; --bg:#09090b; --panel:#0f1115; --border:#1f2937; --green:#00ff88; --cyan:#00d4ff; --amber:#ffbd2e; --red:#ff5f56; --dim:#4b5563; --text:#e6edf3; }
-  * { box-sizing: border-box; margin:0; padding:0; }
-  html,body { height:100%; background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; }
-  body { min-height:100vh; padding:20px; }
-  .shell { max-width:1280px; margin:0 auto; }
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:#0c0e12; border:1px solid var(--border); border-radius:10px 10px 0 0; }
-  .dots { display:flex; gap:6px; } .dot { width:10px; height:10px; border-radius:50%; } .r{background:var(--red)} .y{background:var(--amber)} .g{background:var(--green)}
-  .brand { font-weight:700; letter-spacing:2px; color:var(--green); font-size:13px; }
-  .status { font-size:11px; color:var(--dim); } .status span { color:var(--green); }
-  .main { background:var(--panel); border:1px solid var(--border); border-top:none; border-radius:0 0 10px 10px; padding:24px; }
-  h1 { font-size:26px; color:var(--green); letter-spacing:1px; margin-bottom:4px; }
-  .sub { color:var(--dim); font-size:12px; margin-bottom:20px; }
-  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
-  .stat { background:#0a0e14; border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
-  .stat .k { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
-  .stat .v { font-size:18px; font-weight:700; margin-top:4px; }
-  .green{color:var(--green)} .cyan{color:var(--cyan)} .amber{color:var(--amber)}
-  .ticker { background:#0a0e14; border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:20px; }
-  .ticker h3 { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; display:flex; justify-content:space-between; }
-  .ticker h3 .badge { color:var(--green); }
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  th,td { padding:8px 10px; text-align:left; border-bottom:1px solid #161b22; }
-  th { color:var(--dim); font-weight:500; font-size:10px; text-transform:uppercase; letter-spacing:1px; }
-  .delta { font-weight:700; }
-  .pos { color:var(--green); } .neg { color:var(--red); }
-  .calc { background:#0a0e14; border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:20px; }
-  .calc h3 { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
-  .calc-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
-  .calc-row label { font-size:12px; color:var(--dim); min-width:120px; }
-  .calc-row input { background:#09090b; border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:6px; font-family:inherit; font-size:13px; width:160px; }
-  .calc-row input:focus { outline:none; border-color:var(--green); }
-  .calc-out { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
-  .out { background:#09090b; border:1px solid var(--border); border-radius:6px; padding:10px; }
-  .out .k { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
-  .out .v { font-size:16px; font-weight:700; color:var(--cyan); margin-top:4px; }
-  .actions { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
-  button { background:transparent; border:1px solid var(--green); color:var(--green); padding:10px 16px; border-radius:6px; font-family:inherit; font-size:12px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all .15s; }
-  button:hover { background:var(--green); color:#09090b; }
-  button.sec { border-color:var(--cyan); color:var(--cyan); } button.sec:hover { background:var(--cyan); color:#09090b; }
-  .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:50; align-items:center; justify-content:center; padding:20px; }
-  .modal.open { display:flex; }
-  .modal-card { background:var(--panel); border:1px solid var(--border); border-radius:10px; max-width:720px; width:100%; max-height:85vh; overflow:auto; padding:24px; }
-  .modal-card h2 { color:var(--green); font-size:18px; margin-bottom:6px; }
-  .modal-card .sub { margin-bottom:14px; }
-  .doc { background:#0a0e14; border:1px solid var(--border); border-radius:6px; padding:12px 14px; margin-bottom:10px; }
-  .doc h4 { color:var(--cyan); font-size:12px; margin-bottom:4px; }
-  .doc p { font-size:11px; color:var(--dim); line-height:1.5; }
-  .close { position:absolute; top:16px; right:20px; color:var(--dim); cursor:pointer; font-size:20px; }
-  .foot { margin-top:20px; padding-top:14px; border-top:1px solid var(--border); color:var(--dim); font-size:11px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-  @media (max-width:768px){ .grid{grid-template-columns:repeat(2,1fr)} .calc-out{grid-template-columns:1fr} }
-  @media (max-width:480px){ .grid{grid-template-columns:1fr} h1{font-size:20px} .stat .v{font-size:15px} table{font-size:11px} th,td{padding:6px 4px} .calc-row label{min-width:100px;font-size:11px} .calc-row input{width:100%} }
-  body { overflow-x:hidden; } .shell { padding:0 4px; }
-  .cursor { display:inline-block; width:8px; height:14px; background:var(--green); animation:blink 1s steps(2) infinite; vertical-align:middle; }
-  @keyframes blink { 50%{opacity:0} }
-  .telemetry { font-size:11px; color:var(--dim); margin-top:6px; }
+/* Layout: sticky command bar, hero with illustrative globe, then rates, calculator, process, claim ledger, developer docs.
+   One committed dark look (Void + Diamond Cyan). Amber is reserved for reference/simulated labels. */
+:root {
+  --void: #05070a;
+  --ink: #0a0f19;
+  --panel: rgba(10, 15, 25, 0.88);
+  --line: rgba(0, 240, 255, 0.18);
+  --line-soft: rgba(148, 163, 184, 0.16);
+  --fg: #e8eef5;
+  --fg2: #9aa9bb;
+  --muted: #62748a;
+  --cyan: #00f0ff;
+  --cyan-dim: rgba(0, 240, 255, 0.1);
+  --amber: #ffb020;
+  --amber-dim: rgba(255, 176, 32, 0.12);
+  --mint: #10b981;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background-color: var(--void);
+  background-image:
+    radial-gradient(900px 500px at 78% -8%, rgba(0, 240, 255, 0.10), transparent 62%),
+    radial-gradient(700px 420px at -6% 30%, rgba(16, 185, 129, 0.05), transparent 60%),
+    linear-gradient(to right, rgba(0, 240, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.022) 1px, transparent 1px);
+  background-size: auto, auto, 44px 44px, 44px 44px;
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--void); z-index: 40; }
+.wrap { width: 100%; max-width: 1240px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.025em; line-height: 1.04; }
+p { margin: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg2); display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+/* header */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: rgba(5, 7, 10, 0.86); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--line-soft); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.7rem; }
+.brand { display: flex; align-items: center; gap: 0.65rem; color: var(--fg); }
+.brand:hover { text-decoration: none; }
+.brand svg { width: 28px; height: 28px; flex: none; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.7)); }
+.brand b { font-family: var(--mono); font-size: 0.95rem; letter-spacing: 0.12em; font-weight: 700; }
+.brand b i { font-style: normal; color: var(--cyan); }
+.nav { display: flex; align-items: center; gap: 1.4rem; font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.nav a { color: var(--fg2); }
+.nav a:hover { color: var(--fg); text-decoration: none; }
+.pill { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--mono); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.22rem 0.55rem; border-radius: 3px; border: 1px solid; white-space: nowrap; }
+.pill.ref { color: var(--amber); border-color: rgba(255, 176, 32, 0.5); background: var(--amber-dim); }
+.pill.target { color: var(--cyan); border-color: rgba(0, 240, 255, 0.45); background: var(--cyan-dim); }
+.pill.road { color: var(--fg2); border-color: var(--line-soft); background: rgba(148, 163, 184, 0.08); }
+@media (max-width: 760px) { .nav a { display: none; } }
+
+/* buttons */
+.btn { font: 700 0.8rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; border-radius: 6px; padding: 0.85rem 1.25rem; border: 1px solid var(--cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: background 160ms, box-shadow 160ms, color 160ms; }
+.btn.primary { background: var(--cyan); color: #031116; box-shadow: 0 0 24px rgba(0, 240, 255, 0.28); }
+.btn.primary:hover { background: #6ff6ff; text-decoration: none; }
+.btn.ghost { background: transparent; color: var(--cyan); }
+.btn.ghost:hover { background: var(--cyan-dim); text-decoration: none; }
+.btn:disabled { cursor: not-allowed; border-color: var(--line-soft); color: var(--muted); background: transparent; box-shadow: none; }
+.btn.small { padding: 0.45rem 0.7rem; font-size: 0.7rem; }
+
+/* hero */
+.hero { padding-block: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 4vw, 3.5rem); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
+.hero h1 { font-size: clamp(2.6rem, 6.4vw, 5rem); font-weight: 700; margin-top: 1.1rem; }
+.hero h1 em { font-style: normal; color: var(--cyan); text-shadow: 0 0 40px rgba(0, 240, 255, 0.35); }
+.hero .lede { margin-top: 1.4rem; max-width: 52ch; color: var(--fg2); font-size: 1.08rem; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 2rem; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 2.4rem; border-top: 1px solid var(--line-soft); }
+.facts div { padding: 1rem 1rem 0 0; }
+.facts div + div { padding-left: 1rem; border-left: 1px solid var(--line-soft); }
+.facts b { display: block; font-family: var(--mono); font-size: 1.15rem; color: var(--fg); font-weight: 700; }
+.facts span { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; line-height: 1.4; }
+.globe { position: relative; min-width: 0; }
+.globe canvas { display: block; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; }
+.globe figcaption { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); text-align: center; margin-top: 0.4rem; }
+.globe { margin: 0; }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); } .globe { max-width: 460px; margin-inline: auto; width: 100%; } }
+@media (max-width: 520px) { .facts { grid-template-columns: minmax(0, 1fr); } .facts div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line-soft); margin-top: 0.8rem; } }
+
+/* sections */
+section.block { padding-block: clamp(2.5rem, 5vw, 4.5rem); border-top: 1px solid var(--line-soft); }
+.block h2 { font-size: clamp(1.8rem, 3.6vw, 2.8rem); font-weight: 700; margin-top: 0.8rem; max-width: 22ch; }
+.block .intro { color: var(--fg2); max-width: 62ch; margin-top: 1rem; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); white-space: nowrap; font-weight: 500; }
+td { padding: 1rem; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.gpu b { display: block; font-family: var(--display); font-size: 1.05rem; letter-spacing: -0.01em; }
+td.gpu span { color: var(--muted); font-size: 0.8rem; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.base { color: var(--muted); text-decoration: line-through; }
+td.rate { color: var(--cyan); font-weight: 700; font-size: 1.05rem; }
+td.rate small { display: block; font-size: 0.7rem; color: var(--fg2); font-weight: 400; }
+td.delta { color: var(--fg); }
+.note { color: var(--muted); font-size: 0.82rem; margin-top: 0.9rem; max-width: 80ch; }
+
+/* calculator */
+.calc { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 1.5rem; margin-top: 2rem; }
+.calc .controls { padding: clamp(1rem, 2.5vw, 1.8rem); display: grid; gap: 1.4rem; min-width: 0; }
+.field label, .field .lab { display: block; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg2); margin-bottom: 0.5rem; }
+select, input[type="number"], textarea { width: 100%; background: var(--void); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 0.7rem 0.85rem; font: 500 0.95rem var(--mono); }
+select:focus, input:focus, textarea:focus { border-color: var(--cyan); }
+.row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.row input[type="number"] { width: 7.5rem; }
+.chip { font: 500 0.78rem var(--mono); background: transparent; color: var(--fg2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 0.35rem 0.8rem; cursor: pointer; transition: all 140ms; }
+.chip:hover { color: var(--fg); border-color: var(--cyan); }
+.chip[aria-pressed="true"] { background: var(--cyan); color: #031116; border-color: var(--cyan); font-weight: 700; }
+.result { padding: clamp(1rem, 2.5vw, 1.8rem); display: flex; flex-direction: column; gap: 1rem; min-width: 0; border-color: rgba(0, 240, 255, 0.4); box-shadow: 0 0 40px rgba(0, 240, 255, 0.08); }
+.result dl { margin: 0; display: grid; gap: 0.7rem; }
+.result dl div { display: flex; justify-content: space-between; gap: 1rem; font-family: var(--mono); font-size: 0.86rem; flex-wrap: wrap; }
+.result dt { color: var(--fg2); }
+.result dd { margin: 0; text-align: right; }
+.result .big { border-top: 1px solid var(--line); padding-top: 1rem; }
+.result .big small { display: block; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg2); }
+.result .big strong { font-family: var(--mono); font-size: clamp(1.7rem, 4vw, 2.4rem); color: var(--cyan); font-weight: 700; word-break: break-word; }
+textarea { min-height: 9.5rem; resize: vertical; font-size: 0.74rem; line-height: 1.55; color: var(--fg2); }
+.status-msg { font-family: var(--mono); font-size: 0.72rem; color: var(--fg2); min-height: 1.1rem; }
+@media (max-width: 900px) { .calc { grid-template-columns: minmax(0, 1fr); } }
+
+/* process */
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 2rem; border-top: 1px solid var(--line); counter-reset: step; list-style: none; padding: 0; }
+.steps li { padding: 1.4rem 1.4rem 0 0; position: relative; counter-increment: step; }
+.steps li + li { padding-left: 1.4rem; border-left: 1px solid var(--line-soft); }
+.steps li::before { content: "0" counter(step); font-family: var(--mono); font-size: 0.74rem; color: var(--cyan); letter-spacing: 0.12em; }
+.steps h3 { font-size: 1.2rem; margin-top: 0.6rem; font-weight: 600; letter-spacing: -0.015em; }
+.steps p { color: var(--fg2); font-size: 0.92rem; margin-top: 0.6rem; }
+@media (max-width: 960px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 1.6rem; } .steps li:nth-child(3) { padding-left: 0; border-left: 0; } }
+@media (max-width: 560px) { .steps { grid-template-columns: minmax(0, 1fr); } .steps li, .steps li + li { padding-left: 0; border-left: 0; padding-right: 0; border-top: 1px solid var(--line-soft); } .steps li:first-child { border-top: 0; } }
+.packs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 2.2rem; }
+.pack { padding: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.pack .usd { font-family: var(--mono); font-size: 1.6rem; font-weight: 700; }
+.pack .cu { font-family: var(--mono); color: var(--cyan); font-size: 0.9rem; }
+.pack .eq { color: var(--muted); font-size: 0.8rem; margin-bottom: 0.7rem; flex: 1; }
+@media (max-width: 960px) { .packs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .packs { grid-template-columns: minmax(0, 1fr); } }
+
+/* claim ledger */
+.ledger td:first-child { font-family: var(--display); font-weight: 600; font-size: 1rem; white-space: nowrap; }
+.ledger td:last-child { color: var(--fg2); font-size: 0.9rem; min-width: 18rem; }
+.rule { margin-top: 1.2rem; padding: 1rem 1.2rem; border-left: 2px solid var(--cyan); background: var(--cyan-dim); border-radius: 0 8px 8px 0; font-size: 0.92rem; max-width: 70ch; }
+
+/* developers */
+.code-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin-top: 2rem; }
+.code { min-width: 0; }
+.code .head { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.6rem 0.6rem 1rem; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg2); }
+.code pre { margin: 0; padding: 1rem; overflow-x: auto; font-family: var(--mono); font-size: 0.78rem; line-height: 1.65; color: var(--fg); }
+.code .k { color: var(--cyan); }
+@media (max-width: 900px) { .code-grid { grid-template-columns: minmax(0, 1fr); } }
+
+footer { border-top: 1px solid var(--line-soft); padding-block: 2rem 2.5rem; color: var(--muted); font-size: 0.82rem; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.8rem 2rem; }
+footer .mono { color: var(--fg2); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
 </style>
+<meta name="description" content="ApexSovereign.ai: pre-launch sovereign GPU compute exchange. Reference rates only.">
 </head>
 <body>
-<div class="shell">
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <div class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-      <span class="brand">APEXSOVEREIGN.AI</span>
-    </div>
-    <div class="status">EDGE MESH: <span>ONLINE</span> · LATENCY: <span id="lat">14ms</span> · REGION: GLOBAL</div>
+
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="ApexSovereign.ai home">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="gemA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.3" stop-color="#70f7ff"/><stop offset="0.6" stop-color="#00f0ff"/><stop offset="1" stop-color="#0088cc"/></linearGradient>
+          <linearGradient id="gemB" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0fcff"/><stop offset="0.5" stop-color="#38ddf8"/><stop offset="1" stop-color="#006699"/></linearGradient>
+        </defs>
+        <path d="M16 2 4 14l12 16L28 14z" fill="url(#gemA)"/>
+        <path d="M16 2 28 14H4z" fill="url(#gemB)" opacity="0.85"/>
+        <path d="M4 14h24L16 30z" fill="#0a2236" opacity="0.55"/>
+        <path d="M16 2v28M10 14l6 16 6-16" fill="none" stroke="#e8fdff" stroke-opacity="0.5" stroke-width="0.7"/>
+      </svg>
+      <b>APEX<i>SOVEREIGN</i>.AI</b>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#rates">Rates</a>
+      <a href="#calculator">Calculator</a>
+      <a href="#process">Process</a>
+      <a href="#status">Claim ledger</a>
+      <a href="#developers">Developers</a>
+    </nav>
+    <span class="pill ref">Pre-launch · Reference mode</span>
   </div>
-  <div class="main">
-    <h1>INSTITUTIONAL COMPUTE EXCHANGE</h1>
-    <div class="sub">Sovereign compute-unit economy · Delaware C-Corp · Sub-18ms edge mesh · Atomic ledger settlement</div>
-    <div style="margin-bottom:16px;padding:8px 12px;border:1px dashed var(--amber);border-radius:6px;color:var(--amber);font-size:11px;letter-spacing:.5px;">⚠ Illustrative Target Metrics — Pre-Incorporation Benchmark. All metrics, GPU arbitrage rates, latency indicators, and financial figures shown are illustrative targets and have not been independently verified.</div>
+</header>
 
-    <div class="grid">
-      <div class="stat"><div class="k">Compute Units</div><div class="v green">100 CU / $1</div></div>
-      <div class="stat"><div class="k">GPU Cost Reduction</div><div class="v green">-38%</div></div>
-      <div class="stat"><div class="k">Edge Latency</div><div class="v cyan"><span id="lat2">14</span>ms</div></div>
-      <div class="stat"><div class="k">Settlement</div><div class="v amber">ATOMIC</div></div>
-    </div>
-
-    <div class="ticker">
-      <h3>LIVE GPU ARBITRAGE TICKER <span class="badge">● ILLUSTRATIVE TARGET</span></h3>
-      <table>
-        <thead><tr><th>Cluster</th><th>Spot $/hr</th><th>Hyperscaler $/hr</th><th>Delta</th><th>Savings</th></tr></thead>
-        <tbody id="tickBody"></tbody>
-      </table>
-      <div class="telemetry">Streaming real-time spot pricing deltas · 38% avg cost reduction vs legacy hyperscalers · Updated every 2s</div>
-    </div>
-
-    <div class="calc">
-      <h3>COMPUTE UNIT (CU) CALCULATOR — $1.00 USD = 100 CU</h3>
-      <div class="calc-row">
-        <label>USD Amount</label>
-        <input type="number" id="usd" value="100" min="0" step="0.01" />
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow"><span class="pill target">&lt;18 ms design target</span><span>Sovereign compute exchange</span></div>
+        <h1>Route the workload. Keep the <em>margin.</em></h1>
+        <p class="lede">A prepaid GPU spot exchange for teams that want H100 and B200 capacity without the hyperscaler premium. Every rate on this page is a catalog reference value until supplier contracts are signed, and each claim carries a label that says so.</p>
+        <div class="cta">
+          <a class="btn primary" href="#calculator">Price a fleet</a>
+          <a class="btn ghost" href="#status">Read the claim ledger</a>
+        </div>
+        <div class="facts">
+          <div><b>$1.00 = 100 CU</b><span>Fixed platform rule for prepaid Compute Units</span></div>
+          <div><b>4 GPU classes</b><span>H100, B200, A100 and L40S in the reference catalog</span></div>
+          <div><b>0 measured SLAs</b><span>Latency and uptime figures stay unpublished until measured</span></div>
+        </div>
       </div>
-      <div class="calc-row">
-        <label>CU per Token (est)</label>
-        <input type="number" id="cuPerTok" value="0.0025" min="0" step="0.0001" />
-      </div>
-      <div class="calc-out">
-        <div class="out"><div class="k">Compute Units</div><div class="v" id="outCU">10,000</div></div>
-        <div class="out"><div class="k">Tokens Processable</div><div class="v" id="outTok">4,000,000</div></div>
-        <div class="out"><div class="k">Effective $/1M Tokens</div><div class="v" id="outCost">$0.025</div></div>
-      </div>
+      <figure class="globe">
+        <canvas id="globe" width="640" height="640" role="img" aria-label="Rotating globe showing 14 planned mesh regions connected by arcs"></canvas>
+        <figcaption>Illustrative topology · 14 planned regions · not live telemetry</figcaption>
+      </figure>
     </div>
+  </section>
 
-    <div class="actions">
-      <button onclick="openRoom()">Institutional Investor Data Room</button>
-      <button class="sec" onclick="window.open('/intelligence-stack.html','_blank')">Technical Whitepaper</button>
-      <button class="sec" onclick="window.open('/status.json','_blank')">System Status</button>
+  <section class="block" id="rates">
+    <div class="wrap">
+      <div class="eyebrow"><span class="pill ref">Reference</span><span>Rate matrix</span></div>
+      <h2>Spot rates against a stated baseline.</h2>
+      <p class="intro">Per GPU-hour, in USD and Compute Units. The delta compares the Apex reference rate with a reference on-demand baseline for the same accelerator.</p>
+      <div class="panel scroll" style="margin-top:2rem">
+        <table>
+          <thead><tr><th>Accelerator</th><th>Reference on-demand</th><th>Apex reference rate</th><th>Delta</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="gpu"><b>NVIDIA B200 NVL72</b><span>192 GB HBM3e · NVLink 5</span></td>
+              <td class="num base">$4.60 / hr</td>
+              <td class="num rate">$2.85 / hr<small>285 CU</small></td>
+              <td class="num delta">−38%</td>
+              <td><span class="pill ref">Reference</span></td>
+              <td><button class="btn ghost small" data-model="b200">Price it</button></td>
+            </tr>
+            <tr>
+              <td class="gpu"><b>NVIDIA H100 SXM5</b><span>80 GB HBM3 · NVLink 4</span></td>
+              <td class="num base">$3.23 / hr</td>
+              <td class="num rate">$1.94 / hr<small>194 CU</small></td>
+              <td class="num delta">−40%</td>
+              <td><span class="pill ref">Reference</span></td>
+              <td><button class="btn ghost small" data-model="h100">Price it</button></td>
+            </tr>
+            <tr>
+              <td class="gpu"><b>NVIDIA A100 SXM4</b><span>80 GB HBM2e · NVLink 3</span></td>
+              <td class="num base">$2.18 / hr</td>
+              <td class="num rate">$1.42 / hr<small>142 CU</small></td>
+              <td class="num delta">−35%</td>
+              <td><span class="pill ref">Reference</span></td>
+              <td><button class="btn ghost small" data-model="a100">Price it</button></td>
+            </tr>
+            <tr>
+              <td class="gpu"><b>NVIDIA L40S PCIe</b><span>48 GB GDDR6 · PCIe Gen4</span></td>
+              <td class="num base">$1.31 / hr</td>
+              <td class="num rate">$0.89 / hr<small>89 CU</small></td>
+              <td class="num delta">−32%</td>
+              <td><span class="pill ref">Reference</span></td>
+              <td><button class="btn ghost small" data-model="l40s">Price it</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">The baseline is a catalog value for a typical hyperscaler on-demand rate. It is not a quote from any named provider, and no supplier price feed is connected yet.</p>
     </div>
+  </section>
 
-    <div class="foot">
-      <span>ApexSovereign.ai, Inc. · Delaware C-Corporation · All IP solely owned by entity</span>
-      <span>© 2026 · <span class="cursor"></span></span>
+  <section class="block" id="calculator">
+    <div class="wrap">
+      <div class="eyebrow"><span class="pill ref">Reference</span><span>Fleet calculator</span></div>
+      <h2>What would this fleet cost?</h2>
+      <p class="intro">Choose an accelerator, fleet size and duration. Longer terms apply the discount tiers from the allocator. Nothing here reserves capacity or charges credits.</p>
+      <div class="calc">
+        <div class="panel controls">
+          <div class="field">
+            <label for="calc-model">Accelerator</label>
+            <select id="calc-model">
+              <option value="h100">NVIDIA H100 SXM5 80GB · $1.94 / GPU-hr</option>
+              <option value="b200">NVIDIA B200 NVL72 · $2.85 / GPU-hr</option>
+              <option value="a100">NVIDIA A100 SXM4 80GB · $1.42 / GPU-hr</option>
+              <option value="l40s">NVIDIA L40S PCIe · $0.89 / GPU-hr</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="lab" id="gpu-lab">Fleet size (GPUs)</span>
+            <div class="row" role="group" aria-labelledby="gpu-lab">
+              <input id="calc-gpus" type="number" min="1" max="1024" value="32" aria-label="Number of GPUs">
+              <button class="chip" type="button" data-gpus="8" aria-pressed="false">8</button>
+              <button class="chip" type="button" data-gpus="32" aria-pressed="true">32</button>
+              <button class="chip" type="button" data-gpus="128" aria-pressed="false">128</button>
+              <button class="chip" type="button" data-gpus="512" aria-pressed="false">512</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="lab" id="hrs-lab">Duration (hours)</span>
+            <div class="row" role="group" aria-labelledby="hrs-lab">
+              <input id="calc-hours" type="number" min="1" max="8760" value="720" aria-label="Hours">
+              <button class="chip" type="button" data-hours="24" aria-pressed="false">24 h</button>
+              <button class="chip" type="button" data-hours="168" aria-pressed="false">7 d</button>
+              <button class="chip" type="button" data-hours="720" aria-pressed="true">30 d</button>
+              <button class="chip" type="button" data-hours="2160" aria-pressed="false">90 d</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="calc-term">Commitment term</label>
+            <select id="calc-term">
+              <option value="0">On-demand spot (no discount)</option>
+              <option value="0.05">Reserved 24 h (−5%)</option>
+              <option value="0.10">Reserved 7 d (−10%)</option>
+              <option value="0.15">Reserved 30 d (−15%)</option>
+            </select>
+          </div>
+        </div>
+        <div class="panel result" aria-live="polite">
+          <div class="eyebrow"><span class="pill ref">Reference estimate</span></div>
+          <dl>
+            <div><dt>Reference baseline</dt><dd id="out-base" style="color:var(--muted);text-decoration:line-through">$0.00</dd></div>
+            <div><dt>Apex reference spend</dt><dd id="out-spend">$0.00</dd></div>
+            <div><dt>Compute Units</dt><dd id="out-cu">0 CU</dd></div>
+            <div><dt>Reference delta</dt><dd id="out-pct">0%</dd></div>
+          </dl>
+          <div class="big"><small>Difference against baseline</small><strong id="out-save">$0.00</strong></div>
+          <div class="field" style="margin-top:0.4rem">
+            <label for="quote-text">Capacity request summary</label>
+            <textarea id="quote-text" readonly></textarea>
+          </div>
+          <div class="row">
+            <button class="btn primary small" type="button" id="copy-quote">Copy request summary</button>
+            <span class="status-msg" id="quote-msg" role="status"></span>
+          </div>
+        </div>
+      </div>
+      <p class="note">Estimates use reference rates, not quotes. Capacity requests open with the supplier go-live; until then the summary is a note you can paste into an email to your account contact.</p>
     </div>
+  </section>
+
+  <section class="block" id="process">
+    <div class="wrap">
+      <div class="eyebrow"><span>How it works</span></div>
+      <h2>Prepay, reserve, run, settle.</h2>
+      <ol class="steps">
+        <li><h3>Prepay credits</h3><p>Buy Compute Units at $1.00 = 100 CU. Credits are added only after the billing service confirms the payment.</p></li>
+        <li><h3>Price the fleet</h3><p>Pick an accelerator, fleet size and term. Rates come from the reference catalog until a supplier feed is connected.</p></li>
+        <li><h3>Provision</h3><p>Nodes are 8-GPU units. In supplier mode, allocation moves credits into escrow. In simulated mode nothing is charged and responses carry <span class="mono">demo: true</span>.</p></li>
+        <li><h3>Settle</h3><p>Each credit and debit is a double-entry ledger row. PayPal webhooks are verified with PayPal's signature API before any credit is written.</p></li>
+      </ol>
+      <div class="packs" aria-label="Credit packs">
+        <div class="panel pack"><span class="eyebrow">Developer</span><span class="usd">$50</span><span class="cu">5,000 CU</span><span class="eq">≈ 25.8 H100-hours at the reference rate</span><button class="btn small" disabled>Opens at go-live</button></div>
+        <div class="panel pack"><span class="eyebrow">Prototype</span><span class="usd">$100</span><span class="cu">10,000 CU</span><span class="eq">≈ 51.5 H100-hours at the reference rate</span><button class="btn small" disabled>Opens at go-live</button></div>
+        <div class="panel pack"><span class="eyebrow">Enterprise cluster</span><span class="usd">$500</span><span class="cu">50,000 CU</span><span class="eq">≈ 257.7 H100-hours at the reference rate</span><button class="btn small" disabled>Opens at go-live</button></div>
+        <div class="panel pack"><span class="eyebrow">Sovereign scale</span><span class="usd">$1,000</span><span class="cu">100,000 CU</span><span class="eq">≈ 515.5 H100-hours at the reference rate</span><button class="btn small" disabled>Opens at go-live</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="status">
+    <div class="wrap">
+      <div class="eyebrow"><span>Claim ledger</span></div>
+      <h2>What is real, and what is not yet.</h2>
+      <p class="intro">Every statement on this site maps to one of these labels. A claim moves to <span class="mono">LIVE</span> only after it is measured or contracted.</p>
+      <div class="panel scroll ledger" style="margin-top:2rem">
+        <table>
+          <thead><tr><th>Component</th><th>Status</th><th>What that means today</th></tr></thead>
+          <tbody>
+            <tr><td>Rate catalog</td><td><span class="pill ref">Reference</span></td><td>Fixed catalog values. No supplier price feed is connected.</td></tr>
+            <tr><td>Cluster provisioning</td><td><span class="pill ref">Simulated</span></td><td>Requests return demo clusters and charge 0 CU. No physical hardware is allocated.</td></tr>
+            <tr><td>Credits and settlement</td><td><span class="pill ref">Sandbox</span></td><td>The $1.00 = 100 CU ledger runs against the PayPal sandbox until the go-live checklist is complete.</td></tr>
+            <tr><td>Latency under 18 ms</td><td><span class="pill target">Target</span></td><td>A design goal for mesh routing. It has not been measured and is not a guarantee.</td></tr>
+            <tr><td>Uptime and capacity</td><td><span class="pill road">Not measured</span></td><td>No uptime or aggregate capacity figure is published until there is data behind it.</td></tr>
+            <tr><td>14 mesh regions</td><td><span class="pill road">Roadmap</span></td><td>Planned cities. No facilities are named until they are contracted.</td></tr>
+            <tr><td>Corporate entity</td><td><span class="pill road">In preparation</span></td><td>A Delaware C-Corp is planned and not yet incorporated. No equity, valuation or financing terms are offered on this site.</td></tr>
+            <tr><td>Capacity futures, confidential enclaves</td><td><span class="pill road">Roadmap</span></td><td>Designed for hardware that supports it. Not offered yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="rule">Go-live needs a signed supplier agreement, a live PayPal app, sanctions and KYC screening, legal review and measured telemetry. Until then this site stays in reference mode.</p>
+    </div>
+  </section>
+
+  <section class="block" id="developers">
+    <div class="wrap">
+      <div class="eyebrow"><span class="pill ref">Simulated</span><span>Developers</span></div>
+      <h2>One endpoint to provision.</h2>
+      <p class="intro">Send a bearer key and an idempotency key. Keys are issued server-side after sign-in, and the browser never generates them. In simulated mode the response includes <span class="mono">demo: true</span>.</p>
+      <div class="code-grid">
+        <div class="panel code">
+          <div class="head"><span>cURL</span><button class="btn ghost small" type="button" data-copy="snip-curl">Copy</button></div>
+          <pre><code id="snip-curl">curl -X POST "https://www.apexsovereign.ai/v1/clusters/provision" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "H100 SXM5",
+    "region": "us-ashburn",
+    "nodes": 4,
+    "term": "on-demand"
+  }'</code></pre>
+        </div>
+        <div class="panel code">
+          <div class="head"><span>Python</span><button class="btn ghost small" type="button" data-copy="snip-py">Copy</button></div>
+          <pre><code id="snip-py">import uuid
+import requests
+
+res = requests.post(
+    "https://www.apexsovereign.ai/v1/clusters/provision",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Idempotency-Key": str(uuid.uuid4()),
+    },
+    json={
+        "model": "H100 SXM5",
+        "region": "us-ashburn",
+        "nodes": 4,   # 8 GPUs per node
+        "term": "on-demand",
+    },
+)
+print(res.json())</code></pre>
+        </div>
+      </div>
+      <p class="note" id="snip-msg" role="status"></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>ApexSovereign.ai © 2026 · Pre-launch. Reference rates are catalog values, not quotes or offers.</span>
+    <span class="mono">$1.00 USD = 100 CU</span>
   </div>
-</div>
-
-<div class="modal" id="room">
-  <div class="modal-card">
-    <span class="close" onclick="closeRoom()">&times;</span>
-    <h2>INSTITUTIONAL INVESTOR DATA ROOM</h2>
-    <div class="sub">NDA-secured · Token-gated access · Delaware C-Corp governance package</div>
-    <div class="doc">
-      <h4>IP_ASSIGNMENT_AGREEMENT.md</h4>
-      <p>Unconditional transfer of all proprietary source code, autonomous agent pipelines (run-sovereign-agent.py, viking/), and domain assets (apexsovereign.ai) to ApexSovereign.ai, Inc.</p>
-    </div>
-    <div class="doc">
-      <h4>CAP_TABLE_AND_FINANCING_MEMORANDUM.md</h4>
-      <p>Institutional seed-stage valuation structure, compute-backed asset backing, and equity allocation framework.</p>
-    </div>
-    <div class="doc">
-      <h4>SYSTEM_ARCHITECTURE_SPECIFICATION.md</h4>
-      <p>Comprehensive breakdown of the sub-18ms edge mesh, Supabase atomic ledger (credit_user_account), and PayPal payment pipeline.</p>
-    </div>
-    <div class="doc">
-      <h4>COMPLIANCE_AUDIT_LOG.md</h4>
-      <p>Immutable verification of webhook settlement security and data privacy standards.</p>
-    </div>
-    <div style="margin-top:14px;">
-      <div class="calc-row">
-        <label>Access Token</label>
-        <input type="password" id="roomToken" placeholder="NDA / token" />
-      </div>
-      <button onclick="verifyRoom()">Verify & Enter</button>
-      <span id="roomMsg" style="margin-left:12px;font-size:12px;color:var(--dim);"></span>
-    </div>
-  </div>
-</div>
+</footer>
 
 <script>
-const clusters = [
-  { name:'H100 80GB (8x)', spot:22.40, hyper:36.20 },
-  { name:'B200 192GB (8x)', spot:31.80, hyper:52.10 },
-  { name:'A100 80GB (8x)', spot:14.20, hyper:22.80 },
-];
-function renderTicker(){
-  const tb = document.getElementById('tickBody');
-  tb.innerHTML = clusters.map(c=>{
-    const delta = c.spot - c.hyper;
-    const save = ((c.hyper-c.spot)/c.hyper*100).toFixed(1);
-    const jitter = (Math.random()*0.6-0.3).toFixed(2);
-    const spot = (c.spot + parseFloat(jitter)).toFixed(2);
-    const hypers = (c.hyper + parseFloat(jitter)*0.5).toFixed(2);
-    const d = (parseFloat(spot)-parseFloat(hypers)).toFixed(2);
-    return `<tr>
-      <td>${c.name}</td>
-      <td class="cyan">$${spot}</td>
-      <td class="dim">$${hypers}</td>
-      <td class="delta neg">$${d}</td>
-      <td class="pos">${save}%</td>
-    </tr>`;
-  }).join('');
-}
-renderTicker();
-setInterval(renderTicker, 2000);
-setInterval(()=>{ const l=(12+Math.random()*6).toFixed(0); document.getElementById('lat').textContent=l+'ms'; document.getElementById('lat2').textContent=l; }, 1500);
+(function () {
+  "use strict";
 
-function calc(){
-  const usd = parseFloat(document.getElementById('usd').value)||0;
-  const cuPerTok = parseFloat(document.getElementById('cuPerTok').value)||0.0025;
-  const cu = usd*100;
-  const toks = cuPerTok>0 ? cu/cuPerTok : 0;
-  const perM = toks>0 ? (usd/(toks/1e6)) : 0;
-  document.getElementById('outCU').textContent = cu.toLocaleString();
-  document.getElementById('outTok').textContent = Math.round(toks).toLocaleString();
-  document.getElementById('outCost').textContent = '$'+perM.toFixed(4);
-}
-document.getElementById('usd').addEventListener('input',calc);
-document.getElementById('cuPerTok').addEventListener('input',calc);
-calc();
+  /* ---------- calculator ---------- */
+  var MODELS = {
+    h100: { name: "NVIDIA H100 SXM5 80GB", spot: 1.94, base: 3.23 },
+    b200: { name: "NVIDIA B200 NVL72", spot: 2.85, base: 4.60 },
+    a100: { name: "NVIDIA A100 SXM4 80GB", spot: 1.42, base: 2.18 },
+    l40s: { name: "NVIDIA L40S PCIe", spot: 0.89, base: 1.31 }
+  };
+  var TERMS = { "0": "On-demand spot", "0.05": "Reserved 24 h", "0.1": "Reserved 7 d", "0.15": "Reserved 30 d" };
+  var $ = function (id) { return document.getElementById(id); };
+  function usd(n) { return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function clamp(v, lo, hi) { v = parseInt(v, 10); if (isNaN(v)) v = lo; return Math.min(hi, Math.max(lo, v)); }
 
-function openRoom(){ document.getElementById('room').classList.add('open'); }
-function closeRoom(){ document.getElementById('room').classList.remove('open'); }
-function verifyRoom(){
-  const t = document.getElementById('roomToken').value;
-  const msg = document.getElementById('roomMsg');
-  if (t && t.length >= 8) {
-    msg.style.color = 'var(--green)';
-    msg.textContent = 'ACCESS GRANTED — data room unlocked (NDA verified).';
-  } else {
-    msg.style.color = 'var(--red)';
-    msg.textContent = 'ACCESS DENIED — invalid or missing token.';
+  function updateCalc() {
+    var m = MODELS[$("calc-model").value];
+    var gpus = clamp($("calc-gpus").value, 1, 1024);
+    var hours = clamp($("calc-hours").value, 1, 8760);
+    var disc = parseFloat($("calc-term").value) || 0;
+    var rate = m.spot * (1 - disc);
+    var spend = rate * gpus * hours;
+    var base = m.base * gpus * hours;
+    var save = base - spend;
+    var pct = base > 0 ? (save / base) * 100 : 0;
+    var cu = Math.round(spend * 100);
+    $("out-base").textContent = usd(base);
+    $("out-spend").textContent = usd(spend);
+    $("out-cu").textContent = cu.toLocaleString("en-US") + " CU";
+    $("out-pct").textContent = "−" + pct.toFixed(1) + "%";
+    $("out-save").textContent = usd(save);
+    document.querySelectorAll("[data-gpus]").forEach(function (b) { b.setAttribute("aria-pressed", String(parseInt(b.dataset.gpus, 10) === gpus)); });
+    document.querySelectorAll("[data-hours]").forEach(function (b) { b.setAttribute("aria-pressed", String(parseInt(b.dataset.hours, 10) === hours)); });
+    $("quote-text").value = [
+      "ApexSovereign.ai capacity request (reference rates, not a quote)",
+      "Accelerator:  " + m.name,
+      "Fleet:        " + gpus + " GPUs (" + Math.ceil(gpus / 8) + " nodes of 8)",
+      "Duration:     " + hours + " h (" + (hours / 24).toFixed(1) + " days)",
+      "Term:         " + (TERMS[String(disc)] || "On-demand spot"),
+      "Reference rate: " + usd(rate) + " per GPU-hour",
+      "Reference spend: " + usd(spend) + " (" + cu.toLocaleString("en-US") + " CU)",
+      "Reference baseline: " + usd(base),
+      "Difference:   " + usd(save) + " (" + pct.toFixed(1) + "%)"
+    ].join("\n");
+    $("quote-msg").textContent = "";
   }
-}
+  ["calc-model", "calc-gpus", "calc-hours", "calc-term"].forEach(function (id) {
+    $(id).addEventListener("input", updateCalc);
+    $(id).addEventListener("change", updateCalc);
+  });
+  document.querySelectorAll("[data-gpus]").forEach(function (b) { b.addEventListener("click", function () { $("calc-gpus").value = b.dataset.gpus; updateCalc(); }); });
+  document.querySelectorAll("[data-hours]").forEach(function (b) { b.addEventListener("click", function () { $("calc-hours").value = b.dataset.hours; updateCalc(); }); });
+  document.querySelectorAll("[data-model]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      $("calc-model").value = b.dataset.model;
+      updateCalc();
+      $("calculator").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  /* ---------- copy helpers ---------- */
+  function selectNode(el) {
+    try {
+      if (el.select) { el.focus(); el.select(); return; }
+      var r = document.createRange(); r.selectNodeContents(el);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    } catch (e) { /* selection unavailable */ }
+  }
+  function copyFrom(el, text, msgEl, okText) {
+    var fail = function () { selectNode(el); msgEl.textContent = "Copy blocked here. The text is selected, press Ctrl+C or Cmd+C."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { msgEl.textContent = okText; }, fail);
+    } else { fail(); }
+  }
+  $("copy-quote").addEventListener("click", function () {
+    var ta = $("quote-text");
+    copyFrom(ta, ta.value, $("quote-msg"), "Copied to clipboard.");
+  });
+  document.querySelectorAll("[data-copy]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var el = $(b.dataset.copy);
+      copyFrom(el, el.textContent, $("snip-msg"), "Snippet copied to clipboard.");
+    });
+  });
+
+  updateCalc();
+
+  /* ---------- illustrative globe ---------- */
+  var cv = $("globe");
+  var ctx = cv.getContext("2d");
+  var NODES = [
+    ["Ashburn", 39.0, -77.5], ["Dallas", 32.8, -96.8], ["Portland", 45.5, -122.7], ["São Paulo", -23.5, -46.6],
+    ["Dublin", 53.3, -6.3], ["Frankfurt", 50.1, 8.7], ["Stockholm", 59.3, 18.1], ["Mumbai", 19.1, 72.9],
+    ["Singapore", 1.35, 103.8], ["Tokyo", 35.7, 139.7], ["Seoul", 37.6, 127.0], ["Sydney", -33.9, 151.2],
+    ["Johannesburg", -26.2, 28.0], ["Dubai", 25.2, 55.3]
+  ];
+  var ARCS = [[0, 5], [5, 8], [8, 9], [2, 9], [0, 3], [5, 13], [8, 11], [5, 12], [0, 4], [1, 0], [13, 7], [9, 10]];
+  var RAD = Math.PI / 180, TILT = 0.42;
+  function cart(lat, lon) { var la = lat * RAD, lo = lon * RAD; return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)]; }
+  var NV = NODES.map(function (n) { return cart(n[1], n[2]); });
+
+  function rotate(v, rot, k) {
+    var c = Math.cos(rot), s = Math.sin(rot);
+    var x = v[0] * c + v[2] * s, z = -v[0] * s + v[2] * c, y = v[1];
+    var ct = Math.cos(TILT), st = Math.sin(TILT);
+    return [x, y * ct - z * st, y * st + z * ct, k];
+  }
+  function slerp(a, b, t) {
+    var d = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
+    var om = Math.acos(d), so = Math.sin(om);
+    if (so < 1e-5) return a;
+    var f = Math.sin((1 - t) * om) / so, g = Math.sin(t * om) / so;
+    var v = [f * a[0] + g * b[0], f * a[1] + g * b[1], f * a[2] + g * b[2]];
+    var lift = 1 + 0.16 * Math.sin(Math.PI * t);
+    return [v[0] * lift, v[1] * lift, v[2] * lift];
+  }
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function draw(time) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var size = Math.round(cv.clientWidth * dpr);
+    if (size > 0 && cv.width !== size) { cv.width = size; cv.height = size; }
+    var W = cv.width, cx = W / 2, cy = W / 2, R = W * 0.38;
+    var rot = reduce ? 0.9 : time * 0.00011 + 0.9;
+    ctx.clearRect(0, 0, W, W);
+    function P(v) { return [cx + R * v[0], cy - R * v[1]]; }
+
+    var halo = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 1.28);
+    halo.addColorStop(0, "rgba(0,240,255,0.14)"); halo.addColorStop(1, "rgba(0,240,255,0)");
+    ctx.fillStyle = halo; ctx.fillRect(0, 0, W, W);
+    var body = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
+    body.addColorStop(0, "#0d1b2c"); body.addColorStop(1, "#05070a");
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = body; ctx.fill();
+    ctx.lineWidth = 1.2 * dpr; ctx.strokeStyle = "rgba(0,240,255,0.45)"; ctx.stroke();
+
+    ctx.lineWidth = 0.8 * dpr; ctx.strokeStyle = "rgba(0,240,255,0.16)";
+    function line(pts) {
+      var open = false;
+      ctx.beginPath();
+      pts.forEach(function (p) {
+        if (p[2] > 0) { var q = P(p); if (!open) { ctx.moveTo(q[0], q[1]); open = true; } else { ctx.lineTo(q[0], q[1]); } }
+        else { open = false; }
+      });
+      ctx.stroke();
+    }
+    var lat, lon, pts;
+    for (lat = -60; lat <= 60; lat += 30) { pts = []; for (lon = 0; lon <= 360; lon += 6) pts.push(rotate(cart(lat, lon), rot)); line(pts); }
+    for (lon = 0; lon < 360; lon += 30) { pts = []; for (lat = -90; lat <= 90; lat += 6) pts.push(rotate(cart(lat, lon), rot)); line(pts); }
+
+    ARCS.forEach(function (a, i) {
+      var A = NV[a[0]], B = NV[a[1]];
+      var seg = [];
+      for (var t = 0; t <= 1.0001; t += 0.025) seg.push(rotate(slerp(A, B, t), rot));
+      ctx.lineWidth = 1.1 * dpr; ctx.strokeStyle = "rgba(0,240,255,0.42)";
+      line(seg);
+      var tt = reduce ? ((i * 0.23) % 1) : ((time * 0.00022 + i * 0.37) % 1);
+      var pv = rotate(slerp(A, B, tt), rot);
+      if (pv[2] > 0.02) {
+        var q = P(pv);
+        ctx.beginPath(); ctx.arc(q[0], q[1], 2.6 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff"; ctx.shadowColor = "#00f0ff"; ctx.shadowBlur = 12 * dpr; ctx.fill(); ctx.shadowBlur = 0;
+      }
+    });
+
+    ctx.font = (9.5 * dpr) + "px 'JetBrains Mono', ui-monospace, monospace";
+    ctx.textAlign = "left";
+    NODES.forEach(function (n, i) {
+      var v = rotate(NV[i], rot);
+      if (v[2] <= 0.02) return;
+      var q = P(v);
+      ctx.beginPath(); ctx.arc(q[0], q[1], 7 * dpr, 0, Math.PI * 2); ctx.fillStyle = "rgba(0,240,255,0.14)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(q[0], q[1], 3 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = "#00f0ff"; ctx.shadowColor = "#00f0ff"; ctx.shadowBlur = 10 * dpr; ctx.fill(); ctx.shadowBlur = 0;
+      if (v[2] > 0.5) { ctx.fillStyle = "rgba(232,238,245," + Math.min(0.85, (v[2] - 0.4)) + ")"; ctx.fillText(n[0], q[0] + 9 * dpr, q[1] + 3 * dpr); }
+    });
+  }
+
+  if (reduce) {
+    draw(0);
+    window.addEventListener("resize", function () { draw(0); });
+  } else {
+    (function loop(t) { draw(t); requestAnimationFrame(loop); })(0);
+  }
+})();
 </script>
+
 </body>
 </html>
