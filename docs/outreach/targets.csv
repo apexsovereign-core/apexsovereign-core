@@ -1,3 +1,11 @@
-company_name,contact_name,contact_email,gpu_nodes,status
-"Alpha Compute DC","CTO","cto@alphacompute.example.com","H100","pending"
-"Nexus Data Solutions","Head of Infrastructure","infra@nexusds.example.com","B200","pending"
+company_name,contact_name,contact_email,gpu_nodes
+"Vitro Data Center","Operations Director","ops@vitropasig.example.com","H100"
+"STT Makati Data Center","CTO","cto@sttmakati.example.com","B200"
+"Digital Edge DC - Narra1","VP Business Development","bd@digitaledgenarra1.example.com","H100"
+"ePLDT, VITRO Data Center Makati","Infrastructure Lead","infra@epldtmakati.example.com","B200"
+"Converge ICT Data Center","NOC Director","noc@convergecaloocan.example.com","H100"
+"IPC (IP Converge Data Services, Inc.)","CTO","cto@ipconverge.example.com","B200"
+"Equinix Data Center - Manila","Regional Head","manila-ops@equinix.example.com","H100"
+"Vitro Paranaque","Facility Director","ops@vitroparanaque.example.com","B200"
+"STT Fairview Data Centre","Operations Manager","fairview-ops@sttelemedia.example.com","H100"
+"Beeinfotech PH","Technical Director","info@beeinfotech.example.com","B200"
