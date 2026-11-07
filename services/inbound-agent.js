@@ -1,14 +1,43 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
+import crypto from 'node:crypto';
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+// Shared secret for Google Cloud Pub/Sub push (set via env INBOUND_AGENT_SECRET).
+// Requests must present it via X-PubSub-Token or Authorization: Bearer <token>.
+function verifyInboundAuth(req) {
+    const expected = process.env.INBOUND_AGENT_SECRET;
+    if (!expected) return false;
+    const headerToken = req.headers['x-pubsub-token'];
+    if (headerToken && headerToken === expected) return true;
+    const auth = req.headers.authorization || '';
+    if (auth.toLowerCase().startsWith('bearer ') && auth.slice(7).trim() === expected) return true;
+    return false;
+}
+
+// Decode a Google Cloud Pub/Sub push envelope into a plain email payload.
+function decodePubSubEnvelope(body) {
+    try {
+        if (body && body.message && body.message.data) {
+            const decoded = Buffer.from(body.message.data, 'base64').toString('utf8');
+            return JSON.parse(decoded);
+        }
+    } catch (_) { /* fall through */ }
+    return body || {};
+}
+
 // Inbound Webhook Listener for Email Events
 router.post('/api/agent/inbound-email', async (req, res) => {
+    if (!verifyInboundAuth(req)) {
+        return res.status(401).json({ error: 'unauthorized' });
+    }
+
     try {
-        const { sender, subject, body, attachments } = req.body || {};
+        const payload = decodePubSubEnvelope(req.body);
+        const { sender, subject, body, attachments } = payload;
 
         // Step 1: Classify intent via local Ollama runtime
         const classification = await classifyWithOllama(subject, body);
