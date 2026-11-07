@@ -1,0 +1,3 @@
+company_name,contact_name,contact_email,gpu_nodes,status
+"Alpha Compute DC","CTO","cto@alphacompute.example.com","H100","pending"
+"Nexus Data Solutions","Head of Infrastructure","infra@nexusds.example.com","B200","pending"

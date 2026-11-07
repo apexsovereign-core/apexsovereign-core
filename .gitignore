@@ -6,3 +6,4 @@
 supabase/.temp/
 .DS_Store
 dist/
+docs/outreach/dispatch_log.json
